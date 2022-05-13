@@ -56,9 +56,16 @@ document.addEventListener("DOMContentLoaded", () => {
         button.addEventListener("click", (event) => {
             const index = window.getSelection().anchorOffset
             event.preventDefault()
-            const u = userInput.innerText
-            userInput.innerText = `${u.slice(0, index)}${button.innerText}${u.slice(index, u.length)}`
-            positionCaret(userInput, index + button.innerText.length)
+            const u = userInput.innerText 
+            let t = button.dataset.text || button.innerText
+            let length = t.length
+            if (t.includes("|")) {
+                const pipe_index = t.indexOf("|")
+                t = t.slice(0, pipe_index) + t.slice(pipe_index + 1)
+                length = pipe_index
+            }
+            userInput.innerText = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
+            positionCaret(userInput, index + length)
         })
     }
 
