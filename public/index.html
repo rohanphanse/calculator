@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Calculator</title>
+    <link rel = "stylesheet" href = "https://cdn.linearicons.com/free/1.0.0/icon-font.min.css">
+    <link href = "styles/main.css" rel = "stylesheet" type = "text/css" />
+    <script src = "/scripts/calculator.js"></script>
+    <script src = "/scripts/main.js"></script>
+</head>
+
+<body>
+    <div class = "center">
+        <div id = "container">
+            <a href = "/" id = "title" class = "center-row">
+                Calculator
+            </a>
+            <div id = "subtitle" class = "center-row">
+                "Crunching numbers has never been easier"
+            </div>
+            <div id = "config">
+                <div class = "config-button">
+                    <div class = "config-label">angle</div>
+                    <div class = "config-value" id = "angle-button">rad</div>
+                </div>
+                <div class = "config-button">
+                    <div class = "config-label">digits</div>
+                    <input id = "digits-input" class = "config-value" value = "6" maxlength = "2"/>
+                </div>
+            </div>
+
+            <div id = "command-bar-container">
+                <div id = "command-bar">
+                    <div data-text = "ans" class = "command">ans</div>
+                    <div data-text = "clear" class = "command">clear</div>
+                    <div data-text = "help" class = "command">help</div>
+                    <div class = "divider"></div>
+                    
+                    <div data-text = "+" class = "command">+</div>
+                    <div data-text = "-" class = "command">-</div>
+                    <div data-text = "*" class = "command">*</div>
+                    <div data-text = "/" class = "command">/</div>
+                    <div data-text = "^" class = "command">^</div>
+                    <div data-text = "!" class = "command">!</div>
+                    <div class = "divider"></div>
+                    <div data-text = "abs" class = "command">abs</div>
+                    <div data-text = "ceil" class = "command">ceil</div>
+                    <div data-text = "floor" class = "command">floor</div>
+                    <div data-text = "round" class = "command">round</div>
+                    <div data-text = "sqrt" class = "command">sqrt</div>
+                    <div class = "divider"></div>
+                    <div data-text = "log" class = "command">log</div>
+                    <div data-text = "ln" class = "command">ln</div>
+                    <div data-text = "sin" class = "command">sin</div>
+                    <div data-text = "cos" class = "command">cos</div>
+                    <div data-text = "tan" class = "command">tan</div>
+                    <div class = "divider"></div>
+                    <div data-text = "pi" class = "command">pi</div>
+                    <div data-text = "e" class = "command">e</div>
+                    <div data-text = "tau" class = "command">tau</div>
+                    <div data-text = "phi" class = "command">phi</div>
+                    <div class = "divider"></div>
+                    <div data-text = "min" class = "command">min</div>
+                    <div data-text = "max" class = "command">max</div>
+                    <div data-text = "sum" class = "command">sum</div>
+                    <div data-text = "mean" class = "command">mean</div>
+                    <div data-text = "median" class = "command">median</div>
+                    <div data-text = "sd" class = "command">sd</div>
+             
+                    <div class = "spacer"></div>
+                </div>
+                <div id = "command-bar-overlay-right"></div>
+                <div id = "command-bar-overlay-left"></div>
+            </div>
+
+            <div id = "interface">
+                <div class = "input" placeholder = "Enter an expression..." contenteditable></div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
