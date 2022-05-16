@@ -175,12 +175,12 @@ const OPERATIONS = {
     },
     "min": {
         name: "Minimum",
-        func: (nums) => Math.min(...nums),
+        func: (...nums) => Math.min(...nums),
         schema: [1]
     },
     "max": {
         name: "Maximum",
-        func: (nums) => Math.max(...nums),
+        func: (...nums) => Math.max(...nums),
         schema: [1]
     },
     "sqrt": {
@@ -316,14 +316,16 @@ class Calculator {
         // Changing case to lower
         expression = expression.replace(/\s/g,"").toLowerCase()
         
-        // Includes one instance of "def"
-        if (expression.split("def").length - 1 === 1 && expression.slice(0, 3) === "def") {
-            return this.declareFunction(expression)
         // Includes equals sign
-        } else if (expression.includes("=")) {
+        if (expression.includes("=")) {
             // Only 1 equals sign
             if ((expression.match(/=/g) || []).length === 1) {
-                return this.declareVariable(expression)
+                const before_equals = expression.split("=")[0]
+                if (before_equals.includes("(") && before_equals.includes(")")) {
+                    return this.declareFunction(expression)
+                } else {
+                    return this.declareVariable(expression)
+                }
             } else {
                 return "Variable assignment error"
             }
@@ -464,7 +466,7 @@ class Calculator {
             // Name is alphabetic
             if (/^[a-z_]+$/i.test(name)) {
                 // Name is an operation or keyword
-                if (name in OPERATIONS || KEYWORDS.includes(name || name in this.functions) ) {
+                if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.functions) {
                     return "Variable name taken"
                 }
                 status++
@@ -500,7 +502,7 @@ class Calculator {
 
     declareFunction(expression) {
         try {
-            expression = expression.slice(3).split("=")
+            expression = expression.split("=")
             if (expression.length !== 2) {
                 return "Function equals error"
             }
