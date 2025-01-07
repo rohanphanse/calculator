@@ -1,0 +1,219 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap");
+
+* {
+    border: none;
+    outline: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Open Sans", sans-serif;
+}
+
+.center {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    width: 100vw;
+    height: 100vh;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+    width: max(350px, 50vh);
+
+
+    border: 1px solid rgb(221, 221, 221);
+    border-radius: 8px;
+    margin: 30px;
+}
+
+@media only screen and (max-height: calc(498.73px + 60px)) {
+    .center {
+        align-content: flex-start;
+    }
+}
+
+.center-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+#title {
+    font-size: max(1.9rem, calc(2.5vh + 0.75vw));
+    font-weight: 300;
+    color: #4D4D4D;
+    margin: 7px 0 3px 0;
+    text-align: center;
+    text-decoration: none;
+}
+
+#subtitle {
+    padding: 0 5px 5px 5px;
+    font-style: italic;
+    color: rgb(121, 121, 121);
+    font-size: max(0.9rem, calc((2.5vh + 0.75vw) * 0.42));
+    text-align: center;
+}
+
+#config {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    border-bottom: 1px solid rgb(221, 221, 221);
+}
+
+.config-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 6px 10px 6px 0;
+}
+
+.config-label {
+    font-family: monospace;
+    font-style: italic;
+    padding: 2px 5px;
+    background-color: rgb(240, 240, 240);
+    border-radius: 4px 0 0 4px;
+    border-right: 1px solid rgb(221, 221, 221);
+    transition-duration: 0.1s;
+    cursor: pointer;
+}
+
+.config-value {
+    font-family: monospace;
+    padding: 2px 5px;
+    background-color: rgb(240, 240, 240);
+    border-radius: 0 4px 4px 0;
+    transition-duration: 0.1s;
+    cursor: pointer;
+}
+
+.config-value:hover {
+    background-color: rgb(225, 225, 225);
+}
+
+#command-bar {
+    display: flex;
+    flex-direction: row;
+    padding: 0 5px;
+    border-bottom: 1px solid rgb(221, 221, 221);
+    overflow-y: auto;
+    user-select: none;
+    user-drag: none;
+    -webkit-user-drag: none;
+}
+
+.spacer {
+    padding: 0 0 0 5px;
+}
+
+#command-bar-container {
+    position: relative;
+}
+
+#command-bar-overlay-right {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    height: 31.5px;
+    width: 30px;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0) 20%, rgb(255, 255, 255));
+    pointer-events: none;
+}
+
+#command-bar-overlay-left {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 31.5px;
+    width: 30px;
+    background-image: linear-gradient(to left, rgba(255, 255, 255, 0) 20%, rgb(255, 255, 255));
+    pointer-events: none;
+}
+
+#command-bar::-webkit-scrollbar {
+    height: 4px;
+    background-color: rgb(240, 240, 240);
+}
+
+/* Handle on hover */
+#command-bar::-webkit-scrollbar-thumb {
+    transition-duration: 0.1s;
+    background-color: rgb(163, 163, 163);
+}
+
+#command-bar::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(131, 131, 131);
+}
+
+.command {
+    font-family: monospace;
+    padding: 2px 5px;
+    background-color: rgb(240, 240, 240);
+    border-radius: 4px;
+    margin: 6px 5px;
+    transition-duration: 0.1s;
+    cursor: pointer;
+}
+
+.command:hover {
+    background-color: rgb(225, 225, 225);
+}
+
+.divider {
+    border-left: 1px solid rgb(221, 221, 221);
+    margin: 0 5px;
+}
+
+#interface {
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    overflow: auto;
+    height: max(calc(490px - 112.77px), calc(70vh - 112.77px));
+}
+
+.input {
+    font-family: monospace;
+    font-size: 1.2rem;
+    overflow-wrap: break-word;
+    margin-bottom: 3px;
+}
+
+.input[placeholder]:empty::before {
+    content: attr(placeholder);
+    color: #555; 
+}
+
+.input[placeholder]:empty:focus::before {
+    content: "";
+}
+
+.result {
+    text-align: right;
+    font-size: 0.9rem;
+    font-style: italic;
+    overflow-wrap: break-word;
+    margin-bottom: 3px;
+}
+
+#digits-input {
+    width: 3.7ch;
+    height: 19.5px;
+}
+
+#digits-input:focus {
+    background-color: rgb(225, 225, 225);
+}
+
+#angle-button {
+    user-select: none;
+}
