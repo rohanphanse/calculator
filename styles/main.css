@@ -199,10 +199,13 @@ body {
 
 .result {
     text-align: right;
-    font-size: 0.9rem;
-    font-style: italic;
+    font-family: monospace;
+    font-size: 1rem;
+    color: grey;
+    word-break: break-word;
     overflow-wrap: break-word;
     margin-bottom: 3px;
+    cursor: pointer;
 }
 
 #digits-input {

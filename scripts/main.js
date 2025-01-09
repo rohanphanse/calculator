@@ -3,6 +3,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const calculator = new Calculator()
 
     // Data
+    let history = []
+    let history_index = -1
+    let history_current = ""
+    let history_outputs = []
+    let history_outputs_index = []
 
     // States
     let UPDATE_DIGITS = false
@@ -14,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const angleButton = document.getElementById("angle-button")
     const digitsInput = document.getElementById("digits-input")
     const commandButtons = document.getElementsByClassName("command")
+    const commandBar = document.getElementById("command-bar")
 
     // Initial
 
@@ -26,6 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
         calculator.angle = calculator.angle === "rad" ? "deg" : "rad"
         angleButton.innerText = calculator.angle
     })
+
+    enableDragToScroll(commandBar)
     
     // Digits input
     digitsInput.addEventListener("input", event => {
@@ -59,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const u = userInput.innerText 
             let t = button.dataset.text || button.innerText
             let length = t.length
-            if (t.includes("|")) {
+            if (t.includes("|") && !button.dataset.override) {
                 const pipe_index = t.indexOf("|")
                 t = t.slice(0, pipe_index) + t.slice(pipe_index + 1)
                 length = pipe_index
@@ -73,33 +81,81 @@ document.addEventListener("DOMContentLoaded", () => {
     function ansAutoFill(event) {
         const e = event.target.innerText
         // First character is symbol
-        if (e.trim().length === 1 && SYMBOLS.includes(e)) {
-            userInput.innerHTML = `ans${["!", "^", "%"].includes(e) ? "" : " "}${e}${["^"].includes(e) ? "" : "&nbsp"}`
+        if (e.trim().length === 1 && SYMBOLS.includes(e) && !["-", "~"].includes(e)) {
+            userInput.innerHTML = `ans${["!", "^"].includes(e) ? "" : " "}${e}${["^"].includes(e) ? "" : "&nbsp"}`
             positionCaret(userInput, userInput.innerText.length)
         }
     }
 
     // Handle key down for user input
     function handleKeyDown(event) {
-
+        const user_input = userInput.innerText.trim()
         // Enter key
         if (event.keyCode === 13) {
             // Prevent newline from enter key
             event.preventDefault()
             // Prevent empty queries
-            if (userInput.innerText.trim().length) {
-                // Calculate output
-                const output = calculator.calculate(userInput.innerText)
+            if (user_input.length) {
+                history_index = history.length
+                history.push(user_input)
+                history_current = ""
+                if (user_input === "clear") {
+                    interface.textContent = ""
+                } else {
+                    let output = ""
+                    if (user_input.startsWith("help")) {
+                        const op = user_input.slice(user_input.indexOf("help") + "help".length).toLowerCase().trim()
+                        if (OPERATIONS[op] || HELP[op]) {
+                            let e = OPERATIONS[op] || HELP[op]
+                            output = `Name: ${e.name}\nUsage: `
+                            if (e.schema.length == 0) {
+                                output += op
+                            } else if (e.schema[0] == -1 || SYMBOLS.includes(op) || HELP[op]) {
+                                if (e.schema[0] == -1) {
+                                    output += `${e.vars[0]}${["!"].includes(op) ? "" : " "}${op}`
+                                } else {
+                                    output += `${op}${HELP[op] && op !== "@" ? " " : ""}${e.vars[0]}`
+                                }
+                                for (let i = 1; i < e.vars.length; i++) {
+                                    output += ` ${e.vars[i]}`
+                                }
+                                output += `\nTypes: ${e.vars[0]}: ${e.types[0]}`
+                                for (let i = 1; i < e.vars.length; i++) {
+                                    output += `, ${e.vars[i]}: ${e.types[i]}`
+                                }
+                            } else {
+                                output += `${op}(${e.vars[0]}: ${e.types[0]}`
+                                for (let i = 1; i < e.vars.length; i++) {
+                                    output += `, ${e.vars[i]}: ${e.types[i]}`
+                                }
+                                output += ")"
+                            }
+                            if (e.example) {
+                                output += `\n${e.example}`
+                            }
+                        } else {
+                            output += "Welcome to Calculator! Learn about a function by typing `help func` where `func` is the name of a function such as `sin`..."
+                        }
+                    } else {
+                        // Calculate output
+                        output = calculator.calculate(user_input)
+                    }
 
-                // Result
-                const result = document.createElement("div")
-                result.className = "result"
-                result.innerText = output
-                if (output.length > 100) {
-                    result.style.textAlign = "left"
-                    result.style.margin = "8px 0"
+                    // Result
+                    const result = document.createElement("div")
+                    result.className = "result"
+                    result.innerText = output
+                    if (output.length > 30) {
+                        result.style.textAlign = "left"
+                        result.style.margin = "10px 0 10px 100px"
+                    }
+                    result.addEventListener("click", (event) => {
+                        event.preventDefault()
+                        userInput.innerText += result.innerText + " "
+                        positionCaret(userInput, userInput.innerText.length)
+                    })
+                    interface.append(result)
                 }
-                interface.append(result)
                 
                 // Input
                 const input = document.createElement("div")
@@ -122,12 +178,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } else if (event.keyCode === 57 && event.shiftKey) {
             const index = window.getSelection().anchorOffset
-            if (!(userInput.innerText[index] === ")" && userInput.innerText[index - 1] !== "(")) {
-                event.preventDefault()
-                const u = userInput.innerText
-                userInput.innerText = `${u.slice(0, index)}()${u.slice(index, u.length)}`
-                positionCaret(userInput, index + 1)
-            }
+            event.preventDefault()
+            const u = userInput.innerText
+            userInput.innerText = `${u.slice(0, index)}()${u.slice(index, u.length)}`
+            positionCaret(userInput, index + 1)
         } else if (event.keyCode === 8) {
             const index = window.getSelection().anchorOffset
             const u = userInput.innerText
@@ -138,12 +192,29 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } else if (event.keyCode === 219) {
             const index = window.getSelection().anchorOffset
-            if (!(userInput.innerText[index] === "]" && userInput.innerText[index - 1] !== "[")) {
+            event.preventDefault()
+            const u = userInput.innerText
+            userInput.innerText = `${u.slice(0, index)}[]${u.slice(index, u.length)}`
+            positionCaret(userInput, index + 1)
+        } else if (event.key === "ArrowUp") {
+            if (history_index >= 0 && history_index < history.length) {
+                if (history_index == history.length - 1) {
+                    history_current = user_input
+                }
+                userInput.innerText = history[history_index]
+                history_index = Math.max(history_index - 1, 0)
                 event.preventDefault()
-                const u = userInput.innerText
-                userInput.innerText = `${u.slice(0, index)}[]${u.slice(index, u.length)}`
-                positionCaret(userInput, index + 1)
+                positionCaret(userInput, userInput.innerText.length)
             }
+        } else if (event.key === "ArrowDown") {
+            if (history_index >= 0 && history_index < history.length - 1) {
+                history_index++
+                userInput.innerText = history[history_index]
+            } else {
+                userInput.innerText = history_current
+            }
+            event.preventDefault()
+            positionCaret(userInput, userInput.innerText.length)
         }
     }
 })

@@ -7,6 +7,8 @@
 	<title>Calculator</title>
     <link rel = "stylesheet" href = "https://cdn.linearicons.com/free/1.0.0/icon-font.min.css">
     <link href = "styles/main.css" rel = "stylesheet" type = "text/css" />
+    <script src = "scripts/util.js"></script>
+    <script src = "scripts/operations.js"></script>
     <script src = "scripts/calculator.js"></script>
     <script src = "scripts/main.js"></script>
 </head>
@@ -14,9 +16,9 @@
 <body>
     <div class = "center">
         <div id = "container">
-            <a href = "/" id = "title" class = "center-row">
+            <div id = "title" class = "center-row">
                 Calculator
-            </a>
+            </div>
             <div id = "subtitle" class = "center-row">
                 "Crunching numbers has never been easier"
             </div>
@@ -36,6 +38,11 @@
                     <div data-text = "ans" class = "command">ans</div>
                     <div data-text = "clear" class = "command">clear</div>
                     <div data-text = "help" class = "command">help</div>
+                    <div data-text = "type(|)" class = "command">type</div>
+                    <div class = "divider"></div>
+                    <div data-text = "map(|)" class = "command">map</div>
+                    <div data-text = "range(|)" class = "command">range</div>
+                    <div data-text = "@" class = "command">@</div>
                     <div class = "divider"></div>
                     
                     <div data-text = "+" class = "command">+</div>
@@ -44,6 +51,7 @@
                     <div data-text = "/" class = "command">/</div>
                     <div data-text = "^" class = "command">^</div>
                     <div data-text = "!" class = "command">!</div>
+                    <div data-text = "mod" class = "command">mod</div>
                     <div class = "divider"></div>
                     <div data-text = "abs(|)" class = "command">abs</div>
                     <div data-text = "ceil(|)" class = "command">ceil</div>
@@ -56,10 +64,12 @@
                     <div data-text = "sin(|)" class = "command">sin</div>
                     <div data-text = "cos(|)" class = "command">cos</div>
                     <div data-text = "tan(|)" class = "command">tan</div>
+                    <div data-text = "arcsin(|)" class = "command">arcsin</div>
+                    <div data-text = "arccos(|)" class = "command">arccos</div>
+                    <div data-text = "arctan(|)" class = "command">arctan</div>
                     <div class = "divider"></div>
                     <div data-text = "pi" class = "command">pi</div>
                     <div data-text = "e" class = "command">e</div>
-                    <div data-text = "tau" class = "command">tau</div>
                     <div data-text = "phi" class = "command">phi</div>
                     <div class = "divider"></div>
                     <div data-text = "min(|)" class = "command">min</div>
@@ -68,7 +78,15 @@
                     <div data-text = "mean(|)" class = "command">mean</div>
                     <div data-text = "median(|)" class = "command">median</div>
                     <div data-text = "sd(|)" class = "command">sd</div>
-             
+                    <div class = "divider"></div>
+                    <div data-text = "bin(|)" class = "command">bin</div>
+                    <div data-text = "dec(|)" class = "command">dec</div>
+                    <div data-text = "hex(|)" class = "command">hex</div>
+                    <div data-text = "oct(|)" class = "command">oct</div>
+                    <div data-text = "~" class = "command">~</div>
+                    <div data-text = "&" class = "command">&</div>
+                    <div data-text = "|" data-override = "true" class = "command">|</div>
+                    <div data-text = "xor" class = "command">xor</div>
                     <div class = "spacer"></div>
                 </div>
                 <div id = "command-bar-overlay-right"></div>
