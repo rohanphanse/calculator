@@ -3,7 +3,8 @@ const ORDER_OF_OPERATIONS = [
     ["!"],              // Unary operations
     ["^", "%"],         // Exponentiation and modulus
     ["/", "*"],         // Division then multiplication
-    ["-", "+"],         // Sutraction, negation, and then addition
+    ["-"],        // Sutraction, negation, and then addition
+    ["+"],
     ["~", "&", "|"],
     ["<<", ">>"],
 ]
@@ -13,8 +14,8 @@ const CONSTANTS = ["pi", "e", "tau", "phi", "inf"]
 const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
-const KEYWORDS = ["ans", "clear", "help"]
-const LIST_OPERATIONS = ["mean", "median", "sd", "sum"]
+const KEYWORDS = ["ans", "clear", "help", "save"]
+const LIST_OPERATIONS = ["mean", "median", "sd", "sum", "len"]
 
 // Types
 const TN = "number"
@@ -22,8 +23,7 @@ const TS = "string"
 const TOR = (t1, t2) => `${t1} | ${t2}`
 const TL = (t) => `list[${t}]`
 const TA = "any"
-const TFF = "function"
-const TF = "@function"
+const TF = "function"
 const TO = (t) => `optional[${t}]`
 const TI = "invalid"
 const bases = { "0b": 2, "0x": 16, "0o": 8 }
@@ -395,7 +395,14 @@ const OPERATIONS = {
     "quad": {
         name: "Solve quadratic in form of f(x) = ax^2 + bx + c = 0",
         func: (f, calc) => {
+            const p = calc.functions[f.op].parameters
             const v = calc.functions[f.op].value
+            if (p.length !== 1) {
+                return `Expected ${f.op} to have only one parameter`
+            } 
+            if (count(v, p[0]) !== 2) {
+                return `Expected form of ${f.op}(x) = a${p[0]}^2 + b${p[0]} + c = 0. Use zeros as needed e.g. f(x) = 4x^2 - 0x - 16...`
+            }
             const L = v.length
             let a = 1
             if (typeof v[0] === "number") {
@@ -460,6 +467,9 @@ const OPERATIONS = {
             for (const e of list) {
                 let tokens = [func.op, e]
                 let result = calc.evaluate(tokens, { noAns: true })
+                if (typeof result === "string") {
+                    return result
+                }
                 output.push(result)
             }
             return output
@@ -470,6 +480,38 @@ const OPERATIONS = {
         calc: true,
         example: "Example:\nf(x) = x^2\nmap(range(1, 5), @f)\nOutput: [1, 4, 9, 16, 25]"
     },
+    "reduce": {
+        name: "Reduce",
+        func: (list, func, calc) => {
+            if (list.length === 0) {
+                return list
+            }
+            let acc = list[0]
+            for (let i = 1; i < list.length; i++) {
+                let tokens
+                if (func.op in calc.functions) {
+                    tokens = [func.op, [acc, list[i]]]
+                } else if (OPERATIONS[func.op]) {
+                    const e = OPERATIONS[func.op]
+                    if (e.schema.length == 2 && e.schema[0] === -1) {
+                        tokens = [acc, func.op, list[i]]
+                    } else {
+                        tokens = [func.op, [acc, list[i]]]
+                    }
+                }
+                let result = calc.evaluate(tokens, { noAns: true })
+                if (typeof result === "string") {
+                    return result
+                }
+                acc = result
+            }
+            return acc
+        },
+        schema: [1],
+        vars: ["x", "f"],
+        types: [TL(TA), TF],
+        calc: true,
+    },
     "type": {
         name: "Type check",
         func: (x) => {
@@ -478,15 +520,60 @@ const OPERATIONS = {
         schema: [1],
         vars: ["x"],
         types: [TA]
+    },
+    "get": {
+        name: "Get element or sublist from list",
+        func: (list, start, end) => {
+            if (end !== undefined) {
+                return list.slice(start - 1, end)
+            } else {
+                return list[start - 1]
+            }
+        },
+        schema: [1],
+        vars: ["x", "start", "end"],
+        types: [TL(TA), TN, TO(TN)],
+        example: "Example: get(range(1, 5), 3) -> 3\nget(range(1, 5), 2, 4) -> [2, 3, 4]"
+    },
+    "len": {
+        name: "List length",
+        func: (list) => {
+            return list.length
+        },
+        schema: [1],
+        vars: ["x"],
+        types: [TL(TA)]
+    },
+    "def": {
+        name: "View function definition",
+        func: (f, calc) => {
+            if (f.op in calc.functions) {
+                let fs = calc.functions[f.op].string
+                while (fs.includes("@") && fs.charAt(fs.indexOf("@") + 1) !== "(") {
+                    const index = fs.indexOf("@")
+                    let name = fs.slice(fs.indexOf("@"))
+                    name = name.slice(0, name.indexOf("("))
+                    fs = fs.slice(0, index) + calc.functions[name].string + fs.slice(index + name.length)
+                }
+                return new String(fs)
+            } else {
+                return "Def error > can only view user-defined functions"
+            }
+        },
+        schema: [1],
+        vars: ["func"],
+        types: [TF],
+        calc: true
     }
 }
 
 const HELP = {
     "@": {
-        name: "Treat function as parameter",
+        name: "Lambda function",
         schema: [1],
-        vars: ["f"],
-        types: [TFF]
+        vars: ["(...params) = value"],
+        types: [TF],
+        example: "Example: map(range(1, 5), @(x) = x^2)"
     },
     "clear": {
         name: "Clear calculator",
@@ -498,13 +585,19 @@ const HELP = {
         name: "Help",
         schema: [1],
         vars: ["func"],
-        types: [TFF]
+        types: [TF]
     },
     "ans": {
         name: "Answer - stored result of last calculation",
         schema: [],
         vars: [],
         types: []
+    },
+    "save": {
+        name: "Save user-defined function",
+        schema: [1],
+        vars: ["func"],
+        types: [TF]
     }
 }
 
@@ -521,7 +614,7 @@ class Operation {
     }
 
     toString() {
-        return `@${this.op}`
+        return `${this.op}`
     }
 }
 
@@ -534,7 +627,7 @@ function get_param_types(params) {
             type_list.push(TS)
         } else if (Array.isArray(p)) {
             const types = p.map((t) => get_param_types([t])[0])
-            console.log("types", types)
+            // console.log("types", types)
             if (types.every((t) => t === types[0])) {
                 type_list.push(TL(types[0]))
             } else {
@@ -550,7 +643,7 @@ function get_param_types(params) {
 }
 
 function check_param_types(param_types, correct_types) {
-    console.log("check_param_types", param_types, correct_types)
+    // console.log("check_param_types", param_types, correct_types)
     if (correct_types.length === 1 && correct_types[0] === TA) {
         return true
     }
@@ -583,6 +676,6 @@ function check_param_types(param_types, correct_types) {
             }
         }
     }
-    console.log(valid, correct_types.length)
+    // console.log(valid, correct_types.length)
     return valid === correct_types.length
 }

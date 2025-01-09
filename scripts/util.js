@@ -21,6 +21,19 @@ function round(n, p = 0) {
     return Math.round(n * 10 ** p) / (10 ** p)
 }
 
+function roundArray(a, p = 0) {
+    for (let i = 0; i < a.length; i++) {
+        if (typeof a[i] === "number") {
+            a[i] = round(a[i], p)
+        } else if (Array.isArray(a[i])) {
+            a[i] = roundArray(a[i], p)
+        } else if (a[i] instanceof Operation) {
+            a[i] = a[i].toString()
+        }
+    }
+    return a
+}
+
 function solve_quadratic(a, b, c) {
     const d = b**2 - 4*a*c
     if (d < 0) {

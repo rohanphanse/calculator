@@ -17,10 +17,10 @@
     <div class = "center">
         <div id = "container">
             <div id = "title" class = "center-row">
-                Calculator
+                The Functional Calculator
             </div>
             <div id = "subtitle" class = "center-row">
-                "Crunching numbers has never been easier"
+                Crunch numbers using functional programming!
             </div>
             <div id = "config">
                 <div class = "config-button">
@@ -32,17 +32,30 @@
                     <input id = "digits-input" class = "config-value" value = "6" maxlength = "2"/>
                 </div>
             </div>
-
-            <div id = "command-bar-container">
+            <div class = "command-bar-container">
+                <div id = "user-bar">
+                    <div class = "command-text">Saved functions:</div>
+                </div>
+                <div class = "command-bar-overlay-right"></div>
+                <div class = "command-bar-overlay-left"></div>
+            </div>
+            <div class = "command-bar-container">
                 <div id = "command-bar">
+                    <div class = "command-text">Builtin functions:</div>
                     <div data-text = "ans" class = "command">ans</div>
                     <div data-text = "clear" class = "command">clear</div>
                     <div data-text = "help" class = "command">help</div>
+                    <div data-text = "save" class = "command">save</div>
                     <div data-text = "type(|)" class = "command">type</div>
+                    <div data-text = "def(|)" class = "command">def</div>
                     <div class = "divider"></div>
+                    <div data-text = "@(|) = " class = "command">@</div>
                     <div data-text = "map(|)" class = "command">map</div>
+                    <div data-text = "reduce(|)" class = "command">reduce</div>
+                    <div class = "divider"></div>
                     <div data-text = "range(|)" class = "command">range</div>
-                    <div data-text = "@" class = "command">@</div>
+                    <div data-text = "get(|)" class = "command">get</div>
+                    <div data-text = "len(|)" class = "command">len</div>
                     <div class = "divider"></div>
                     
                     <div data-text = "+" class = "command">+</div>
@@ -83,14 +96,18 @@
                     <div data-text = "dec(|)" class = "command">dec</div>
                     <div data-text = "hex(|)" class = "command">hex</div>
                     <div data-text = "oct(|)" class = "command">oct</div>
+                    <div data-text = "&lt;&lt;" class = "command">&lt;&lt;</div>
+                    <div data-text = "&gt;&gt;" class = "command">&gt;&gt;</div>
                     <div data-text = "~" class = "command">~</div>
                     <div data-text = "&" class = "command">&</div>
                     <div data-text = "|" data-override = "true" class = "command">|</div>
                     <div data-text = "xor" class = "command">xor</div>
+                    <div class = "divider"></div>
+                    <div data-text = "quad(|)" class = "command">quad</div>
                     <div class = "spacer"></div>
                 </div>
-                <div id = "command-bar-overlay-right"></div>
-                <div id = "command-bar-overlay-left"></div>
+                <div class = "command-bar-overlay-right"></div>
+                <div class = "command-bar-overlay-left"></div>
             </div>
 
             <div id = "interface">

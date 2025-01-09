@@ -6,8 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let history = []
     let history_index = -1
     let history_current = ""
-    let history_outputs = []
-    let history_outputs_index = []
 
     // States
     let UPDATE_DIGITS = false
@@ -20,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const digitsInput = document.getElementById("digits-input")
     const commandButtons = document.getElementsByClassName("command")
     const commandBar = document.getElementById("command-bar")
+    const userBar = document.getElementById("user-bar")
 
     // Initial
 
@@ -75,6 +74,58 @@ document.addEventListener("DOMContentLoaded", () => {
             userInput.innerText = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
             positionCaret(userInput, index + length)
         })
+    }
+
+    let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
+    renderSavedFunctions(saved_functions)
+    for (const f in saved_functions) {
+        // console.log(saved_functions)
+        calculator.calculate(saved_functions[f])
+    }
+    calculator.ans = null
+
+    function commandInsert(event) {
+        const index = window.getSelection().anchorOffset
+        event.preventDefault()
+        const u = userInput.innerText 
+        let t = event.target.dataset.text || event.target.innerText
+        let length = t.length
+        if (t.includes("|") && !event.target.dataset.override) {
+            const pipe_index = t.indexOf("|")
+            t = t.slice(0, pipe_index) + t.slice(pipe_index + 1)
+            length = pipe_index
+        }
+        userInput.innerText = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
+        positionCaret(userInput, index + length)
+    }
+
+    function renderSavedFunctions(saved_functions) {
+        userBar.textContent = ""
+        const cmdText = document.createElement("div")
+        cmdText.classList.add("command-text")
+        cmdText.innerText = "Saved functions:"
+        userBar.append(cmdText)
+        for (const f in saved_functions) {
+            const userButton = document.createElement("div")
+            userButton.classList.add("user-button")
+            const cmd = document.createElement("div")
+            cmd.classList.add("user-button-text")
+            cmd.dataset.text = `${f}(|)`
+            cmd.innerText = `${f}`
+            const button = document.createElement("div")
+            button.innerText = "x"
+            button.classList.add("user-button-x")
+            userButton.append(cmd)
+            userButton.append(button)
+            userBar.append(userButton)
+            cmd.addEventListener("click", commandInsert)
+            button.addEventListener("click", (event) => {
+                const new_saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
+                delete new_saved_functions[f]
+                localStorage.setItem("saved_functions", JSON.stringify(new_saved_functions))
+                renderSavedFunctions(new_saved_functions)
+            })
+        }
     }
 
     // Auto fill answer
@@ -136,6 +187,31 @@ document.addEventListener("DOMContentLoaded", () => {
                         } else {
                             output += "Welcome to Calculator! Learn about a function by typing `help func` where `func` is the name of a function such as `sin`..."
                         }
+                    } else if (user_input.startsWith("save")) {
+                        const op = user_input.slice(user_input.indexOf("save") + "save".length).toLowerCase().trim()
+                        // console.log("save", op)
+                        if (!op.startsWith("@") && op in calculator.functions) {
+                            try {   
+                                let fs = calculator.functions[op].string
+                                while (fs.includes("@") && fs.charAt(fs.indexOf("@") + 1) !== "(") {
+                                    const index = fs.indexOf("@")
+                                    let name = fs.slice(fs.indexOf("@"))
+                                    name = name.slice(0, name.indexOf("("))
+                                    fs = fs.slice(0, index) + calculator.functions[name].string + fs.slice(index + name.length)
+                                }
+                                // console.log("fs", fs)
+                                output = `Saved ${fs}`
+                                let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
+                                saved_functions[op] = fs
+                                localStorage.setItem("saved_functions", JSON.stringify(saved_functions))
+                                renderSavedFunctions(saved_functions)
+                            } catch (err) {
+                                // console.log(err)
+                                output = `Save error`
+                            }
+                        } else {
+                            output = `Save error > can only save user-defined functions`
+                        }
                     } else {
                         // Calculate output
                         output = calculator.calculate(user_input)
@@ -149,11 +225,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         result.style.textAlign = "left"
                         result.style.margin = "10px 0 10px 100px"
                     }
-                    result.addEventListener("click", (event) => {
-                        event.preventDefault()
-                        userInput.innerText += result.innerText + " "
-                        positionCaret(userInput, userInput.innerText.length)
-                    })
+                    if (typeof output !== "string" && output < 100) {
+                        result.style.cursor = "pointer"
+                        result.addEventListener("click", (event) => {
+                            event.preventDefault()
+                            userInput.innerText += result.innerText + " "
+                            positionCaret(userInput, userInput.innerText.length)
+                        })
+                    }
                     interface.append(result)
                 }
                 
@@ -207,6 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 positionCaret(userInput, userInput.innerText.length)
             }
         } else if (event.key === "ArrowDown") {
+            if (history.length === 0) return
             if (history_index >= 0 && history_index < history.length - 1) {
                 history_index++
                 userInput.innerText = history[history_index]

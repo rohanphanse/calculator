@@ -9,18 +9,75 @@ class Calculator {
         this.ans = null
         this.variables = {}
         this.functions = {}
-        this.recursion = {}
+        this.overflow_count = 0
+        this.overflow_max = 100000
+        this.lambda_counter = 0
+        this.parameter_context = {}
     }
 
     // Parse raw expression into tokens
     parse(expression, options = {}) {
+        // console.log("ignore_vars", options.ignore_vars)
         const tokens = []
-        // Standardize input by...
-        // Removing all whitespace
-        // Changing case to lower
-        expression = expression.replace(/\s/g, "").toLowerCase()
-        // Includes equals sign
+        // Includes @ or =
+        if (expression.includes("@")) {
+            while (expression.includes("@") && expression.charAt(expression.lastIndexOf("@") + 1) === "(") {
+                // console.log("while @")
+                let bracket_count = 0
+                let paren_count = 0
+                let start = -1
+                let active = false
+                for (let i = 0; i < expression.length; i++) {
+                    if (expression.charAt(i) === "[") {
+                        bracket_count++ 
+                    }
+                    if (expression.charAt(i) === "(") {
+                        paren_count++
+                    }
+                    if (expression.charAt(i) === "]") {
+                        bracket_count--
+                        if (start !== -1 && bracket_count === -1) {
+                            active = true
+                        }
+                    }
+                    if (expression.charAt(i) === ")") {
+                        paren_count--
+                        if (start !== -1 && paren_count === -1) {
+                            active = true
+                        }
+                    }
+                    if (start !== -1 && (expression.charAt(i) === "," && bracket_count === 0 && paren_count === 0)
+                    ) {
+                        active = true
+                    }
+                    if (start !== -1 && !active && i === expression.length - 1) {
+                        i++
+                        active = true
+                    }
+                    if (expression.charAt(i) === "@" && expression.charAt(i + 1) === "(") {
+                        if (start !== -1) {
+                            return "@ error"
+                        }
+                        start = i
+                        bracket_count = 0
+                        paren_count = 0
+                    }
+                    if (active) {
+                        this.lambda_counter++
+                        const expr = `@${this.lambda_counter}${expression.slice(start + 1, i)}`
+                        const result = this.declareFunction(expr, { ignore_name: true, ignore_vars: true })
+                        if (typeof result === "string") {
+                            return result
+                        }
+                        expression = `${expression.slice(0, start)}@${this.lambda_counter}${expression.slice(i)}`
+                        // console.log("@", expression)
+                        break
+                    }
+                }
+            }
+        }
         if (expression.includes("=")) {
+            // console.log("=", expression)
             // Only 1 equals sign
             if ((expression.match(/=/g) || []).length === 1) {
                 const before_equals = expression.split("=")[0]
@@ -30,27 +87,38 @@ class Calculator {
                     return this.declareVariable(expression)
                 }
             } else {
+                // console.log("1")
                 return "Variable assignment error"
             }
         }
         // Loop through string
         for (let i = 0; i < expression.length; i++) {
+            if (expression.charAt(i).trim().length === 0) {
+                continue
+            }
             let double_symbol = expression.substr(i, 2)
             // Symbol
-            if (SYMBOLS.includes(expression[i]) || SYMBOLS.includes(double_symbol)) {
+            if (SYMBOLS.includes(expression.charAt(i)) || SYMBOLS.includes(double_symbol)) {
                 if (SYMBOLS.includes(double_symbol)) {
                     tokens.push(double_symbol) 
                     i++
                 } else {
-                    tokens.push(expression[i])
+                    tokens.push(expression.charAt(i))
                 }
             // Number
-            } else if (!isNaN(expression[i])) {
-                const number = this.peek(expression, i, "number")
-                tokens.push(+number)
-                i += number.length - 1
+            } else if (expression.charAt(i) !== " " && !isNaN(expression.charAt(i))) {
+                if (expression.charAt(i) === "0" && ["b", "o", "x"].includes(expression.charAt(i + 1))) {
+                    const str = this.peek(expression, i + 1, "string")
+                    tokens.push(new String("0" + str))
+                    i += str.length 
+                } else {
+                    const number = this.peek(expression, i, "number")
+                    // console.log(i, expression.charAt(i), "number", number, +number)
+                    tokens.push(+number)
+                    i += number.length - 1
+                }
             // Letter
-            } else if (/^[a-z_]+$/i.test(expression[i])) {
+            } else if (/^[a-zA-Z]+$/i.test(expression.charAt(i))) {
                 const string = this.peek(expression, i, "string")
                 // Function parameter
                 if (options?.functionParameters?.includes(string)) {
@@ -75,25 +143,37 @@ class Calculator {
                 } else if (string in this.functions) {
                     tokens.push(string)
                     i += string.length - 1
+                } else if (options.ignore_vars) {
+                    tokens.push(string)
+                    i += string.length - 1
                 } else {
                     return `Unknown string "${string}" at position ${i + 1}`
                 }
+            } else if (expression.charAt(i) === "@") {
+                const number = this.peek(expression, i + 1, "number")
+                tokens.push(`@${number}`)
+                i += number.length
             // Special characters
-            } else if (["(", ")", "[", "]", ",", "@"].includes(expression[i])) {
+            } else if (["(", ")", "[", "]", ","].includes(expression[i])) {
                 tokens.push(expression[i])
             // Unknown character
             } else {
                 return `Unknown character "${expression[i]}" at position ${i + 1}`
             }
         }
-        // Replace @ with Operation wrapper
         for (let i = 0; i < tokens.length; i++) {
-            if (tokens[i] === "@") {
-                if (i === tokens.length - 1 && !this.functions[tokens[i + 1]] && !OPERATIONS[tokens[i + 1]]) {
-                    return "@ error"
-                } 
-                tokens[i + 1] = new Operation(tokens[i + 1])
-                tokens.splice(i, 1)
+            // Unpack Operation stored in variable for function call
+            if (tokens[i] instanceof Operation) {
+                if (i < tokens.length - 1 && ![",", "]", ")"].includes(tokens[i + 1])) {
+                    tokens[i] = tokens[i].op
+                    continue
+                }
+            }
+            // Store function as Operation object
+            if (this.functions[tokens[i]] || OPERATIONS[tokens[i]]) {
+                if (i === tokens.length - 1 || [",", "]", ")"].includes(tokens[i + 1])) {
+                    tokens[i] = new Operation(tokens[i])
+                }
             }
         }
         // Number parentheses and brackets
@@ -133,10 +213,13 @@ class Calculator {
                 check = n => isNaN(n)
                 break
             case "string":
-                check = e => !/^[a-z_]+$/i.test(e)
+                check = e => !/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(e)
                 break
         }
         while (index + length <= string.length) {
+            if (string.charAt(index).trim().length === 0) {
+                continue
+            }
             length++
             if (check(string.substr(index, length))) {
                 break
@@ -148,10 +231,10 @@ class Calculator {
     // Declare variable 
     declareVariable(expression) {
         try {
-            let [name, value] = expression.split("=")
+            let [name, value] = expression.split("=").map((x) => x.trim())
             let status = 0
             // Name is alphabetic
-            if (/^[a-z_]+$/i.test(name)) {
+            if (/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name)) {
                 // Name is an operation or keyword
                 if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.functions) {
                     return "Variable name taken"
@@ -160,8 +243,7 @@ class Calculator {
             }
             // Calculate variable value
             const result = this.calculate(value, { noAns: true, array: true })
-            console.log(typeof result, Array.isArray(result))
-            if (isFinite(result) || Array.isArray(result)) {
+            if (typeof result !== "string") {
                 status++
             } else {
                 return "Variable value error"
@@ -173,18 +255,21 @@ class Calculator {
                     redeclared = true
                 }
                 this.variables[name] = result
-                return `Variable ${name} ${redeclared ? "reassigned" : "declared"}`  
+                return new String(`Variable ${name} ${redeclared ? "reassigned" : "declared"}`)  
             } else {
+                // console.log("2")
                 return "Variable assignment error"
             }
         } catch (err) {
+            // console.log("3", err)
             return "Variable assignment error"
         }
     }
 
-    declareFunction(expression) {
+    declareFunction(expression, options = {}) {
         try {
-            expression = expression.split("=")
+            expression = expression.split("=").map((x) => x.trim())
+            // console.log("fe", expression, expression.length)
             if (expression.length !== 2) {
                 return "Function equals error"
             }
@@ -194,19 +279,23 @@ class Calculator {
             )) {
                 return "Function parenthesis error"
             }
-
             const name = expression[0].slice(0, expression[0].indexOf("("))
-            if (!/^[a-z_]+$/i.test(name)) {
+            // console.log("name", name, /^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name))
+            if (!options?.ignore_name && !/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name)) {
                 return "Function name error"
             }
             if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.variables) {
                 return "Function name taken"
             }
-            const parameters = expression[0].slice(expression[0].indexOf("(") + 1, expression.indexOf(")")).split(",")
-            if (!(parameters.filter(e => /^[a-z_]+$/i.test(e)).length === parameters.length && (new Set(parameters)).size === parameters.length)) {
+            const parameters = expression[0].slice(expression[0].indexOf("(") + 1, expression.indexOf(")")).split(",").map((x) => x.trim())
+            // console.log("fp", parameters)
+            if (!(parameters.filter(e => /^[a-zA-Z][a-zA-Z0-9_]*$/i.test(e)).length === parameters.length && 
+                (new Set(parameters)).size === parameters.length
+            )) {
                 return "Function parameter error"
             }
-            const value = this.parse(expression[1], { functionParameters: parameters })          
+            const value = this.parse(expression[1], { functionParameters: parameters, ignore_vars: options.ignore_vars })      
+            // console.log("fv", value)    
     
             if (typeof value === "string") {
                 return "Function value error"
@@ -220,17 +309,20 @@ class Calculator {
                     value,
                     string: `${name}(${parameters.join(",")}) = ${expression[1]}`
                 }
-                return `Function ${name} ${redeclared ? "re" : ""}declared`
+                if (name.startsWith("@")) {
+                    this.functions[name].string = `@(${parameters.join(",")}) = ${expression[1]}`
+                }
+                return new String(`Function ${name} ${redeclared ? "re" : ""}declared`)
             }
         } catch (err) {
-            console.log(err)
+            // console.log(err)
             return "Function declaration error"
         }
     }
 
     // Initialize array
     initializeArray(tokens) {
-        console.log("begin initializeArray", tokens)
+        // console.log("begin initializeArray", tokens)
         try {
             const array = []
             let start = 0
@@ -249,13 +341,13 @@ class Calculator {
                     array.push(tokens.slice(start, t + 1))
                 }
             }
-            console.log("a", array)
+            // console.log("a", array)
 
             for (let a = 0; a < array.length; a++) {
                 if (!Array.isArray(array[a][0])) {
                     const result = this.evaluate(array[a], { noAns: true, array: true })
-                    console.log(typeof result)
-                    console.log("arreval", array[a], "=>", result)
+                    // console.log(typeof result)
+                    // console.log("arreval", array[a], "=>", result)
                     if (typeof result === "string") {
                         throw "Error"
                     } else {
@@ -267,64 +359,90 @@ class Calculator {
             }
             return array
         } catch (err) {
-            console.log("error", err)
+            // console.log("error", err)
             return "Array error"
         }
     }
 
     evaluateFunction(tokens, index) {
-        this.recursion[tokens[index]] = this.recursion?.[tokens[index]] ? this.recursion[tokens[index]] + 1 : 1
-        if (this.recursion?.[tokens[index]] > 1000) {
-            console.log(this.recursion)
-            return "Recursion error"
+        this.overflow_count++
+        if (this.overflow_count > this.overflow_max) {
+            return "Overflow error: too many function calls"
         }
-        console.log("recursion", this.recursion)
+        let func_parameters = null
         try {
-            console.log("evaluateFunction", tokens, index)
+            // console.log("evaluateFunction", tokens, index)
             const func = this.functions[tokens[index]]
             let parameters = tokens[index + 1]
             if (parameters.length > func.parameters.length || !Array.isArray(parameters)) {
                 parameters = [parameters]
             }
-            console.log("parameters", parameters)
+            // console.log("parameters", parameters)
             if (parameters.length !== func.parameters.length) {
                 return `Function ${tokens[index]} > Parameter error`
             }
+            for (let i = 0; i < func.parameters.length; i++) {
+                this.parameter_context[func.parameters[i]] = parameters[i]
+            }
+            // console.log("this.parameter_context", this.parameter_context)
+            func_parameters = func.parameters
             const value = [...func.value]
-            console.log("func.parameters", func.parameters)
-            console.log("value", value)
+            // console.log("func.parameters", func.parameters)
+            // console.log("value", value)
             for (let v = 0; v < value.length; v++) {
-                console.log(v)
+                // console.log(v)
                 for (let p = 0; p < func.parameters.length; p++) {
-                    console.log("v", value[v], "p", func.parameters[p])
+                    // console.log("v", value[v], "p", func.parameters[p])
                     if (value[v] === func.parameters[p]) {
                         value[v] = parameters[p]
                     }
                 }
             }
-            console.log("value", value)
+            // console.log("value", value)
             const result = this.evaluate(value, { noAns: true, array: true })
-            console.log(result)
+            for (let i = 0; i < func_parameters.length; i++) {
+                delete this.parameter_context[func_parameters[i]]
+            }
+            // console.log(result)
             if (typeof result === "string")
                 return `Function ${tokens[index]} > ${result}`
             else {
                 tokens.splice(index, 2, result)
-                console.log("evaluateFunction tokens", tokens)
+                // console.log("evaluateFunction tokens", tokens)
                 return tokens
             }
         } catch (err) {
+            try {
+                // Remove parameters from parameter context
+                if (func_parameters) {
+                    for (let i = 0; i < func_parameters.length; i++) {
+                        delete this.parameter_context[func_parameters[i]]
+                    }
+                    // console.log("this.parameter_context", this.parameter_context)
+                }
+            } catch (e) {
+                return `Function ${tokens[index]} > Evaluation error`
+            }
             return `Function ${tokens[index]} > Evaluation error`
         }
     }
 
     // Evaluate numerical result from tokens
     evaluate(tokens, options = {}) {
-        console.log("begin evaluate()", tokens)
+        this.overflow_count++
+        if (this.overflow_count > this.overflow_max) {
+            return "Overflow error: too many function calls"
+        }
         // Replace ans with value
         if (typeof this.ans !== "string") {
             for (let t = 0; t < tokens.length; t++) {
                 if (tokens[t] === "ans" ) {
                     tokens[t] = this.ans
+                }
+                // Parameter context
+                if (tokens[t] in this.parameter_context && !(tokens[t] in this.variables || tokens[t] in this.functions)) {
+                    tokens[t] = this.parameter_context[tokens[t]]
+                    // console.log("parameter_context", tokens)
                 }
             }
         }
@@ -381,7 +499,7 @@ class Calculator {
                                 return array
                             } 
                             tokens.splice(t, close - t + 1, array)
-                            console.log("array", tokens)
+                            // console.log("array", tokens)
                         } else {
                             // Evaluate expression inside parentheses
                             const result = this.evaluateSingle(tokens.slice(t + 1, close))
@@ -389,7 +507,7 @@ class Calculator {
                                 return result      
                             }
                             tokens.splice(t, close - t + 1, result)
-                            console.log("parens", tokens)
+                            // console.log("parens", tokens)
                         }
                         break
                     }
@@ -399,13 +517,18 @@ class Calculator {
         // No parentheses left
         // Single expression to be evaluated
         const result = this.evaluateSingle(tokens)
-        console.log("evaluateSingle", result)
+        // console.log("evaluateSingle", result)
         if (typeof result !== "string" && !options?.noAns) {
             this.ans = result
         }
         const final_result = this.evaluateSingle(tokens, { round: true })
         if (Array.isArray(final_result) && !options?.array) {
-            return JSON.stringify(final_result).replaceAll(",", ", ").replaceAll('"', "")
+            if (final_result.length > 50) {
+                return JSON.stringify(roundArray(final_result.slice(0, 25), this.digits)).replaceAll('"', "").slice(0, -1) + ",..., " + JSON.stringify(roundArray(final_result.slice(-25), this.digits)).replaceAll('"', "").slice(1)
+            } else {
+                return JSON.stringify(roundArray(final_result, this.digits)).replaceAll(",", ", ").replaceAll('"', "")
+            }
+             
         } else {
             return final_result
         }
@@ -465,7 +588,7 @@ class Calculator {
         } else if (CONSTANTS.includes(tokens[0])) {
             return round(OPERATIONS[tokens[0]].func(), this.digits)
         } else if (tokens[0] in OPERATIONS) {
-            return new String(OPERATIONS[tokens[0]].name)
+            return new Operation(tokens[0])
         } else if (Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation) {
             return tokens[0]
         } else if (tokens[0] in this.functions) {
@@ -477,16 +600,16 @@ class Calculator {
 
     // Evaluate expression with operator/symbol
     evaluateOperator(tokens) {
-        console.log("evaluateOperator", tokens)
+        // console.log("evaluateOperator", tokens)
         // Filter order of operations array so only used operations are present
         let used_operations = ORDER_OF_OPERATIONS.map(list => list.filter(e => tokens.includes(e))).filter(e => e.length)
         if (used_operations.length) {
             // Loop through lists in used operations
             for (let i = 0; i < used_operations.length; i++) {
-                // Loop through elements of lists
-                for (let j = 0; j < used_operations[i].length; j++) {
-                    // Loop through tokens
-                    for (let index = 0; index < tokens.length; index++) {
+                // Loop through tokens
+                for (let index = 0; index < tokens.length; index++) {
+                    // Loop through elements of lists
+                    for (let j = 0; j < used_operations[i].length; j++) {
                         if (tokens[index] === used_operations[i][j]) {
                             return this.operate(tokens, index)
                         }
@@ -505,14 +628,14 @@ class Calculator {
             // Create parameters
             let params = operation.schema.map((i) => tokens[i + index])
             if (tokens[index] !== "type") {
-                console.log("p", params)
+                // console.log("p", params)
                 if (!LIST_OPERATIONS.includes(tokens[index])) {
                     params = params.flatMap((x) => x)
                 } else if (params.length === 1 && !Array.isArray(params[0])) {
                     params = [params]
                 }
             }
-            console.log("p", params)
+            // console.log("p", params)
             if (params.length > operation.types.length) {
                 return `${operation.name} error > type error: expected at most ${operation.types.length} parameter${operation.types.length !== 1 ? "s" : ""} but received ${params.length} parameters`
             }
@@ -521,7 +644,7 @@ class Calculator {
                 // Try negation if parameter error for subtraction
                 let fail = true
                 if (tokens[index] === "-") {
-                    console.log("negation")
+                    // console.log("negation")
                     operation = OPERATIONS["neg"]
                     params = operation.schema.map((i) => tokens[i + index])
                     param_types = get_param_types(params)
@@ -545,6 +668,9 @@ class Calculator {
                 params.push(this)
             }
             let result = operation.func(...params)
+            if (typeof result === "string") {
+                return `${operation.name} error > ${result}`
+            }
             if (typeof result === "number" && isNaN(result)) {
                 return `${operation.name} error > NaN error`
             }
@@ -556,16 +682,16 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            console.log("operate error", err)
-            return `${operation.name} error`
+            // console.log("operate error", err)
+            return `${operation.name} error > execution error`
         }
     }
 
     // Calculate numerical result from raw expression
     calculate(expression, options = {}) {
-        this.recursion = {}
+        this.overflow_count = 0
         const tokens = this.parse(expression)
-        console.log("parse", tokens)
+        // console.log("parse", tokens)
         if (Array.isArray(tokens)) {
             return this.evaluate(tokens, options)
         } else {
