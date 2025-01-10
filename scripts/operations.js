@@ -15,7 +15,7 @@ const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save"]
-const LIST_OPERATIONS = ["mean", "median", "sd", "sum", "len"]
+const LIST_OPERATIONS = ["mean", "median", "sd", "sum", "len", "max", "min"]
 
 // Types
 const TN = "number"
