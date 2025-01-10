@@ -10,7 +10,7 @@ const ORDER_OF_OPERATIONS = [
 ]
 
 // Subsets
-const CONSTANTS = ["pi", "e", "tau", "phi", "inf"]
+const CONSTANTS = ["pi", "e", "phi", "inf"]
 const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]

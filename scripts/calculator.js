@@ -170,7 +170,7 @@ class Calculator {
                 }
             }
             // Store function as Operation object
-            if (this.functions[tokens[i]] || OPERATIONS[tokens[i]]) {
+            if (this.functions[tokens[i]] || OPERATIONS[tokens[i]] && !CONSTANTS.includes(tokens[i])) {
                 if (i === tokens.length - 1 || [",", "]", ")"].includes(tokens[i + 1])) {
                     tokens[i] = new Operation(tokens[i])
                 }
