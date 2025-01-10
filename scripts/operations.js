@@ -465,7 +465,7 @@ const OPERATIONS = {
         func: (list, func, calc) => {
             let output = []
             for (const e of list) {
-                let tokens = [func.op, e]
+                let tokens = [func.op, [e]]
                 let result = calc.evaluate(tokens, { noAns: true })
                 if (typeof result === "string") {
                     return result
