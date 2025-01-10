@@ -283,14 +283,14 @@ const OPERATIONS = {
     },
     "min": {
         name: "Minimum",
-        func: (...nums) => Math.min(...nums),
+        func: (nums) => Math.min(...nums),
         schema: [1],
         vars: ["x"],
         types: [TL(TN)]
     },
     "max": {
         name: "Maximum",
-        func: (...nums) => Math.max(...nums),
+        func: (nums) => Math.max(...nums),
         schema: [1],
         vars: ["x"],
         types: [TL(TN)]
