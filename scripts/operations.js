@@ -644,7 +644,7 @@ const HELP = {
 // Determine if string is name of math function 
 // Math function - in OPERATIONS but not a symbol
 function isMathFunction(e) {
-    return isNaN(e) && e in OPERATIONS && !SYMBOLS.includes(e)
+    return typeof e === "string" && e in OPERATIONS && !SYMBOLS.includes(e)
 }
 
 // Operation wrapper class
@@ -655,6 +655,12 @@ class Operation {
 
     toString() {
         return `${this.op}`
+    }
+}
+ 
+class Paren {
+    constructor(tokens) {
+        this.tokens = tokens
     }
 }
 

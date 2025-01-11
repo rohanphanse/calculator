@@ -543,7 +543,7 @@ class Calculator {
                             if (typeof array === "string") {
                                 return array
                             } 
-                            tokens.splice(t, close - t + 1, array)
+                            tokens.splice(t, close - t + 1, new Paren(array))
                             // console.log("array", tokens)
                         } else {
                             // Evaluate expression inside parentheses
@@ -603,6 +603,7 @@ class Calculator {
                 // Evaluate math functions
                 for (let i = 0; i < tokens.length; i++) {
                     if (isMathFunction(tokens[i]) || tokens[i] in this.functions) {
+                        // console.log("call this.operate #2")
                         tokens = tokens[i] in this.functions ? this.evaluateFunction(tokens, i) : this.operate(tokens, i)
                         if (typeof tokens === "string") {
                             return tokens
@@ -656,6 +657,7 @@ class Calculator {
                     // Loop through elements of lists
                     for (let j = 0; j < used_operations[i].length; j++) {
                         if (tokens[index] === used_operations[i][j]) {
+                            // console.log("call this.operate")
                             return this.operate(tokens, index)
                         }
                     }
@@ -668,14 +670,22 @@ class Calculator {
 
     // Perform operation given tokens and index
     operate(tokens, index, options) {
+        // console.log("operate", tokens, index)
         let operation = OPERATIONS[tokens[index]]
         try {
             // Create parameters
             let params = operation.schema.map((i) => tokens[i + index])
+            // console.log("operate params Paren", params)
+            for (let i = 0; i < params.length; i++) {
+                if (params[i] instanceof Paren) {
+                    params.splice(i, 1, ...params[i].tokens) 
+                }
+            }
+            // console.log("operate params", params)
             if (tokens[index] !== "type") {
                 // console.log("p", params)
                 if (!LIST_OPERATIONS.includes(tokens[index])) {
-                    params = params.flatMap((x) => x)
+                    
                 } else if (params.length === 1 && !Array.isArray(params[0])) {
                     params = [params]
                 }

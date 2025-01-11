@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     enableDragToScroll(commandBar)
+    enableDragToScroll(userBar)
     
     // Digits input
     digitsInput.addEventListener("input", event => {

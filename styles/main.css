@@ -112,7 +112,7 @@ body {
 .user-button {
     display: flex;
     align-items: center;
-    margin-right: 10px;
+    margin: 6px 5px;
 }
 
 .user-button-text {
@@ -136,7 +136,7 @@ body {
 }
 
 #user-bar {
-    height: 31px;
+    min-height: 31.99px;
 }
 
 .spacer {
