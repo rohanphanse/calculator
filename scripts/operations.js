@@ -388,9 +388,9 @@ const OPERATIONS = {
             }
             const N = parseInt(n, radix)
             if (n.length === 32 && n[0] === "1") {
-                // Convert to signed 32-bit integer
                 return N - Math.pow(2, 32)
             }
+            return N
         },
         schema: [1],
         vars: ["x", "radix"],
@@ -660,6 +660,7 @@ class Operation {
 
 function get_param_types(params) {
     const type_list = []
+    // console.log("get_param_types", params)
     for (const p of params) {
         if (typeof p === "number") {
             type_list.push(TN)

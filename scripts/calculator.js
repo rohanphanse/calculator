@@ -13,7 +13,6 @@ class Calculator {
         this.overflow_max = 100000
         this.lambda_counter = 0
         this.parameter_context = {}
-        this.recursion = 0
     }
 
     // Parse raw expression into tokens
@@ -426,8 +425,6 @@ class Calculator {
     }
 
     duplicateLambdas(lambda, params, values) {
-        this.recursion++
-        if (this.recursion > 10) return null
         // console.log("duplicateLambdas", lambda, params, values)
         // console.log(this.functions[lambda].value)
         let dup = false
@@ -648,9 +645,9 @@ class Calculator {
 
     // Evaluate expression with operator/symbol
     evaluateOperator(tokens) {
-        // console.log("evaluateOperator", tokens)
         // Filter order of operations array so only used operations are present
         let used_operations = ORDER_OF_OPERATIONS.map(list => list.filter(e => tokens.includes(e))).filter(e => e.length)
+        // console.log("evaluateOperator", tokens, used_operations)
         if (used_operations.length) {
             // Loop through lists in used operations
             for (let i = 0; i < used_operations.length; i++) {
