@@ -349,7 +349,7 @@ const OPERATIONS = {
     "bin": {
         name: "Decimal to binary",
         func: (n) => {
-            return new String("0b" + n.toString(2))
+            return new String("0b" + (n >>> 0).toString(2))
         },
         schema: [1],
         vars: ["x"],
@@ -386,7 +386,11 @@ const OPERATIONS = {
                     break
                 }
             }
-            return parseInt(n, radix)
+            const N = parseInt(n, radix)
+            if (n.length === 32 && n[0] === "1") {
+                // Convert to signed 32-bit integer
+                return N - Math.pow(2, 32)
+            }
         },
         schema: [1],
         vars: ["x", "radix"],
@@ -400,35 +404,30 @@ const OPERATIONS = {
             if (p.length !== 1) {
                 return `Expected ${f.op} to have only one parameter`
             } 
-            if (count(v, p[0]) !== 2) {
-                return `Expected form of ${f.op}(x) = a${p[0]}^2 + b${p[0]} + c = 0. Use zeros as needed e.g. f(x) = 4x^2 - 0x - 16...`
-            }
-            const L = v.length
-            let a = 1
-            if (typeof v[0] === "number") {
-                a = v[0]
-            } else if (v[0] === "-") {
-                a = -1
-                if (typeof v[1] === "number") {
-                    a *= v[1]
+            const x = p[0]
+            const eq = v.join("")
+            const eq_x = eq.replaceAll(x, "x")
+            const match = eq_x.match(/([+-]?\d*)x\^2(?:([+-]?\d*)x)?([+-]?\d*)?/)
+            if (match) {
+                const a = parseFloat(match[1] || "1")
+                const b = parseFloat(match[2] || "0")
+                const c = parseFloat(match[3] || "0")
+                // console.log(match, a, b, c)
+                const result = solve_quadratic(a, b, c).map((x) => round(x, calc.digits))
+                if (result.includes(NaN)) {
+                    return "Invalid format error"
                 }
-            }
-            const i = v.indexOf("^")
-            let b = 1
-            if (v[i + 2] === "-") {
-                b = -1
-            }
-            if (typeof v[i + 3] === "number") {
-                b *= v[i + 3]
-            } 
-            let c = v[L - 1] * (v[L - 2] === "-" ? -1 : 1)
-            const result = solve_quadratic(a, b, c).map((x) => round(x, calc.digits))
-            if (result.length === 2) {
-                return new String(`x = ${result[0]} or x = ${result[1]}`)
-            } else if (result.length === 1) {
-                return new String(`x = ${result[0]}`)
+                let response = `Roots of ${a}${x}^2 + ${b}${x} + ${c} = 0\n`
+                if (result.length === 2) {
+                    response += `${x} = ${result[0]} or ${x} = ${result[1]}`
+                } else if (result.length === 1) {
+                    response += `${x} = ${result[0]}`
+                } else {
+                    response += "No real solutions"
+                }
+                return new String(response)
             } else {
-                return new String("No real solutions")
+                return "Invalid format error"
             }
         }, 
         schema: [1],
@@ -437,11 +436,48 @@ const OPERATIONS = {
         calc: true
     },
     "cubic": {
-        name: "Solve cubic in form of ax^3 + bx^2 + cx + d = 0",
-        func: (a, b, c, d) => solve_cubic(a, b, c, d),
+        name: "Solve cubic in form of f(x) = ax^3 + bx^2 + cx + d = 0",
+        func: (f, calc) => {
+            const p = calc.functions[f.op].parameters
+            const v = calc.functions[f.op].value
+            if (p.length !== 1) {
+                return `Expected ${f.op} to have only one parameter`
+            } 
+            const x = p[0]
+            const eq = v.join("")
+            const eq_x = eq.replaceAll(x, "x")
+            const match = eq_x.match(/([+-]?\d*)x\^3(?:\s*([+-]?\d*)x\^2)?(?:\s*([+-]?\d*)x)?(?:\s*([+-]?\d+))?/)
+            // console.log("cubic", match)
+            if (match) {
+                const a = parseCoefficient(match[1])
+                const b = parseCoefficient(match[2])
+                const c = parseCoefficient(match[3])
+                const d = parseFloat(match[4] || "0")
+                // console.log("cubic", a, b, c, d)
+                const result = solve_cubic(a, b, c, d).map((x) => round(x, calc.digits))
+                // console.log("cubic", result)
+                if (result.includes(NaN)) {
+                    return "Invalid format error"
+                }
+                let response = `Roots of ${a}${x}^3 + ${b}${x}^2 + ${c}${x} + ${d} = 0\n`
+                if (result.length === 3) {
+                    response += `${x} = ${result[0]} or ${x} = ${result[1]} or ${x} = ${result[2]}`
+                } else if (result.length === 2) {
+                    response += `${x} = ${result[0]} or ${x} = ${result[1]}`
+                } else if (result.length === 1) {
+                    response += `${x} = ${result[0]}`
+                } else {
+                    response += "No real solutions"
+                }
+                return new String(response)
+            } else {
+                return "Invalid format error"
+            }
+        }, 
         schema: [1],
-        vars: ["a", "b", "c", "d"],
-        types: [TN, TN, TN, TN]
+        vars: ["f"],
+        types: [TF],
+        calc: true
     },
     "range": {
         name: "Inclusive range",
@@ -547,12 +583,16 @@ const OPERATIONS = {
     "def": {
         name: "View function definition",
         func: (f, calc) => {
+            // console.log("in def", f, calc.functions)
             if (f.op in calc.functions) {
                 let fs = calc.functions[f.op].string
                 while (fs.includes("@") && fs.charAt(fs.indexOf("@") + 1) !== "(") {
                     const index = fs.indexOf("@")
                     let name = fs.slice(fs.indexOf("@"))
-                    name = name.slice(0, name.indexOf("("))
+                    if (name.indexOf(")") !== -1) {
+                        name = name.slice(0, name.indexOf(")"))
+                    }
+                    // console.log("defname", name)
                     fs = fs.slice(0, index) + calc.functions[name].string + fs.slice(index + name.length)
                 }
                 return new String(fs)
@@ -678,4 +718,10 @@ function check_param_types(param_types, correct_types) {
     }
     // console.log(valid, correct_types.length)
     return valid === correct_types.length
+}
+
+function parseCoefficient(coefficient) {
+    if (coefficient === "" || coefficient === "+") return 1
+    if (coefficient === "-") return -1
+    return parseFloat(coefficient) || 0
 }

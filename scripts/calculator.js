@@ -13,6 +13,7 @@ class Calculator {
         this.overflow_max = 100000
         this.lambda_counter = 0
         this.parameter_context = {}
+        this.recursion = 0
     }
 
     // Parse raw expression into tokens
@@ -21,13 +22,12 @@ class Calculator {
         const tokens = []
         // Includes @ or =
         if (expression.includes("@")) {
-            while (expression.includes("@") && expression.charAt(expression.lastIndexOf("@") + 1) === "(") {
-                // console.log("while @")
+            while (expression.includes("@(") && expression.lastIndexOf("@(") !== -1) {
                 let bracket_count = 0
                 let paren_count = 0
-                let start = -1
+                let start = expression.lastIndexOf("@(")
                 let active = false
-                for (let i = 0; i < expression.length; i++) {
+                for (let i = start + 1; i < expression.length; i++) {
                     if (expression.charAt(i) === "[") {
                         bracket_count++ 
                     }
@@ -53,14 +53,6 @@ class Calculator {
                     if (start !== -1 && !active && i === expression.length - 1) {
                         i++
                         active = true
-                    }
-                    if (expression.charAt(i) === "@" && expression.charAt(i + 1) === "(") {
-                        if (start !== -1) {
-                            return "@ error"
-                        }
-                        start = i
-                        bracket_count = 0
-                        paren_count = 0
                     }
                     if (active) {
                         this.lambda_counter++
@@ -390,14 +382,18 @@ class Calculator {
             // console.log("func.parameters", func.parameters)
             // console.log("value", value)
             for (let v = 0; v < value.length; v++) {
-                // console.log(v)
+                // console.log("lambda check value", v)
                 for (let p = 0; p < func.parameters.length; p++) {
                     // console.log("v", value[v], "p", func.parameters[p])
                     if (value[v] === func.parameters[p]) {
                         value[v] = parameters[p]
                     }
                 }
+                if (value[v] instanceof Operation && value[v].op.startsWith("@")) {
+                    value[v] = this.duplicateLambdas(value[v].op, func.parameters, parameters)
+                }
             }
+            // console.log("this.functions", this.functions)
             // console.log("value", value)
             const result = this.evaluate(value, { noAns: true, array: true })
             for (let i = 0; i < func_parameters.length; i++) {
@@ -412,6 +408,7 @@ class Calculator {
                 return tokens
             }
         } catch (err) {
+            // console.log("evaluateFunction", err)
             try {
                 // Remove parameters from parameter context
                 if (func_parameters) {
@@ -421,9 +418,55 @@ class Calculator {
                     // console.log("this.parameter_context", this.parameter_context)
                 }
             } catch (e) {
+                // console.log("evaluateFunction", e)
                 return `Function ${tokens[index]} > Evaluation error`
             }
             return `Function ${tokens[index]} > Evaluation error`
+        }
+    }
+
+    duplicateLambdas(lambda, params, values) {
+        this.recursion++
+        if (this.recursion > 10) return null
+        // console.log("duplicateLambdas", lambda, params, values)
+        // console.log(this.functions[lambda].value)
+        let dup = false
+        for (const p of params) {
+            if (this.functions[lambda].value.includes(p)) {
+                dup = true 
+                break
+            }
+        }
+        if (dup) {
+            this.lambda_counter++
+            const new_lambda = `@${this.lambda_counter}`
+            this.functions[new_lambda] = {
+                parameters: this.functions[lambda].parameters,
+                value: this.functions[lambda].value.slice(),
+                string: this.functions[lambda].string,
+            }
+            // console.log("this.functions", this.functions)
+            for (let i = 0; i < this.functions[new_lambda].value.length; i++) {
+                for (let j = 0; j < params.length; j++) {
+                    if (this.functions[new_lambda].value[i] === params[j]) {
+                        this.functions[new_lambda].value[i] = values[j]
+                    }
+                }
+                if (this.functions[new_lambda].value[i] instanceof Operation && this.functions[new_lambda].value[i].op.startsWith("@")) {
+                    const l = this.duplicateLambdas(this.functions[new_lambda].value[i].op, params, values)
+                    if (l) {
+                        this.functions[new_lambda].value[i] = l
+                    }
+                }
+            }
+            return new Operation(new_lambda)
+        } else {
+            for (let i = 0; i < this.functions[lambda].value.length; i++) {
+                if (this.functions[lambda].value[i] instanceof Operation && this.functions[lambda].value[i].op.startsWith("@")) {
+                    duplicateLambdas(this.functions[lambda].value[i].op, params, values)
+                }
+            }
+            return null
         }
     }
 
@@ -433,6 +476,7 @@ class Calculator {
         if (this.overflow_count > this.overflow_max) {
             return "Overflow error: too many function calls"
         }
+        // console.log("evaluate", tokens)
         // Replace ans with value
         if (typeof this.ans !== "string") {
             for (let t = 0; t < tokens.length; t++) {
@@ -443,6 +487,10 @@ class Calculator {
                 if (tokens[t] in this.parameter_context && !(tokens[t] in this.variables || tokens[t] in this.functions)) {
                     tokens[t] = this.parameter_context[tokens[t]]
                     // console.log("parameter_context", tokens)
+                }
+                if (tokens[t] in this.variables) {
+                    tokens[t] = this.variables[tokens[t]]
+                    // console.log("evvar", tokens)
                 }
             }
         }
@@ -682,7 +730,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            // console.log("operate error", err)
+            // console.log("exec error", err)
             return `${operation.name} error > execution error`
         }
     }

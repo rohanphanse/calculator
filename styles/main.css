@@ -167,18 +167,19 @@ body {
     pointer-events: none;
 }
 
-#command-bar::-webkit-scrollbar {
+#command-bar::-webkit-scrollbar, 
+#user-bar::-webkit-scrollbar {
     height: 4px;
     background-color: rgb(240, 240, 240);
 }
 
 /* Handle on hover */
-#command-bar::-webkit-scrollbar-thumb {
+#command-bar::-webkit-scrollbar-thumb, #user-bar::-webkit-scrollbar-thumb {
     transition-duration: 0.1s;
     background-color: rgb(163, 163, 163);
 }
 
-#command-bar::-webkit-scrollbar-thumb:hover {
+#command-bar::-webkit-scrollbar-thumb:hover, #user-bar::-webkit-scrollbar-thumb {
     background-color: rgb(131, 131, 131);
 }
 

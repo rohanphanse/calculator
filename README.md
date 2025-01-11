@@ -6,7 +6,7 @@ My goal for this project was to create a web calculator that offered standard ca
 
 As a challenge to myself, I decided not to use any external libraries. The entire calculator including the parser, evaluation engine, and UI was implemented with around 2000 lines of JavaScript code!
 
-**Functional programming features:** map, reduce, functions as first-class objects, anonymous functions, type checking
+**Functional programming features:** map, reduce, functions as first-class objects, anonymous functions, type checking, lambda capture
 
 **Terminal features:** up and down arrow keys move through history, use `help` on any function or keyword to learn how to use it
 
