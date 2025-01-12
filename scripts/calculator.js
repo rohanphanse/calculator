@@ -268,15 +268,15 @@ class Calculator {
                 && count(expression[0], ")") === 1 
                 && expression[0].indexOf("(") < expression[0].indexOf(")")
             )) {
-                return "Function parenthesis error"
+                return "Function declaration error > parentheses error"
             }
             const name = expression[0].slice(0, expression[0].indexOf("("))
             // console.log("name", name, /^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name))
             if (!options?.ignore_name && !/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name)) {
-                return "Function name error"
+                return "Function declaration error > name error"
             }
             if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.variables) {
-                return "Function name taken"
+                return "Function declaration error > name error"
             }
             let parameters = expression[0].slice(expression[0].indexOf("(") + 1, expression.indexOf(")")).split(",").map((x) => x.trim())
             if (parameters.length === 1 && parameters[0].length === 0) {
@@ -284,13 +284,13 @@ class Calculator {
             } else if (!(parameters.filter(e => /^[a-zA-Z][a-zA-Z0-9_]*$/i.test(e)).length === parameters.length && 
                 (new Set(parameters)).size === parameters.length
             )) {
-                return "Function parameter error"
+                return "Function declaration error > invalid parameters"
             }
             const value = this.parse(expression[1], { functionParameters: parameters, ignore_vars: options.ignore_vars })      
             // console.log("fv", value)    
     
             if (typeof value === "string") {
-                return "Function value error"
+                return `Function declaration error > ${value}` 
             } else {
                 let redeclared = false
                 if (name in this.functions) {
@@ -307,7 +307,7 @@ class Calculator {
                 return new String(`Function ${name} ${redeclared ? "re" : ""}declared`)
             }
         } catch (err) {
-            console.log(err)
+            // console.log(err)
             return "Function declaration error"
         }
     }
