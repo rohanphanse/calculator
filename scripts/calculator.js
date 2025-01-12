@@ -278,9 +278,10 @@ class Calculator {
             if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.variables) {
                 return "Function name taken"
             }
-            const parameters = expression[0].slice(expression[0].indexOf("(") + 1, expression.indexOf(")")).split(",").map((x) => x.trim())
-            // console.log("fp", parameters)
-            if (!(parameters.filter(e => /^[a-zA-Z][a-zA-Z0-9_]*$/i.test(e)).length === parameters.length && 
+            let parameters = expression[0].slice(expression[0].indexOf("(") + 1, expression.indexOf(")")).split(",").map((x) => x.trim())
+            if (parameters.length === 1 && parameters[0].length === 0) {
+                parameters = []
+            } else if (!(parameters.filter(e => /^[a-zA-Z][a-zA-Z0-9_]*$/i.test(e)).length === parameters.length && 
                 (new Set(parameters)).size === parameters.length
             )) {
                 return "Function parameter error"
@@ -306,7 +307,7 @@ class Calculator {
                 return new String(`Function ${name} ${redeclared ? "re" : ""}declared`)
             }
         } catch (err) {
-            // console.log(err)
+            console.log(err)
             return "Function declaration error"
         }
     }
@@ -365,12 +366,14 @@ class Calculator {
             // console.log("evaluateFunction", tokens, index)
             const func = this.functions[tokens[index]]
             let parameters = tokens[index + 1]
-            if (parameters.length > func.parameters.length || !Array.isArray(parameters)) {
+            if (parameters instanceof Paren) {
+                parameters = parameters.tokens
+            } else {
                 parameters = [parameters]
             }
             // console.log("parameters", parameters)
             if (parameters.length !== func.parameters.length) {
-                return `Function ${tokens[index]} > Parameter error`
+                return `Function ${tokens[index]} > parameter error: expected at most ${func.parameters.length} parameter${func.parameters.length !== 1 ? "s" : ""} but received ${parameters.length} parameters`
             }
             for (let i = 0; i < func.parameters.length; i++) {
                 this.parameter_context[func.parameters[i]] = parameters[i]
@@ -534,9 +537,7 @@ class Calculator {
                         if (close - t === 1) {
                             // Previous token is math function, () => []
                             if (isMathFunction(tokens[t - 1]) || tokens[t - 1] in this.functions) {
-                                tokens.splice(t, close - t + 1, [])
-                            } else {
-                                tokens.splice(t, close - t + 1, 0) // () -> 0
+                                tokens.splice(t, close - t + 1, new Paren([]))
                             }
                         } else if (tokens.slice(t + 1, close).includes(",")) {
                             const array = this.initializeArray(tokens.slice(t + 1, close))
@@ -664,7 +665,7 @@ class Calculator {
                 }
             }
         } else {
-            return "No operator error"
+            return "Empty parentheses error"
         }
     }
 

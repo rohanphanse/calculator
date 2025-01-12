@@ -673,12 +673,16 @@ function get_param_types(params) {
         } else if (p instanceof String) {
             type_list.push(TS)
         } else if (Array.isArray(p)) {
-            const types = p.map((t) => get_param_types([t])[0])
-            // console.log("types", types)
-            if (types.every((t) => t === types[0])) {
-                type_list.push(TL(types[0]))
-            } else {
+            if (p.length === 0) {
                 type_list.push(TL(TA))
+            } else {
+                const types = p.map((t) => get_param_types([t])[0])
+                // console.log("types", types)
+                if (types.every((t) => t === types[0])) {
+                    type_list.push(TL(types[0]))
+                } else {
+                    type_list.push(TL(TA))
+                }
             }
         } else if (p instanceof Operation) {
             type_list.push(TF)
