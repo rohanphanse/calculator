@@ -562,19 +562,19 @@ class Calculator {
         }
         // No parentheses left
         // Single expression to be evaluated
-        const result = this.evaluateSingle(tokens)
-        // console.log("evaluateSingle", result)
-        if (typeof result !== "string" && !options?.noAns) {
-            this.ans = result
+        let final_result = this.evaluateSingle(tokens)
+        // console.log("evaluateSingle", final_result)
+        if (typeof final_result !== "string" && !options?.noAns) {
+            this.ans = final_result
         }
-        const final_result = this.evaluateSingle(tokens, { round: true })
-        if (Array.isArray(final_result) && !options?.array) {
+        if (typeof final_result === "number") {
+            return round(final_result, this.digits)
+        } else if (Array.isArray(final_result) && !options?.array) {
             if (final_result.length > 50) {
                 return JSON.stringify(roundArray(final_result.slice(0, 25), this.digits)).replaceAll('"', "").slice(0, -1) + ",..., " + JSON.stringify(roundArray(final_result.slice(-25), this.digits)).replaceAll('"', "").slice(1)
             } else {
                 return JSON.stringify(roundArray(final_result, this.digits)).replaceAll(",", ", ").replaceAll('"', "")
             }
-             
         } else {
             return final_result
         }
@@ -631,9 +631,9 @@ class Calculator {
 
         // One token to evaluate
         if (typeof tokens[0] === "number") {
-            return options.round ? round(tokens[0], this.digits) : tokens[0]
+            return tokens[0]
         } else if (CONSTANTS.includes(tokens[0])) {
-            return round(OPERATIONS[tokens[0]].func(), this.digits)
+            return OPERATIONS[tokens[0]].func()
         } else if (tokens[0] in OPERATIONS) {
             return new Operation(tokens[0])
         } else if (Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation) {
@@ -679,7 +679,11 @@ class Calculator {
             // console.log("operate params Paren", params)
             for (let i = 0; i < params.length; i++) {
                 if (params[i] instanceof Paren) {
-                    params.splice(i, 1, ...params[i].tokens) 
+                    if (params[i].tokens.length > 1 && LIST_OPERATIONS.includes(tokens[index])) {
+                        params.splice(i, 1, params[i].tokens) 
+                    } else {
+                        params.splice(i, 1, ...params[i].tokens) 
+                    }
                 }
             }
             // console.log("operate params", params)
