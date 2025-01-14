@@ -175,7 +175,9 @@ class Calculator {
             // Store function as Operation object
             if (this.functions[tokens[i]] || (OPERATIONS[tokens[i]] && !CONSTANTS.includes(tokens[i]))) {
                 if ((i === tokens.length - 1 || [",", "]", ")"].includes(tokens[i + 1])) && typeof tokens[i] === "string") {
-                    tokens[i] = new Operation(tokens[i])
+                    if (tokens[i] !== "!" || (tokens[i] === "!" && i > 0 && tokens[i - 1] === ",")) {
+                        tokens[i] = new Operation(tokens[i])
+                    }
                 }
             }
         }
@@ -240,7 +242,7 @@ class Calculator {
             if (/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name)) {
                 // Name is an operation or keyword
                 if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.functions) {
-                    return "Variable name taken"
+                    return "Variable assignment error > name error"
                 }
                 status++
             }
@@ -249,8 +251,7 @@ class Calculator {
             if (typeof result !== "string") {
                 status++
             } else {
-                console.error(result)
-                return "Variable value error"
+                return `Variable assignment error > ${result}`
             }
             // Variable name and value valid
             if (status === 2) {
@@ -311,7 +312,7 @@ class Calculator {
                     string: `${name}(${parameters.join(",")}) = ${expression[1]}`
                 }
                 if (name.startsWith("@")) {
-                    this.functions[name].string = `@(${parameters.join(",")}) = ${expression[1]}`
+                    this.functions[name].string = `@(${parameters.join(", ")}) = ${expression[1]}`
                 }
                 return new String(`Function ${name} ${redeclared ? "re" : ""}declared`)
             }
@@ -576,7 +577,7 @@ class Calculator {
     }
 
     // Evaluate expression without parentheses
-    evaluateSingle(tokens, options = {}) {
+    evaluateSingle(tokens) {
         // console.log("evaluateSingle", tokens)
         if (tokens.length > 1) {
             // Count number of math functions
@@ -588,15 +589,6 @@ class Calculator {
             }
 
             while (function_count) {
-                // Recount
-                let calc_function_count = 0
-                for (const t of tokens) {
-                    if (typeof t === "string" && (isMathFunction(t) || t in this.functions)) {
-                        calc_function_count++
-                    }
-                }
-                function_count = calc_function_count
-
                 // Evaluate math functions
                 for (let i = 0; i < tokens.length; i++) {
                     if (typeof tokens[i] === "string" && (isMathFunction(tokens[i]) || tokens[i] in this.functions)) {
@@ -610,13 +602,36 @@ class Calculator {
                         }
                     }
                 }
+                // Recount
+                let calc_function_count = 0
+                for (const t of tokens) {
+                    if (typeof t === "string" && (isMathFunction(t) || t in this.functions)) {
+                        calc_function_count++
+                    }
+                }
+                function_count = calc_function_count
             }
 
             // Add multiplication signs between adjacent numbers
             for (let t = 0; t < tokens.length - 1; t++) {
-                if (!isNaN(tokens[t]) && !isNaN(tokens[t + 1])) {
+                if (typeof tokens[t] === "number" && typeof tokens[t + 1] === "number") {
                     tokens.splice(t + 1, 0, "*")
                 }
+            }
+
+
+            if (tokens.length > 1 && tokens.filter((x) => x instanceof Operation).length > 0) {
+                for (let i = 0; i < tokens.length; i++) {
+                    if (tokens[i] instanceof Operation) {
+                        tokens[i] = tokens[i].op
+                        break
+                    }
+                }
+                tokens = this.evaluateSingle(tokens)
+                if (typeof tokens === "string") {
+                    return tokens
+                }
+                tokens = [tokens]
             }
             
             // Evaluate operators
