@@ -22,14 +22,15 @@ function round(n, p = 0) {
 }
 
 function roundArray(a, p = 0) {
+    a = structuredClone(a)
     for (let i = 0; i < a.length; i++) {
         if (typeof a[i] === "number") {
             a[i] = round(a[i], p)
+        } else if (typeof a[i] === "object" && "op" in a[i]) {
+            a[i] = a[i].op
         } else if (Array.isArray(a[i])) {
             a[i] = roundArray(a[i], p)
-        } else if (a[i] instanceof Operation) {
-            a[i] = a[i].toString()
-        }
+        } 
     }
     return a
 }

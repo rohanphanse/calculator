@@ -412,7 +412,6 @@ const OPERATIONS = {
                 const a = parseFloat(match[1] || "1")
                 const b = parseFloat(match[2] || "0")
                 const c = parseFloat(match[3] || "0")
-                // console.log(match, a, b, c)
                 const result = solve_quadratic(a, b, c).map((x) => round(x, calc.digits))
                 if (result.includes(NaN)) {
                     return "Invalid format error"
@@ -447,15 +446,12 @@ const OPERATIONS = {
             const eq = v.join("")
             const eq_x = eq.replaceAll(x, "x")
             const match = eq_x.match(/([+-]?\d*)x\^3(?:\s*([+-]?\d*)x\^2)?(?:\s*([+-]?\d*)x)?(?:\s*([+-]?\d+))?/)
-            // console.log("cubic", match)
             if (match) {
                 const a = parseCoefficient(match[1])
                 const b = parseCoefficient(match[2])
                 const c = parseCoefficient(match[3])
                 const d = parseFloat(match[4] || "0")
-                // console.log("cubic", a, b, c, d)
                 const result = solve_cubic(a, b, c, d).map((x) => round(x, calc.digits))
-                // console.log("cubic", result)
                 if (result.includes(NaN)) {
                     return "Invalid format error"
                 }
@@ -501,7 +497,7 @@ const OPERATIONS = {
         func: (list, func, calc) => {
             let output = []
             for (const e of list) {
-                let tokens = [func.op, [e]]
+                let tokens = [func.op, new Paren([e])]
                 let result = calc.evaluate(tokens, { noAns: true })
                 if (typeof result === "string") {
                     return result
@@ -526,13 +522,13 @@ const OPERATIONS = {
             for (let i = 1; i < list.length; i++) {
                 let tokens
                 if (func.op in calc.functions) {
-                    tokens = [func.op, [acc, list[i]]]
+                    tokens = [func.op, new Paren([acc, list[i]])]
                 } else if (OPERATIONS[func.op]) {
                     const e = OPERATIONS[func.op]
                     if (e.schema.length == 2 && e.schema[0] === -1) {
                         tokens = [acc, func.op, list[i]]
                     } else {
-                        tokens = [func.op, [acc, list[i]]]
+                        tokens = [func.op, new Paren([acc, list[i]])]
                     }
                 }
                 let result = calc.evaluate(tokens, { noAns: true })
@@ -583,7 +579,6 @@ const OPERATIONS = {
     "def": {
         name: "View function definition",
         func: (f, calc) => {
-            // console.log("in def", f, calc.functions)
             if (f.op in calc.functions) {
                 let fs = calc.functions[f.op].string
                 while (fs.includes("@") && fs.charAt(fs.indexOf("@") + 1) !== "(") {
@@ -592,7 +587,6 @@ const OPERATIONS = {
                     if (name.indexOf(")") !== -1) {
                         name = name.slice(0, name.indexOf(")"))
                     }
-                    // console.log("defname", name)
                     fs = fs.slice(0, index) + calc.functions[name].string + fs.slice(index + name.length)
                 }
                 return new String(fs)
@@ -677,7 +671,6 @@ function get_param_types(params) {
                 type_list.push(TL(TA))
             } else {
                 const types = p.map((t) => get_param_types([t])[0])
-                // console.log("types", types)
                 if (types.every((t) => t === types[0])) {
                     type_list.push(TL(types[0]))
                 } else {
@@ -727,7 +720,6 @@ function check_param_types(param_types, correct_types) {
             }
         }
     }
-    // console.log(valid, correct_types.length)
     return valid === correct_types.length
 }
 
