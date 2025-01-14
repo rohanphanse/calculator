@@ -10,7 +10,7 @@ As a challenge to myself, I decided not to use any external libraries. The entir
 
 **Terminal features:** up and down arrow keys move through history, use `help` on any function or keyword to learn how to use it
 
-**Additional features:** option to locally save user-defined functions 
+**Additional features:** option to locally save user-defined functions, base conversions, polynomial root solvers
 
 **Link to demo: <a href = "https://rohanphanse.github.io/calculator/">https://rohanphanse.github.io/calculator</a>**
 

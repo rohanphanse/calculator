@@ -109,7 +109,6 @@ class Calculator {
                             break
                     }
                     const str = this.peek(expression, i + 1, "string")
-                    console.log("peek", str)
                     if (check(str.slice(1))) {
                         tokens.push(new String(`0${str}`))
                         i += str.length
