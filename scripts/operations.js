@@ -349,7 +349,10 @@ const OPERATIONS = {
     "bin": {
         name: "Decimal to binary",
         func: (n) => {
-            return new String("0b" + (n >>> 0).toString(2))
+            if (isInt32(n)) {
+                return new String("0b" + (n >>> 0).toString(2))
+            }
+            return new String("0b" + n.toString(2))
         },
         schema: [1],
         vars: ["x"],
@@ -358,6 +361,9 @@ const OPERATIONS = {
     "hex": {
         name: "Decimal to hexadecimal",
         func: (n) => {
+            if (isInt32(n)) {
+                return new String("0x" + (n >>> 0).toString(16))
+            }
             return new String("0x" + n.toString(16))
         },
         schema: [1],
@@ -368,6 +374,9 @@ const OPERATIONS = {
     "oct": {
         name: "Decimal to octal",
         func: (n) => {
+            if (isInt32(n)) {
+                return new String("0o" + (n >>> 0).toString(8))
+            }
             return new String("0o" + n.toString(8))
         },
         schema: [1],

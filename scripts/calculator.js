@@ -95,10 +95,27 @@ class Calculator {
             // Number
             } else if (!isNaN(expression.charAt(i))) {
                 if (expression.charAt(i) === "0" && i < expression.length - 1 && ["b", "o", "x"].includes(expression.charAt(i + 1))) {
+                    let check
                     const base = expression.charAt(i + 1)
-                    const str = this.peek(expression, i + 2, base)
-                    tokens.push(new String(`0${base}${str}`))
-                    i += str.length 
+                    switch (base) {
+                        case "b":
+                            check = (x) => /^[01]+$/.test(x)
+                            break
+                        case "x":
+                            check = (x) => /^[0-9a-fA-F]+$/.test(x)
+                            break
+                        case "o":
+                            check = (x) => /^[0-7]+$/.test(x)
+                            break
+                    }
+                    const str = this.peek(expression, i + 1, "string")
+                    console.log("peek", str)
+                    if (check(str.slice(1))) {
+                        tokens.push(new String(`0${str}`))
+                        i += str.length
+                    } else {
+                        return "Invalid base string"
+                    }
                 } else {
                     const number = this.peek(expression, i, "number")
                     tokens.push(+number)
@@ -201,15 +218,6 @@ class Calculator {
                 break
             case "string":
                 check = (e) => !/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(e)
-                break
-            case "b":
-                check = (x) => !/^[01]+$/.test(x)
-                break
-            case "x":
-                check = (x) => !/^[0-9a-fA-F]+$/.test(x)
-                break
-            case "o":
-                check = (x) => !/^[0-7]+$/.test(x)
                 break
         }
         while (index + length <= string.length) {

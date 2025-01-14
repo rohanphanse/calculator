@@ -95,3 +95,7 @@ function solve_cubic(a, b, c, d) {
 
     return roots;
 }
+
+function isInt32(n) {
+    return n >= -2147483648 && n <= 2147483647
+  }
