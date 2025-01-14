@@ -22,7 +22,6 @@ function round(n, p = 0) {
 }
 
 function roundArray(a, p = 0) {
-    a = structuredClone(a)
     for (let i = 0; i < a.length; i++) {
         if (typeof a[i] === "number") {
             a[i] = round(a[i], p)

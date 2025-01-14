@@ -345,7 +345,7 @@ class Calculator {
 
             for (let a = 0; a < array.length; a++) {
                 if (!Array.isArray(array[a][0])) {
-                    const result = this.evaluate(array[a], { noAns: true, array: true })
+                    const result = this.evaluate(array[a], { noAns: true, array: true, noRound: true })
                     if (typeof result === "string") {
                         throw "Error"
                     } else {
@@ -467,6 +467,7 @@ class Calculator {
 
     // Evaluate numerical result from tokens
     evaluate(tokens, options = {}) {
+        // console.log("evaluate", tokens)
         this.overflow_count++
         if (this.overflow_count > this.overflow_max) {
             return "Overflow error: too many function calls"
@@ -554,18 +555,20 @@ class Calculator {
         // No parentheses left
         // Single expression to be evaluated
         let final_result = this.evaluateSingle(tokens)
-        // console.log("evaluateSingle", final_result)
+        // ("final_result", final_result)
         if (typeof final_result !== "string" && !options?.noAns) {
             this.ans = final_result
+        } 
+        if (options.noRound) {
+            return final_result
         }
         if (typeof final_result === "number") {
             return round(final_result, this.digits)
         } else if (Array.isArray(final_result) && !options?.array) {
             if (final_result.length > 50) {
-                return JSON.stringify(roundArray(structuredClone(final_result.slice(0, 25)), this.digits)).replaceAll('"', "").slice(0, -1) + ",..., " + JSON.stringify(structuredClone(roundArray(final_result.slice(-25), this.digits))).replaceAll('"', "").slice(1)
+                return JSON.stringify(roundArray(structuredClone(final_result.slice(0, 25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(0, -1) + ", ..., " + JSON.stringify(roundArray(structuredClone(final_result.slice(-25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(1)
             } else {
-                let x = JSON.stringify(structuredClone(roundArray(final_result, this.digits))).replaceAll(",", ", ").replaceAll('"', "")
-                return x
+                return JSON.stringify(roundArray(structuredClone(final_result), this.digits)).replaceAll(",", ", ").replaceAll('"', "")
             }
         } else {
             return final_result
