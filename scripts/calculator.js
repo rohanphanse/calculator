@@ -245,7 +245,7 @@ class Calculator {
                 status++
             }
             // Calculate variable value
-            const result = this.calculate(value, { noAns: true, array: true })
+            const result = this.calculate(value, { noAns: true, noRound: true })
             if (typeof result !== "string") {
                 status++
             } else {
@@ -345,7 +345,7 @@ class Calculator {
 
             for (let a = 0; a < array.length; a++) {
                 if (!Array.isArray(array[a][0])) {
-                    const result = this.evaluate(array[a], { noAns: true, array: true, noRound: true })
+                    const result = this.evaluate(array[a], { noAns: true, noRound: true })
                     if (typeof result === "string") {
                         throw "Error"
                     } else {
@@ -396,7 +396,7 @@ class Calculator {
                 }
             }
             // console.log("this.functions", this.functions)
-            const result = this.evaluate(value, { noAns: true, array: true })
+            const result = this.evaluate(value, { noAns: true, noRound: true })
             for (let i = 0; i < func_parameters.length; i++) {
                 delete this.parameter_context[func_parameters[i]]
             }
@@ -564,7 +564,7 @@ class Calculator {
         }
         if (typeof final_result === "number") {
             return round(final_result, this.digits)
-        } else if (Array.isArray(final_result) && !options?.array) {
+        } else if (Array.isArray(final_result)) {
             if (final_result.length > 50) {
                 return JSON.stringify(roundArray(structuredClone(final_result.slice(0, 25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(0, -1) + ", ..., " + JSON.stringify(roundArray(structuredClone(final_result.slice(-25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(1)
             } else {

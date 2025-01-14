@@ -507,7 +507,9 @@ const OPERATIONS = {
             let output = []
             for (const e of list) {
                 let tokens = [func.op, new Paren([e])]
-                let result = calc.evaluate(tokens, { noAns: true })
+                console.log(tokens)
+                let result = calc.evaluate(tokens, { noAns: true, noRound: true })
+                console.log(result, typeof result)
                 if (typeof result === "string") {
                     return result
                 }
@@ -540,7 +542,7 @@ const OPERATIONS = {
                         tokens = [func.op, new Paren([acc, list[i]])]
                     }
                 }
-                let result = calc.evaluate(tokens, { noAns: true })
+                let result = calc.evaluate(tokens, { noAns: true, noRound: true })
                 if (typeof result === "string") {
                     return result
                 }
