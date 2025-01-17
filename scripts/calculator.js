@@ -393,7 +393,10 @@ class Calculator {
                     }
                 }
                 if (value[v] instanceof Operation && value[v].op.startsWith("@")) {
-                    value[v] = this.duplicateLambdas(value[v].op, func.parameters, parameters)
+                    const result = this.duplicateLambdas(value[v].op, func.parameters, parameters)
+                    if (result) {
+                        value[v] = result
+                    }
                 }
             }
             // console.log("this.functions", this.functions)
