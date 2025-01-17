@@ -699,12 +699,8 @@ class Calculator {
                     }
                 }
             }
-            if (tokens[index] !== "type") {
-                if (!LIST_OPERATIONS.includes(tokens[index])) {
-                    
-                } else if (params.length === 1 && !Array.isArray(params[0])) {
-                    params = [params]
-                }
+            if (LIST_OPERATIONS.includes(tokens[index]) && params.length === 1 && !Array.isArray(params[0])) {
+                params = [params]
             }
             if (params.length > operation.types.length) {
                 return `${operation.name} error > type error: expected ${operation.types.length} parameter${operation.types.length !== 1 ? "s" : ""} but received ${params.length} parameters`

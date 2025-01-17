@@ -15,7 +15,7 @@ const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save"]
-const LIST_OPERATIONS = ["mean", "median", "sd", "sum", "len", "max", "min"]
+const LIST_OPERATIONS = ["mean", "median", "sd", "sum", "len", "max", "min", "concat"]
 
 // Types
 const TN = "number"
@@ -507,9 +507,7 @@ const OPERATIONS = {
             let output = []
             for (const e of list) {
                 let tokens = [func.op, new Paren([e])]
-                console.log(tokens)
                 let result = calc.evaluate(tokens, { noAns: true, noRound: true })
-                console.log(result, typeof result)
                 if (typeof result === "string") {
                     return result
                 }
@@ -609,6 +607,19 @@ const OPERATIONS = {
         vars: ["func"],
         types: [TF],
         calc: true
+    },
+    "concat": {
+        name: "Concatenate lists together",
+        func: (lists) => {
+            let ans = []
+            for (const l of lists) {
+                ans.push(...l)
+            }
+            return ans
+        },
+        schema: [1],
+        vars: ["a", "b"],
+        types: [TL(TL(TA))]
     }
 }
 
@@ -722,7 +733,11 @@ function check_param_types(param_types, correct_types) {
                 valid++
             }
         } else if (ct === TL(TA)) {
-            if (pt.startsWith("list")) {
+            if (pt.startsWith("list[")) {
+                valid++
+            }
+        } else if (ct === TL(TL(TA))) {
+            if (pt.startsWith("list[list[")) {
                 valid++
             }
         } else {
