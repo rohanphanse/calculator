@@ -613,13 +613,17 @@ const OPERATIONS = {
         func: (lists) => {
             let ans = []
             for (const l of lists) {
-                ans.push(...l)
+                if (Array.isArray(l)) {
+                    ans.push(...l)
+                } else {
+                    ans.push(l)
+                }
             }
             return ans
         },
         schema: [1],
         vars: ["a", "b"],
-        types: [TL(TL(TA))]
+        types: [TL(TA)]
     }
 }
 
