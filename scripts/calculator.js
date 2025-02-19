@@ -572,7 +572,24 @@ class Calculator {
             if (final_result.length > 50) {
                 return JSON.stringify(roundArray(structuredClone(final_result.slice(0, 25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(0, -1) + ", ..., " + JSON.stringify(roundArray(structuredClone(final_result.slice(-25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(1)
             } else {
-                return JSON.stringify(roundArray(structuredClone(final_result), this.digits)).replaceAll(",", ", ").replaceAll('"', "")
+                let str = JSON.stringify(roundArray(structuredClone(final_result), this.digits)).replaceAll(",", ", ").replaceAll('"', "")
+                if (str[1] !== "[") {
+                    return str
+                }
+                let count = 0
+                for (let i = 0; i < str.length; i++) {
+                    if (str[i] === "[") {
+                        count += 1
+                    }
+                    if (str[i] == "]") {
+                        count -= 1
+                    }
+                    if (str[i - 1] == "]" && str[i] == ",") {
+                        str = str.slice(0, i + 1) + "\n" + " ".repeat(count) + str.slice(i + 2)
+                        i += count
+                    }
+                }
+                return str
             }
         } else {
             return final_result

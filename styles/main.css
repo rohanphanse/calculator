@@ -242,6 +242,7 @@ body {
     word-break: break-word;
     overflow-wrap: break-word;
     margin-bottom: 3px;
+    white-space: pre-wrap;
 }
 
 #digits-input {

@@ -219,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     // Result
-                    const result = document.createElement("div")
+                    const result = document.createElement("pre")
                     result.className = "result"
                     result.innerText = output
                     if (output.length > 30) {

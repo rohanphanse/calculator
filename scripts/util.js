@@ -97,4 +97,159 @@ function solve_cubic(a, b, c, d) {
 
 function isInt32(n) {
     return n >= -2147483648 && n <= 2147483647
-  }
+}
+
+// Credit for following functions: Google Generative AI
+
+function rref(m) {
+    m = m.map(row => [...row]) // Copy matrix
+    const R = m.length
+    const C = m[0].length
+    let lead = 0
+    for (let r = 0; r < R; r++) {
+        if (lead >= C) {
+            return m
+        }
+        let i = r
+        while (Math.abs(m[i][lead]) < 1e-10) {
+            i++;
+            if (i === R) {
+                i = r
+                lead++
+                if (lead === C) {
+                    return m
+                }
+            }
+        }
+        [m[r], m[i]] = [m[i], m[r]]
+        let div = m[r][lead]
+        for (let j = 0; j < C; j++) {
+            m[r][j] /= div
+        }
+        for (let i = 0; i < R; i++) {
+            if (i !== r) {
+                let mult = m[i][lead];
+                for (let j = 0; j < C; j++) {
+                    m[i][j] -= mult * m[r][j]
+                }
+            }
+        }
+        lead++
+    }
+    return m
+}
+
+function det(m) {
+    const L = m.length
+    if (L === 1) {
+      return m[0][0]
+    }
+    if (L === 2) {
+      return m[0][0] * m[1][1] - m[0][1] * m[1][0]
+    }
+    let _det = 0
+    for (let i = 0; i < L; i++) {
+      const submatrix = m.slice(1).map(row => row.filter((_, j) => j !== i))
+      _det += m[0][i] * Math.pow(-1, i) * det(submatrix)
+    }
+    return _det
+}
+
+function add_tensors(a1, a2) {
+    if (!Array.isArray(a1) || !Array.isArray(a2)) {
+        return "Invalid types"
+    }
+    if (a1.length !== a2.length) {
+        return "Tensors must have same dimensions"
+    }
+    const result = []
+    for (let i = 0; i < a1.length; i++) {
+        if (Array.isArray(a1[i]) && Array.isArray(a2[i])) {
+        result.push(add_tensors(a1[i], a2[i]))
+        } else if (typeof a1[i] === "number" && typeof a2[i] === "number"){
+            result.push(a1[i] + a2[i])
+        } else {
+            return "Invalid types"
+        }
+    }
+    return result
+}
+
+function tensor_add_scalar(a1, s) {
+    console.log("t", a1, s)
+    const result = []
+    for (let i = 0; i < a1.length; i++) {
+        if (Array.isArray(a1[i])) {
+            result.push(tensor_add_scalar(a1[i], s))
+        } else if (typeof a1[i] === "number"){
+            result.push(a1[i] + s)
+        } else {
+            console.log("invt", a1, s)
+            return "Invalid types"
+        }
+    }
+    return result
+}
+
+function create_zero_tensor(dims) {
+    if (dims.length === 0) {
+      return 0
+    }
+    const size = dims[0]
+    const rest = dims.slice(1)
+    const tensor = []
+    for (let i = 0; i < size; i++) {
+      tensor.push(create_zero_tensor(rest));
+    }
+    return tensor
+}
+
+function inverse(m) {
+    const R = m.length
+    const C = m[0].length
+    if (R !== C) {
+        return "Expected square matrix"
+    }
+    const aug = m.map((row, i) => [...row, ...Array.from({ length: R }, (_, j) => (i === j ? 1 : 0))])
+    const rref_aug = rref(aug)
+    const inv = rref_aug.map(row => row.slice(C))
+    for (let i = 0; i < R; i++) {
+        for (let j = 0; j < C; j++) {
+            const e = (i === j) ? 1 : 0;
+            if (Math.abs(rref_aug[i][j] - e) > 1e-10) {
+                return "Not invertible"
+            }
+        }
+    }
+    return inv
+}
+
+function matmul(A, B) {
+    const RA = A.length
+    const CA = A[0].length
+    const RB = B.length;
+    const CB = B[0].length
+    if (RB !== CA) {
+        return "Incompatible dimensions."
+    }
+    const result = Array(RA).fill(null).map(() => Array(CB).fill(0))
+    for (let i = 0; i < RA; i++) {
+        for (let j = 0; j < CB; j++) {
+        for (let k = 0; k < CA; k++) {
+            result[i][j] += A[i][k] * B[k][j]
+        }
+        }
+    }
+    return result
+}
+
+function matmul_scalar(A, s) {
+    const result = []
+    for (let i = 0; i < A.length; i++) {
+        result.push([])
+        for (let j = 0; j < A[0].length; j++) {
+            result[i].push(A[i][j] * s)
+        }
+    }
+    return result
+}

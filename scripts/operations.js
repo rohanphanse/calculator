@@ -15,7 +15,7 @@ const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save"]
-const LIST_OPERATIONS = ["mean", "median", "sd", "sum", "len", "max", "min", "concat"]
+const LIST_OPERATIONS = ["mean", "median", "sd", "sum", "len", "max", "min", "concat", "zeros"]
 
 // Types
 const TN = "number"
@@ -32,10 +32,23 @@ const bases = { "0b": 2, "0x": 16, "0o": 8 }
 const OPERATIONS = {
     "+": {
         name: "Addition",
-        func: (a, b) => a + b,
+        func: (a, b) => {
+            param_types = get_param_types([a, b])
+            if (param_types[0] == TN && param_types[1] == TN) {
+                return a + b
+            } else if (param_types[0].startsWith("list") && param_types[1].startsWith("list") && param_types[0] == param_types[1]) {
+                return add_tensors(a, b)
+            } else if (param_types[0] == "number" && param_types[1].startsWith("list")) {
+                return tensor_add_scalar(b, a)
+            } else if (param_types[1] == "number" && param_types[0].startsWith("list")) {
+                return tensor_add_scalar(a, b)
+            } else {
+                return "Invalid types"
+            }
+        },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TN, TN]
+        types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))]
     },
     "-": {
         name: "Subtraction",
@@ -54,10 +67,23 @@ const OPERATIONS = {
     },
     "*": {
         name: "Multiplication",
-        func: (a, b) => a * b,
+        func: (a, b) => {
+            param_types = get_param_types([a, b])
+            if (param_types[0] == TN && param_types[1] == TN) {
+                return a * b
+            } else if (param_types[0].startsWith("list") && param_types[1].startsWith("list") && param_types[0] == param_types[1]) {
+                return matmul(a, b)
+            } else if (param_types[0] == "number" && param_types[1].startsWith("list")) {
+                return matmul_scalar(b, a)
+            } else if (param_types[1] == "number" && param_types[0].startsWith("list")) {
+                return matmul_scalar(a, b)
+            } else {
+                return "Invalid types"
+            }
+        },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TN, TN]
+        types: [TOR(TN, TL(TL(TN))), TOR(TN, TL(TL(TN)))]
     },
     "/": {
         name: "Division",
@@ -622,8 +648,76 @@ const OPERATIONS = {
             return ans
         },
         schema: [1],
-        vars: ["a", "b"],
+        vars: ["a"],
         types: [TL(TA)]
+    },
+    "rref": {
+        name: "Reduced Row Echelon Form (RREF)",
+        func: (m) => rref(m),
+        schema: [1],
+        vars: ["m"],
+        types: [TL(TL(TN))]
+    },
+    "det": {
+        name: "Determinant",
+        func: (m) => det(m),
+        schema: [1],
+        vars: ["m"],
+        types: [TL(TL(TN))]
+    },
+    "zeros": {
+        name: "Create tensor filled with zeros",
+        func: (dims) => create_zero_tensor(dims),
+        schema: [1],
+        vars: ["dims"],
+        types: [TL(TA)],
+    },
+    "ident": {
+        name: "Create identity matrix",
+        func: (n) => {
+            const m = []
+            for (let i = 0; i < n; i++) {
+                m.push([])
+                for (let j = 0; j < n; j++) {
+                    m[i].push(0)
+                }
+                m[i][i] = 1
+            }
+            return m
+        },
+        schema: [1],
+        vars: ["n"],
+        types: [TN]
+    },
+    "transpose": {
+        name: "Transpose",
+        func: (m) => {
+            const tm = []
+            for (let j = 0; j < m[0].length; j++) {
+                tm.push([])
+                for (let i = 0; i < m.length; i++) {
+                    tm[j].push(m[i][j])
+                }
+            }
+            return tm;
+        },
+        schema: [1],
+        vars: ["m"],
+        types: [TL(TL(TN))]
+    },
+    "inv": {
+        name: "Inverse",
+        func: (m) => inverse(m),
+        schema: [1],
+        vars: ["m"],
+        types: [TL(TL(TN))]
+    },
+    "eigen": {
+        name: "Compute eigenvalues",
+        func: (m) => eigenvalues(m),
+        schema: [1],
+        vars: ["m"],
+        types: [TL(TL(TN))]
     }
 }
 
@@ -725,9 +819,9 @@ function check_param_types(param_types, correct_types) {
         if (ct.includes("|")) {
             ct = ct.split("|").map((e) => e.trim())
             for (const t of ct) {
-                if (t === pt) {
+                if (check_param_types([pt], [t])) {
                     valid++
-                    continue
+                    break
                 }
             }
         } else if (ct.startsWith("optional")) {
