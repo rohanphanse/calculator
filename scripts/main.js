@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let history = []
     let history_index = -1
     let history_current = ""
+    let display_mode = 1
 
     // States
     let UPDATE_DIGITS = false
@@ -16,10 +17,11 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const angleButton = document.getElementById("angle-button")
     const digitsInput = document.getElementById("digits-input")
+    const displayButton = document.getElementById("display-button")
     const commandButtons = document.getElementsByClassName("command")
     const commandBar = document.getElementById("command-bar")
     const userBar = document.getElementById("user-bar")
-
+    const calcContainer = document.getElementById("container")
     // Initial
 
     // User input event listeners
@@ -30,6 +32,14 @@ document.addEventListener("DOMContentLoaded", () => {
     angleButton.addEventListener("click", event => {
         calculator.angle = calculator.angle === "rad" ? "deg" : "rad"
         angleButton.innerText = calculator.angle
+    })
+    displayButton.addEventListener("click", (event) => {
+        display_mode = !display_mode
+        if (display_mode == 1) {
+            calcContainer.style.width = "max(350px, 50vh)"
+        } else {
+            calcContainer.style.width = "max(350px, 50vw)"
+        }
     })
 
     enableDragToScroll(commandBar)
@@ -42,8 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!isNaN(e)) {
             if (+e > 12) {
                 calculator.digits = 12
-            } else if (+e < 0) {
-                calculator.digits = 0
+            } else if (+e < 1) {
+                calculator.digits = 1
             } else {
                 calculator.digits = Math.round(+e)
             }
@@ -133,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function ansAutoFill(event) {
         const e = event.target.innerText
         // First character is symbol
-        if (e.trim().length === 1 && SYMBOLS.includes(e) && !["-", "~"].includes(e)) {
+        if (e.trim().length === 1 && SYMBOLS.includes(e) && !["-", "~", ...UNITS].includes(e)) {
             userInput.innerHTML = `ans${["!", "^"].includes(e) ? "" : " "}${e}${["^"].includes(e) ? "" : "&nbsp"}`
             positionCaret(userInput, userInput.innerText.length)
         }
@@ -162,13 +172,16 @@ document.addEventListener("DOMContentLoaded", () => {
                             output = `Name: ${e.name}\nUsage: `
                             if (e.schema.length == 0) {
                                 output += op
-                            } else if (e.schema[0] == -1 || SYMBOLS.includes(op) || HELP[op]) {
-                                if (e.schema[0] == -1) {
+                            } else if (e.schema[0] < 0 || SYMBOLS.includes(op) || HELP[op]) {
+                                if (e.schema[0] === -2) {
+                                    output += `${e.vars[0]} ${e.vars[1]} ${op}`
+                                } else if (e.schema[0] === -1) {
                                     output += `${e.vars[0]}${["!"].includes(op) ? "" : " "}${op}`
                                 } else {
                                     output += `${op}${HELP[op] && op !== "@" ? " " : ""}${e.vars[0]}`
                                 }
                                 for (let i = 1; i < e.vars.length; i++) {
+                                    if (e.schema[i] < 0) continue
                                     output += ` ${e.vars[i]}`
                                 }
                                 output += `\nTypes: ${e.vars[0]}: ${e.types[0]}`
@@ -224,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     result.innerText = output
                     if (output.length > 30) {
                         result.style.textAlign = "left"
-                        result.style.margin = "10px 0 10px 100px"
+                        result.style.margin = "10px 0 10px 20%"
                     }
                     if (typeof output !== "string" && output < 100) {
                         result.style.cursor = "pointer"

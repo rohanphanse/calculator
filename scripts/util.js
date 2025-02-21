@@ -24,7 +24,7 @@ function round(n, p = 0) {
 function roundArray(a, p = 0) {
     for (let i = 0; i < a.length; i++) {
         if (typeof a[i] === "number") {
-            a[i] = round(a[i], p)
+            a[i] = set_precision(a[i], p)
         } else if (typeof a[i] === "object" && "op" in a[i]) {
             a[i] = a[i].op
         } else if (Array.isArray(a[i])) {
@@ -32,6 +32,11 @@ function roundArray(a, p = 0) {
         } 
     }
     return a
+}
+
+function set_precision(value, p) {
+    if (value === 0) return 0
+    return parseFloat(value.toPrecision(p))
 }
 
 function solve_quadratic(a, b, c) {

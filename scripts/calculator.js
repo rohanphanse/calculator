@@ -4,7 +4,7 @@
 // Calculator
 class Calculator {
     constructor (params) {
-        this.digits = params ? params.digits : 6
+        this.digits = params ? params.digits : 12
         this.angle = params ? params.angle : "rad"
         this.ans = null
         this.variables = {}
@@ -85,7 +85,7 @@ class Calculator {
             }
             let double_symbol = expression.substr(i, 2)
             // Symbol
-            if (SYMBOLS.includes(expression.charAt(i)) || SYMBOLS.includes(double_symbol)) {
+            if (!/^[a-zA-Z]$/.test(expression.charAt(i)) && SYMBOLS.includes(expression.charAt(i)) || SYMBOLS.includes(double_symbol)) {
                 if (SYMBOLS.includes(double_symbol)) {
                     tokens.push(double_symbol) 
                     i++
@@ -242,7 +242,7 @@ class Calculator {
             if (/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name)) {
                 // Name is an operation or keyword
                 if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.functions) {
-                    return "Variable assignment error > name error"
+                    return "Variable assignment error > name taken error"
                 }
                 status++
             }
@@ -567,7 +567,7 @@ class Calculator {
             return final_result
         }
         if (typeof final_result === "number") {
-            return round(final_result, this.digits)
+            return set_precision(final_result, this.digits)
         } else if (Array.isArray(final_result)) {
             if (final_result.length > 50) {
                 return JSON.stringify(roundArray(structuredClone(final_result.slice(0, 25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(0, -1) + ", ..., " + JSON.stringify(roundArray(structuredClone(final_result.slice(-25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(1)
@@ -764,7 +764,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            // console.log("exec error", err)
+            console.log("exec error", err)
             return `${operation.name} error > execution error`
         }
     }

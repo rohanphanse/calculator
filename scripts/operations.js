@@ -1,8 +1,68 @@
+// Units
+const UNITS = ["km", "m", "cm", "mm", "um", "nm", "ft", "mi", "kg", "g", "mg", "lb", "oz", "s", "mn", "hr", "ms", "day", "yr", "ly", "wk", "J", "cal", "kcal", "au", "kJ", "eV", "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB", "m3", "cm3", "L", "gal", "mL", "ft3", "in", "K", "C", "F"]
+const UNIT_NAMES = { "km": "Kilometer", "m": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Killogram", "g": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "s": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "J": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kJ": "Kilojoule", "eV": "Electron Volt", "B": "Byte", "KB": "Kilobyte", "MB": "Megabyte", "GB": "Gigabyte", "TB": "Terabyte", "PB": "Petabyte", "EB": "Exabyte", "ZB": "Zettabyte", "YB": "Yottabyte", "m3": "Cubic Meter", "cm3": "Cubic Centimer", "L": "Liter", "gal": "Gallon", "mL": "Milliiter", "ft3": "Cubic Foot", "in": "Inch", "K": "Kelvin", "C": "Celcius", "F": "Fahrenheit" }
+const FROM_UNITS = {
+    "km": 1000,
+    "m": 1,
+    "cm": 0.01,
+    "mm": 0.001,
+    "um": 0.000001,
+    "nm": 0.000000001,
+    "ft": 0.3048,
+    "mi": 1609.34,
+    "kg": 1,
+    "g": 0.001,
+    "mg": 0.000001,
+    "lb": 0.453592,
+    "oz": 0.0283495,
+    "s": 1,
+    "mn": 60,
+    "hr": 3600,
+    "ms": 0.001,
+    "day": 86400, 
+    "yr": 31556952,
+    "ly": 9.461e+15,
+    "wk": 604800,
+    "J": 1,
+    "cal": 4.184,
+    "kcal": 4184,
+    "au": 1.496e+11,
+    "kJ": 1000,
+    "eV": 1.60218e-19,
+    "B": 1,
+    "KB": 2**10,
+    "MB": 2**20,
+    "GB": 2**30,
+    "TB": 2**40,
+    "PB": 2**50,
+    "EB": 2**60,
+    "ZB": 2**70,
+    "YB": 2**80,
+    "m3": 1,
+    "cm3": 0.000001,
+    "L": 0.001,
+    "gal": 0.00378541,
+    "mL": 0.000001,
+    "ft3": 0.0283168,
+    "in": 0.0254,
+    "K": { from: (x) => x - 273.15, to: (x) => x + 273.15 },
+    "C": { from: (x) => x, to: (x) => x },
+    "F": { from: (x) => (x - 32) * 5/9, to: (x) => x * 9/5 + 32 }
+}
+const TO_UNITS = {}
+for (const u in FROM_UNITS) {
+    if (typeof FROM_UNITS[u] === "number") {
+        TO_UNITS[u] = 1 / FROM_UNITS[u]
+    }
+}
 // Order of operations
 const ORDER_OF_OPERATIONS = [
+    [":"],
     ["!"],              // Unary operations
-    ["choose", "perm"],
     ["^", "%", "mod"],         // Exponentiation and modulus
+    ["choose", "perm"],
+    ["to"],
+    UNITS,
     ["/", "*"],         // Division then multiplication
     ["-"],        // Sutraction, negation, and then addition
     ["+"],
@@ -11,8 +71,8 @@ const ORDER_OF_OPERATIONS = [
 ]
 
 // Subsets
-const CONSTANTS = ["pi", "e", "phi", "inf"]
-const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "xor", "choose", "perm"]
+const CONSTANTS = ["pi", "e", "phi", "inf", "units"]
+const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save"]
@@ -89,7 +149,7 @@ const OPERATIONS = {
                 return matmul_scalar(a, b)
             } else if (param_types[0] == TN && param_types[1] == TL(TN)) {
                 return matmul_scalar([b], a)[0]
-            } else if (param_types[1] == TN && param_types[0] == TL(TL(TN))) {
+            } else if (param_types[1] == TN && param_types[0] == TL(TN)) {
                 return matmul_scalar([a], b)[0]
             } else {
                 return "Invalid types"
@@ -596,19 +656,27 @@ const OPERATIONS = {
         vars: ["x"],
         types: [TA]
     },
-    "get": {
-        name: "Get element or sublist from list",
+    "slice": {
+        name: "Get sublist of list",
         func: (list, start, end) => {
             if (end !== undefined) {
                 return list.slice(start - 1, end)
             } else {
-                return list[start - 1]
+                return list.slice(start - 1)
             }
         },
         schema: [1],
         vars: ["x", "start", "end"],
         types: [TL(TA), TN, TO(TN)],
-        example: "Example: get(range(1, 5), 3) -> 3\nget(range(1, 5), 2, 4) -> [2, 3, 4]"
+        example: "Example: slice([10, 20, 30, 40, 50], 2, 4) -> [20, 30, 40]"
+    },
+    ":": {
+        name: "Get list element by index",
+        func: (x, i) => x[i - 1],
+        schema: [-1, 1],
+        vars: ["x", "i"],
+        types: [TL(TA), TN],
+        example: "Example: b = [2, 4, [6, 8]]\nb:1 -> 2\nb:3:1 -> 6"
     },
     "len": {
         name: "List length",
@@ -817,6 +885,47 @@ const OPERATIONS = {
         schema: [1],
         vars: ["n"],
         types: [TN]
+    },
+    "to": {
+        name: "Convert units",
+        func: (n, u1, u2) => {
+            if (u1 instanceof Operation) {
+                u1 = u1.op
+            }
+            if (u2 instanceof Operation) {
+                u2 = u2.op
+            }
+            if (u1 in FROM_UNITS && u2 in FROM_UNITS) {
+                if (typeof FROM_UNITS[u1] === "number" && typeof FROM_UNITS[u2] === "number") {
+                    return n * FROM_UNITS[u1] * TO_UNITS[u2]
+                } else if (typeof FROM_UNITS[u1] === "object" && typeof FROM_UNITS[u2] === "object") {
+                    return FROM_UNITS[u2].to(FROM_UNITS[u1].from(n))
+                }
+            }
+            return "Invalid units"
+        },
+        schema: [-2, -1, 1],
+        vars: ["n", "u1", "u2"],
+        types: [TN, TA, TA],
+        example: "Example:\n5 km to mi -> 3.10686\n30 C to F -> 86"
+    },
+    "units": {
+        name: "List of supported units",
+        func: () => {
+            return [["km", "m", "cm", "mm", "um", "nm", "mi", "ft", "in", "au", "ly"], ["kg", "g", "mg", "lb", "oz"], ["s", "ms", "mn", "hr", "day", "wk", "yr"], ["J", "kJ", "cal", "kcal", "eV"], ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"], ["m3", "cm3", "L" , "mL", "gal", "ft3"], ["K", "C", "F"]]
+        },
+        schema: [],
+        vars: [],
+        types: []
+    }
+}
+for (let i = 0; i < UNITS.length; i++) {
+    OPERATIONS[UNITS[i]] = {
+        name: UNIT_NAMES[UNITS[i]],
+        func: () => 1,
+        schema: [],
+        vars: [],
+        types: []
     }
 }
 
@@ -914,6 +1023,10 @@ function check_param_types(param_types, correct_types) {
     for (let i = 0; i < correct_types.length; i++) {
         let ct = correct_types[i]
         let pt = i < param_types.length ? param_types[i] : null
+        if (ct === TA) {
+            valid++
+            continue
+        }
         // OR
         if (ct.includes("|")) {
             ct = ct.split("|").map((e) => e.trim())

@@ -24,12 +24,16 @@
             </div>
             <div id = "config">
                 <div class = "config-button">
+                    <div class = "config-label">display</div>
+                    <div class = "config-value" id = "display-button">↔</div>
+                </div>
+                <div class = "config-button">
                     <div class = "config-label">angle</div>
                     <div class = "config-value" id = "angle-button">rad</div>
                 </div>
                 <div class = "config-button">
                     <div class = "config-label">digits</div>
-                    <input id = "digits-input" class = "config-value" value = "6" maxlength = "2"/>
+                    <input id = "digits-input" class = "config-value" value = "12" maxlength = "2"/>
                 </div>
             </div>
             <div class = "command-bar-container">
@@ -54,11 +58,11 @@
                     <div data-text = "reduce(|)" class = "command">reduce</div>
                     <div class = "divider"></div>
                     <div data-text = "range(|)" class = "command">range</div>
-                    <div data-text = "get(|)" class = "command">get</div>
                     <div data-text = "len(|)" class = "command">len</div>
+                    <div data-text = ":" class = "command">:</div>
+                    <div data-text = "slice(|)" class = "command">slice</div>
                     <div data-text = "concat(|)" class = "command">concat</div>
                     <div class = "divider"></div>
-                    
                     <div data-text = "+" class = "command">+</div>
                     <div data-text = "-" class = "command">-</div>
                     <div data-text = "*" class = "command">*</div>
@@ -120,6 +124,15 @@
                     <div data-text = "factor(|)" class = "command">factor</div>
                     <div data-text = "choose" class = "command">choose</div>
                     <div data-text = "perm" class = "command">perm</div>
+                    <div class = "divider"></div>
+                    <div data-text = "to" class = "command">to</div>
+                    <div data-text = "units" class = "command">units</div>
+                    <div data-text = "km" class = "command">km</div>
+                    <div data-text = "km" class = "command">mi</div>
+                    <div data-text = "kg" class = "command">kg</div>
+                    <div data-text = "lb" class = "command">lb</div>
+                    <div data-text = "C" class = "command">C</div>
+                    <div data-text = "F" class = "command">F</div>
                     <div class = "spacer"></div>
                 </div>
                 <div class = "command-bar-overlay-right"></div>

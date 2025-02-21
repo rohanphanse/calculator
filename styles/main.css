@@ -21,6 +21,7 @@ body {
 }
 
 #container {
+    transition-duration: 0.2s;
     display: flex;
     flex-direction: column;
     width: max(350px, 50vh);
@@ -237,7 +238,7 @@ body {
 .result {
     text-align: right;
     font-family: monospace;
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: grey;
     word-break: break-word;
     overflow-wrap: break-word;
