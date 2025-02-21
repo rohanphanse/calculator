@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     let output = ""
                     if (user_input.startsWith("help")) {
-                        const op = user_input.slice(user_input.indexOf("help") + "help".length).toLowerCase().trim()
+                        const op = user_input.slice(user_input.indexOf("help") + "help".length).trim()
                         if (OPERATIONS[op] || HELP[op]) {
                             let e = OPERATIONS[op] || HELP[op]
                             output = `Name: ${e.name}\nUsage: `

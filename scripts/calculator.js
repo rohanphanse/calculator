@@ -634,7 +634,7 @@ class Calculator {
 
             // Add multiplication signs between adjacent numbers
             for (let t = 0; t < tokens.length - 1; t++) {
-                if (typeof tokens[t] === "number" && typeof tokens[t + 1] === "number") {
+                if (is_multipliable(tokens[t]) && is_multipliable(tokens[t + 1])) {
                     tokens.splice(t + 1, 0, "*")
                 }
             }

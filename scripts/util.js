@@ -253,3 +253,20 @@ function matmul_scalar(A, s) {
     }
     return result
 }
+
+function factorial(n) {
+    let value = 1
+    for (let i = 2; i <= n; i++) {
+        value *= i
+    }
+    return value
+}
+
+function gcd(a, b) {
+    while (b !== 0) {
+        const temp = b
+        b = a % b
+        a = temp
+    }
+    return a
+}

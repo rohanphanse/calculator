@@ -1,17 +1,18 @@
 // Order of operations
 const ORDER_OF_OPERATIONS = [
     ["!"],              // Unary operations
-    ["^", "%"],         // Exponentiation and modulus
+    ["choose", "perm"],
+    ["^", "%", "mod"],         // Exponentiation and modulus
     ["/", "*"],         // Division then multiplication
     ["-"],        // Sutraction, negation, and then addition
     ["+"],
-    ["~", "&", "|"],
+    ["~", "&", "|", "xor"],
     ["<<", ">>"],
 ]
 
 // Subsets
 const CONSTANTS = ["pi", "e", "phi", "inf"]
-const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~"]
+const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "xor", "choose", "perm"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save"]
@@ -71,19 +72,32 @@ const OPERATIONS = {
             param_types = get_param_types([a, b])
             if (param_types[0] == TN && param_types[1] == TN) {
                 return a * b
-            } else if (param_types[0].startsWith("list") && param_types[1].startsWith("list") && param_types[0] == param_types[1]) {
+            } else if (param_types[0] == TL(TN) && param_types[1] == TL(TN)) {
+                if (a.length !== b.length) {
+                    return "Dot product error > vectors must be the same size"
+                }
+                let dot_product = 0
+                for (let i = 0; i < a.length; i++) {
+                    dot_product += a[i] * b[i]
+                }
+                return dot_product
+            } else if (param_types[0] == TL(TL(TN)) && param_types[1] == TL(TL(TN))) {
                 return matmul(a, b)
-            } else if (param_types[0] == "number" && param_types[1].startsWith("list")) {
+            } else if (param_types[0] == TN && param_types[1] == TL(TL(TN))) {
                 return matmul_scalar(b, a)
-            } else if (param_types[1] == "number" && param_types[0].startsWith("list")) {
+            } else if (param_types[1] == TN && param_types[0] == TL(TL(TN))) {
                 return matmul_scalar(a, b)
+            } else if (param_types[0] == TN && param_types[1] == TL(TN)) {
+                return matmul_scalar([b], a)[0]
+            } else if (param_types[1] == TN && param_types[0] == TL(TL(TN))) {
+                return matmul_scalar([a], b)[0]
             } else {
                 return "Invalid types"
             }
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TOR(TN, TL(TL(TN))), TOR(TN, TL(TL(TN)))]
+        types: [TOR(TN, TOR(TL(TL(TN)), TL(TN))), TOR(TN, TOR(TL(TL(TN)), TL(TN)))]
     },
     "/": {
         name: "Division",
@@ -101,13 +115,7 @@ const OPERATIONS = {
     },
     "!": {
         name: "Factorial",
-        func: (n) => {
-            let value = 1
-            for (let i = 2; i <= n; i++) {
-                value *= i
-            }
-            return value
-        },
+        func: (n) => factorial(n),
         schema: [-1],
         vars: ["x"],
         types: [TN]
@@ -689,7 +697,7 @@ const OPERATIONS = {
         vars: ["n"],
         types: [TN]
     },
-    "transpose": {
+    "T": {
         name: "Transpose",
         func: (m) => {
             const tm = []
@@ -712,12 +720,103 @@ const OPERATIONS = {
         vars: ["m"],
         types: [TL(TL(TN))]
     },
-    "eigen": {
-        name: "Compute eigenvalues",
-        func: (m) => eigenvalues(m),
+    "choose": {
+        name: "Choose (# of combinations)",
+        func: (n, k) => {
+            return Math.round(factorial(n) / (factorial(k) * factorial(n - k)))
+        },
+        schema: [-1, 1],
+        vars: ["n", "k"],
+        types: [TN, TN]
+    },
+    "perm": {
+        name: "Compute # of permutations",
+        func: (n, k) => {
+            return Math.round(factorial(n) / (factorial(n - k)))
+        },
+        schema: [-1, 1],
+        vars: ["n", "k"],
+        types: [TN, TN]
+    },
+    "rank": {
+        name: "Rank",
+        func: (m) => {
+            if (m.length === 0 || m[0].length === 0) {
+                return 0
+            }
+            const rref_m = rref(m)
+            let rank = 0
+            for (let i = 0; i < rref_m.length; i++) {
+                const is_zero_row = rref_m[i].every(e => e === 0);
+                if (!is_zero_row) {
+                    rank++
+                } 
+            }
+            return rank
+        },
         schema: [1],
         vars: ["m"],
         types: [TL(TL(TN))]
+    },
+    "cross": {
+        name: "Cross product",
+        func: (a, b) => {
+            if (a.length !== 3 || b.length !== 3) {
+                return "Vectors must be 3-dimensional"
+            }
+            const result = [
+                a[1] * b[2] - a[2] * b[1],
+                a[2] * b[0] - a[0] * b[2],
+                a[0] * b[1] - a[1] * b[0],
+            ]
+            return result;
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TL(TN), TL(TN)]
+    },
+    "gcd": {
+        name: "Greatest common divisor",
+        func: (a, b) => gcd(a, b),
+        schema: [1],
+        vars: ["a", "b"],
+        types: [TN, TN]
+    },
+    "lcm": {
+        name: "Least common multiple",
+        func: (a, b) => {
+            return a * b / gcd(a, b)
+        },
+        schema: [1],
+        vars: ["a", "b"],
+        types: [TN, TN]
+    },
+    "factor": {
+        name: "Prime factorization",
+        func: (n) => {
+            let N = n
+            const factors = []
+            let divisor = 2
+            while (n >= 2) {
+                if (n % divisor == 0) {
+                    factors.push(divisor);
+                    n /= divisor;
+                } else {
+                    divisor++
+                }
+            }
+            let factor_counts = factors.reduce((counts, factor) => {
+                counts[factor] = (counts[factor] || 0) + 1;
+                return counts;
+            }, {})
+            let formatted_factors = Object.entries(factor_counts)
+                .sort((a, b) => a[0] - b[0])
+                .map(([p, c]) => (c > 1 ? `${p}^${c}` : `${p}`))
+            return new String(`${N} = ` + formatted_factors.join(" × "))
+        },
+        schema: [1],
+        vars: ["n"],
+        types: [TN]
     }
 }
 
@@ -851,4 +950,9 @@ function parseCoefficient(coefficient) {
     if (coefficient === "" || coefficient === "+") return 1
     if (coefficient === "-") return -1
     return parseFloat(coefficient) || 0
+}
+
+function is_multipliable(token) {
+    let param_type = get_param_types([token])
+    return param_type == TN || param_type == TL(TN) || param_type == TL(TL(TN))
 }
