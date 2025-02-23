@@ -85,7 +85,7 @@ class Calculator {
             }
             let double_symbol = expression.substr(i, 2)
             // Symbol
-            if (!/^[a-zA-Z]$/.test(expression.charAt(i)) && SYMBOLS.includes(expression.charAt(i)) || SYMBOLS.includes(double_symbol)) {
+            if (!/^[a-zA-Z]$/.test(expression.charAt(i)) && (SYMBOLS.includes(expression.charAt(i)) || SYMBOLS.includes(double_symbol))) {
                 if (SYMBOLS.includes(double_symbol)) {
                     tokens.push(double_symbol) 
                     i++
@@ -731,6 +731,14 @@ class Calculator {
                     params = operation.schema.map((i) => tokens[i + index])
                     param_types = get_param_types(params)
                     if (check_param_types(param_types, operation.types)) {
+                        fail = false
+                    }
+                }
+                if (["^", "*", "/"].includes(tokens[index])) {
+                    if (index < tokens.length - 2 && tokens[index + 1] == "-" && typeof tokens[index + 2] == "number") {
+                        const v = -tokens[index + 2]
+                        tokens.splice(index + 1, 2, v)
+                        params = operation.schema.map((i) => tokens[i + index])
                         fail = false
                     }
                 }
