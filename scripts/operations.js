@@ -1,9 +1,9 @@
 // Units
-const UNITS = ["km", "m", "cm", "mm", "um", "nm", "ft", "mi", "kg", "g", "mg", "lb", "oz", "s", "mn", "hr", "ms", "day", "yr", "ly", "wk", "J", "cal", "kcal", "au", "kJ", "eV", "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB", "m3", "cm3", "L", "gal", "mL", "ft3", "in", "K", "C", "F"]
-const UNIT_NAMES = { "km": "Kilometer", "m": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Killogram", "g": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "s": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "J": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kJ": "Kilojoule", "eV": "Electron Volt", "B": "Byte", "KB": "Kilobyte", "MB": "Megabyte", "GB": "Gigabyte", "TB": "Terabyte", "PB": "Petabyte", "EB": "Exabyte", "ZB": "Zettabyte", "YB": "Yottabyte", "m3": "Cubic Meter", "cm3": "Cubic Centimer", "L": "Liter", "gal": "Gallon", "mL": "Milliiter", "ft3": "Cubic Foot", "in": "Inch", "K": "Kelvin", "C": "Celcius", "F": "Fahrenheit" }
+const UNITS = ["km", "meter", "cm", "mm", "um", "nm", "ft", "mi", "kg", "gram", "mg", "lb", "oz", "se", "mn", "hr", "ms", "day", "yr", "ly", "wk", "joule", "cal", "kcal", "au", "kjoule", "ev", "byte", "kb", "mb", "gb", "tb", "pb", "eb", "zb", "yb", "m3", "cm3", "liter", "gal", "ml", "ft3", "in", "kel", "cel", "far"]
+const UNIT_NAMES = { "km": "Kilometer", "meter": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Killogram", "gram": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "se": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "joule": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kjoule": "Kilojoule", "ev": "Electron Volt", "byte": "Byte", "kb": "Kilobyte", "mb": "Megabyte", "gb": "Gigabyte", "tb": "Terabyte", "pb": "Petabyte", "eb": "Exabyte", "zb": "Zettabyte", "yb": "Yottabyte", "m3": "Cubic Meter", "cm3": "Cubic Centimer", "liter": "Liter", "gal": "Gallon", "ml": "Milliiter", "ft3": "Cubic Foot", "in": "Inch", "kel": "Kelvin", "cel": "Celcius", "far": "Fahrenheit" }
 const FROM_UNITS = {
     "km": 1000,
-    "m": 1,
+    "meter": 1,
     "cm": 0.01,
     "mm": 0.001,
     "um": 0.000001,
@@ -11,11 +11,11 @@ const FROM_UNITS = {
     "ft": 0.3048,
     "mi": 1609.34,
     "kg": 1,
-    "g": 0.001,
+    "gram": 0.001,
     "mg": 0.000001,
     "lb": 0.453592,
     "oz": 0.0283495,
-    "s": 1,
+    "se": 1,
     "mn": 60,
     "hr": 3600,
     "ms": 0.001,
@@ -23,31 +23,31 @@ const FROM_UNITS = {
     "yr": 31556952,
     "ly": 9.461e+15,
     "wk": 604800,
-    "J": 1,
+    "joule": 1,
     "cal": 4.184,
     "kcal": 4184,
     "au": 1.496e+11,
-    "kJ": 1000,
-    "eV": 1.60218e-19,
-    "B": 1,
-    "KB": 2**10,
-    "MB": 2**20,
-    "GB": 2**30,
-    "TB": 2**40,
-    "PB": 2**50,
-    "EB": 2**60,
-    "ZB": 2**70,
-    "YB": 2**80,
+    "kjoule": 1000,
+    "ev": 1.60218e-19,
+    "byte": 1,
+    "kb": 2**10,
+    "mb": 2**20,
+    "gb": 2**30,
+    "tb": 2**40,
+    "pb": 2**50,
+    "eb": 2**60,
+    "zb": 2**70,
+    "yb": 2**80,
     "m3": 1,
     "cm3": 0.000001,
-    "L": 0.001,
+    "liter": 0.001,
     "gal": 0.00378541,
-    "mL": 0.000001,
+    "ml": 0.000001,
     "ft3": 0.0283168,
     "in": 0.0254,
-    "K": { from: (x) => x - 273.15, to: (x) => x + 273.15 },
-    "C": { from: (x) => x, to: (x) => x },
-    "F": { from: (x) => (x - 32) * 5/9, to: (x) => x * 9/5 + 32 }
+    "kel": { from: (x) => x - 273.15, to: (x) => x + 273.15 },
+    "cel": { from: (x) => x, to: (x) => x },
+    "far": { from: (x) => (x - 32) * 5/9, to: (x) => x * 9/5 + 32 }
 }
 const TO_UNITS = {}
 for (const u in FROM_UNITS) {
@@ -912,7 +912,7 @@ const OPERATIONS = {
     "units": {
         name: "List of supported units",
         func: () => {
-            return [["km", "m", "cm", "mm", "um", "nm", "mi", "ft", "in", "au", "ly"], ["kg", "g", "mg", "lb", "oz"], ["s", "ms", "mn", "hr", "day", "wk", "yr"], ["J", "kJ", "cal", "kcal", "eV"], ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"], ["m3", "cm3", "L" , "mL", "gal", "ft3"], ["K", "C", "F"]]
+            return [["km", "meter", "cm", "mm", "um", "nm", "mi", "ft", "in", "au", "ly"], ["kg", "gram", "mg", "lb", "oz"], ["se", "ms", "mn", "hr", "day", "wk", "yr"], ["joule", "kjoule", "cal", "kcal", "ev"], ["byte", "kb", "mb", "gb", "tb", "pb", "eb", "zb", "yb"], ["m3", "cm3", "liter" , "ml", "gal", "ft3"], ["kel", "cel", "far"]]
         },
         schema: [],
         vars: [],
