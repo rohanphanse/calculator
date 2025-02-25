@@ -6,8 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let history = []
     let history_index = -1
     let history_current = ""
-    let display_mode = 1
-
+    let display_mode = localStorage.getItem("display_mode") || "default"
+ 
     // States
     let UPDATE_DIGITS = false
 
@@ -35,11 +35,16 @@ document.addEventListener("DOMContentLoaded", () => {
         angleButton.innerText = calculator.angle
     })
     displayButton.addEventListener("click", (event) => {
-        display_mode = !display_mode
-        if (display_mode == 1) {
+        if (!calcContainer.classList.contains("transition-enabled")) {
+            calcContainer.classList.add("transition-enabled")
+        }
+        display_mode = localStorage.getItem("display_mode") || "default"
+        if (display_mode === "wide") {
             calcContainer.style.width = "max(350px, 50vh)"
+            localStorage.setItem("display_mode", "default")
         } else {
             calcContainer.style.width = "max(350px, 50vw)"
+            localStorage.setItem("display_mode", "wide")
         }
     })
 
@@ -88,6 +93,11 @@ document.addEventListener("DOMContentLoaded", () => {
             positionCaret(userInput, index + length)
         })
     }
+
+    if (localStorage.getItem("display_mode") == "wide") {
+        calcContainer.style.width = "max(350px, 50vw)"
+    }
+    calcContainer.style.opacity = "1"
 
     let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
     let saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")

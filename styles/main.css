@@ -21,13 +21,17 @@ body {
 }
 
 #container {
-    transition-duration: 0.2s;
     display: flex;
     flex-direction: column;
     width: max(350px, 50vh);
     border: 1px solid rgb(221, 221, 221);
     border-radius: 8px;
     margin: 30px;
+    opacity: 0;
+}
+
+.transition-enabled {
+    transition-duration: 0.2s;
 }
 
 @media only screen and (max-height: calc(498.73px + 60px)) {

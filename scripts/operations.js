@@ -76,7 +76,7 @@ const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save"]
-const LIST_OPERATIONS = ["mean", "median", "sd", "sum", "len", "max", "min", "concat", "zeros"]
+const LIST_OPERATIONS = ["mean", "median", "sd", "sort", "sum", "len", "max", "min", "concat", "zeros"]
 
 // Types
 const TN = "number"
@@ -415,7 +415,7 @@ const OPERATIONS = {
         name: "Median",
         func: (nums) => {
             if (nums.length > 1) {
-                nums.sort((a, b) => a - b)
+                nums = [...nums].sort((a, b) => a - b)
                 if (nums.length % 2 === 0) {
                     return (nums[nums.length / 2 - 1] + nums[nums.length / 2]) / 2
                 } else {
@@ -440,6 +440,15 @@ const OPERATIONS = {
         schema: [1],
         vars: ["x"],
         types: [TL(TN)]
+    },
+    "sort": {
+        name: "Sort in non-decreasing order",
+        func: (nums) => {
+            return [...nums].sort((a, b) => a - b)
+        },
+        schema: [1],
+        vars: ["x"],
+        types: [TL(TN)],
     },
     "bin": {
         name: "Decimal to binary",
