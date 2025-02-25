@@ -780,7 +780,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            // console.log("exec error", err)
+            console.log("exec error", err)
             return `${operation.name} error > execution error`
         }
     }

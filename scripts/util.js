@@ -160,7 +160,7 @@ function det(m) {
     return _det
 }
 
-function add_tensors(a1, a2) {
+function add_tensors(a1, a2, s2 = 1, s1 = 1) {
     if (!Array.isArray(a1) || !Array.isArray(a2)) {
         return "Invalid types"
     }
@@ -170,9 +170,9 @@ function add_tensors(a1, a2) {
     const result = []
     for (let i = 0; i < a1.length; i++) {
         if (Array.isArray(a1[i]) && Array.isArray(a2[i])) {
-        result.push(add_tensors(a1[i], a2[i]))
+        result.push(add_tensors(a1[i], a2[i], s2, s1))
         } else if (typeof a1[i] === "number" && typeof a2[i] === "number"){
-            result.push(a1[i] + a2[i])
+            result.push(a1[i] * s1 + a2[i] * s2)
         } else {
             return "Invalid types"
         }
@@ -180,16 +180,14 @@ function add_tensors(a1, a2) {
     return result
 }
 
-function tensor_add_scalar(a1, s) {
-    console.log("t", a1, s)
+function tensor_add_scalar(a1, s, c = 1) {
     const result = []
     for (let i = 0; i < a1.length; i++) {
         if (Array.isArray(a1[i])) {
-            result.push(tensor_add_scalar(a1[i], s))
+            result.push(tensor_add_scalar(a1[i], s, c))
         } else if (typeof a1[i] === "number"){
-            result.push(a1[i] + s)
+            result.push(c * a1[i] + s)
         } else {
-            console.log("invt", a1, s)
             return "Invalid types"
         }
     }

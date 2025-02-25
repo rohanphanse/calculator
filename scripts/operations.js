@@ -114,18 +114,40 @@ const OPERATIONS = {
     },
     "-": {
         name: "Subtraction",
-        func: (a, b) => a - b,
+        func: (a, b) => {
+            param_types = get_param_types([a, b])
+            if (param_types[0] == TN && param_types[1] == TN) {
+                return a - b
+            } else if (param_types[0].startsWith("list") && param_types[1].startsWith("list") && param_types[0] == param_types[1]) {
+                return add_tensors(a, b, -1)
+            } else if (param_types[0] == "number" && param_types[1].startsWith("list")) {
+                return tensor_add_scalar(b, a, -1)
+            } else if (param_types[1] == "number" && param_types[0].startsWith("list")) {
+                return tensor_add_scalar(a, -b)
+            } else {
+                return "Invalid types"
+            }
+        },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TN, TN]
+        types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))]
         
     },
     "neg": {
         name: "Negation",
-        func: (n) => n * -1,
+        func: (n) => {
+            param_type = get_param_types([n])[0]
+            if (param_type == TN) {
+                return -n
+            } else if (param_type.startsWith("list")) {
+                return add_tensors(n, n, -1, 0)
+            } else {
+                return "Invalid types"
+            }
+        },
         schema: [1],
         vars: ["x"],
-        types: [TN]
+        types: [TOR(TN, TL(TA))]
     },
     "*": {
         name: "Multiplication",
