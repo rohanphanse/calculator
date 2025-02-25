@@ -37,6 +37,13 @@
                 </div>
             </div>
             <div class = "command-bar-container">
+                <div id = "var-bar">
+                    <div class = "command-text">Saved variables:</div>
+                </div>
+                <div class = "command-bar-overlay-right"></div>
+                <div class = "command-bar-overlay-left"></div>
+            </div>
+            <div class = "command-bar-container">
                 <div id = "user-bar">
                     <div class = "command-text">Saved functions:</div>
                 </div>
@@ -113,7 +120,7 @@
                     <div data-text = "inv(|)" class = "command">inv</div>
                     <div data-text = "zeros(|)" class = "command">zeros</div>
                     <div data-text = "ident(|)" class = "command">ident</div>
-                    <div data-text = "T(|)" class = "command">T</div>
+                    <div data-text = "tran(|)" class = "command">tran</div>
                     <div data-text = "rank(|)" class = "command">rank</div>
                     <div data-text = "cross" class = "command">cross</div>
                     <div class = "divider"></div>
@@ -131,8 +138,8 @@
                     <div data-text = "km" class = "command">mi</div>
                     <div data-text = "kg" class = "command">kg</div>
                     <div data-text = "lb" class = "command">lb</div>
-                    <div data-text = "C" class = "command">C</div>
-                    <div data-text = "F" class = "command">F</div>
+                    <div data-text = "cel" class = "command">cel</div>
+                    <div data-text = "far" class = "command">far</div>
                     <div class = "spacer"></div>
                 </div>
                 <div class = "command-bar-overlay-right"></div>
@@ -140,7 +147,7 @@
             </div>
 
             <div id = "interface">
-                <div class = "input" placeholder = "Enter an expression..." contenteditable></div>
+                <div class = "input" placeholder = "Enter an expression..." contenteditable = "plaintext-only"></div>
             </div>
         </div>
     </div>

@@ -734,6 +734,14 @@ class Calculator {
                         fail = false
                     }
                 }
+                if (tokens[index] === "to") {
+                    operation = OPERATIONS["to2"]
+                    params = operation.schema.map((i) => tokens[i + index])
+                    param_types = get_param_types(params)
+                    if (check_param_types(param_types, operation.types)) {
+                        fail = false
+                    }
+                }
                 if (["^", "*", "/"].includes(tokens[index])) {
                     if (index < tokens.length - 2 && tokens[index + 1] == "-" && typeof tokens[index + 2] == "number") {
                         const v = -tokens[index + 2]
@@ -772,7 +780,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            console.log("exec error", err)
+            // console.log("exec error", err)
             return `${operation.name} error > execution error`
         }
     }

@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const commandButtons = document.getElementsByClassName("command")
     const commandBar = document.getElementById("command-bar")
     const userBar = document.getElementById("user-bar")
+    const varBar = document.getElementById("var-bar")
     const calcContainer = document.getElementById("container")
     // Initial
 
@@ -44,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     enableDragToScroll(commandBar)
     enableDragToScroll(userBar)
+    enableDragToScroll(varBar)
     
     // Digits input
     digitsInput.addEventListener("input", event => {
@@ -88,10 +90,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
+    let saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")
     renderSavedFunctions(saved_functions)
+    renderSavedVariables(saved_variables)
     for (const f in saved_functions) {
         // console.log(saved_functions)
         calculator.calculate(saved_functions[f])
+    }
+    for (const v in saved_variables) {
+        // console.log(`${v} = ${JSON.stringify(saved_variables[v]).replace('"', "")}`)
+        calculator.calculate(`${v} = ${JSON.stringify(saved_variables[v]).replaceAll('"', "")}`)
     }
     calculator.ans = null
 
@@ -135,6 +143,35 @@ document.addEventListener("DOMContentLoaded", () => {
                 delete new_saved_functions[f]
                 localStorage.setItem("saved_functions", JSON.stringify(new_saved_functions))
                 renderSavedFunctions(new_saved_functions)
+            })
+        }
+    }
+
+    function renderSavedVariables(saved_variables) {
+        varBar.textContent = ""
+        const cmdText = document.createElement("div")
+        cmdText.classList.add("command-text")
+        cmdText.innerText = "Saved variables:"
+        varBar.append(cmdText)
+        for (const f in saved_variables) {
+            const userButton = document.createElement("div")
+            userButton.classList.add("user-button")
+            const cmd = document.createElement("div")
+            cmd.classList.add("user-button-text")
+            cmd.dataset.text = `${f}`
+            cmd.innerText = `${f}`
+            const button = document.createElement("div")
+            button.innerText = "x"
+            button.classList.add("user-button-x")
+            userButton.append(cmd)
+            userButton.append(button)
+            varBar.append(userButton)
+            cmd.addEventListener("click", commandInsert)
+            button.addEventListener("click", (event) => {
+                const new_saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")
+                delete new_saved_variables[f]
+                localStorage.setItem("saved_variables", JSON.stringify(new_saved_variables))
+                renderSavedVariables(new_saved_variables)
             })
         }
     }
@@ -202,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             output += "Welcome to Calculator! Learn about a function by typing `help func` where `func` is the name of a function such as `sin`..."
                         }
                     } else if (user_input.startsWith("save")) {
-                        const op = user_input.slice(user_input.indexOf("save") + "save".length).toLowerCase().trim()
+                        const op = user_input.slice(user_input.indexOf("save") + "save".length).trim()
                         // console.log("save", op)
                         if (!op.startsWith("@") && op in calculator.functions) {
                             try {   
@@ -223,8 +260,22 @@ document.addEventListener("DOMContentLoaded", () => {
                                 // console.log(err)
                                 output = `Save error`
                             }
+                        } else if (op in calculator.variables) {
+                            try {
+                                let value = JSON.stringify(calculator.variables[op])
+                                value = value.replace(/\{"op":"([^"]+)"\}/g, "$1")
+                                value = value.replaceAll('"', "")
+                                output = `Saved ${op} = ${value}`
+                                let saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")
+                                saved_variables[op] = value
+                                localStorage.setItem("saved_variables", JSON.stringify(saved_variables))
+                                renderSavedVariables(saved_variables)
+                            } catch (err) {
+                                // console.log(err)
+                                output = `Save error`
+                            }
                         } else {
-                            output = `Save error > can only save user-defined functions`
+                            output = `Save error > can only save user-defined variables and functions`
                         }
                     } else {
                         // Calculate output
@@ -253,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Input
                 const input = document.createElement("div")
                 input.className = "input"
-                input.contentEditable = true
+                input.contentEditable = "plaintext-only"
 
                 // Last input is designated as user input
                 userInput.contentEditable = false

@@ -87,6 +87,7 @@ const TA = "any"
 const TF = "function"
 const TO = (t) => `optional[${t}]`
 const TI = "invalid"
+const TU = "unit"
 const bases = { "0b": 2, "0x": 16, "0o": 8 }
 
 // Operations
@@ -676,7 +677,7 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["x", "i"],
         types: [TL(TA), TN],
-        example: "Example: b = [2, 4, [6, 8]]\nb:1 -> 2\nb:3:1 -> 6"
+        example: "Example:\nb = [2, 4, [6, 8]]\nb:1 -> 2\nb:3:1 -> 6"
     },
     "len": {
         name: "List length",
@@ -765,7 +766,7 @@ const OPERATIONS = {
         vars: ["n"],
         types: [TN]
     },
-    "T": {
+    "tran": {
         name: "Transpose",
         func: (m) => {
             const tm = []
@@ -906,8 +907,31 @@ const OPERATIONS = {
         },
         schema: [-2, -1, 1],
         vars: ["n", "u1", "u2"],
-        types: [TN, TA, TA],
-        example: "Example:\n5 km to mi -> 3.10686\n30 C to F -> 86"
+        types: [TN, TU, TU],
+        example: "Example:\n5 km to mi -> 3.10686\n30 cel to far -> 86"
+    },
+    "to2":  {
+        name: "Convert units",
+        func: (u1, u2) => {
+            n = 1
+            if (u1 instanceof Operation) {
+                u1 = u1.op
+            }
+            if (u2 instanceof Operation) {
+                u2 = u2.op
+            }
+            if (u1 in FROM_UNITS && u2 in FROM_UNITS) {
+                if (typeof FROM_UNITS[u1] === "number" && typeof FROM_UNITS[u2] === "number") {
+                    return n * FROM_UNITS[u1] * TO_UNITS[u2]
+                } else if (typeof FROM_UNITS[u1] === "object" && typeof FROM_UNITS[u2] === "object") {
+                    return FROM_UNITS[u2].to(FROM_UNITS[u1].from(n))
+                }
+            }
+            return "Invalid units"
+        },
+        schema: [-1, 1],
+        vars: ["u1", "u2"],
+        types: [TU, TU]
     },
     "units": {
         name: "List of supported units",
@@ -1006,7 +1030,13 @@ function get_param_types(params) {
                 }
             }
         } else if (p instanceof Operation) {
-            type_list.push(TF)
+            if (p.op in UNIT_NAMES) {
+                type_list.push(TU)
+            } else {
+                type_list.push(TF)
+            }
+        } else if (p in UNIT_NAMES) {
+            type_list.push(TU)
         } else {
             type_list.push(TI)
         }

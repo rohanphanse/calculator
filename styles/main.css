@@ -99,7 +99,7 @@ body {
     background-color: rgb(225, 225, 225);
 }
 
-#command-bar, #user-bar {
+#command-bar, #user-bar, #var-bar {
     display: flex;
     flex-direction: row;
     padding: 0 5px;
@@ -125,6 +125,7 @@ body {
     border-right: 1px solid rgb(221, 221, 221);
     transition-duration: 0.1s;
     cursor: pointer;
+    user-select: none;
 }
 
 .user-button-x {
@@ -137,7 +138,7 @@ body {
     color: red;
 }
 
-#user-bar {
+#user-bar, #var-bar {
     min-height: 31.99px;
 }
 
@@ -170,21 +171,22 @@ body {
 }
 
 #command-bar::-webkit-scrollbar, 
-#user-bar::-webkit-scrollbar {
+#user-bar::-webkit-scrollbar, #var-bar::-webkit-scrollbar {
     height: 4px;
     background-color: rgb(240, 240, 240);
 }
 
-#command-bar::-webkit-scrollbar-thumb, #user-bar::-webkit-scrollbar-thumb {
+#command-bar::-webkit-scrollbar-thumb, #user-bar::-webkit-scrollbar-thumb, #var-bar::-webkit-scrollbar-thumb {
     transition-duration: 0.1s;
     background-color: rgb(163, 163, 163);
 }
 
-#command-bar::-webkit-scrollbar-thumb:hover, #user-bar::-webkit-scrollbar-thumb:hover {
+#command-bar::-webkit-scrollbar-thumb:hover, #user-bar::-webkit-scrollbar-thumb:hover, #var-bar::-webkit-scrollbar-thumb:hover {
     background-color: rgb(131, 131, 131);
 }
 
 .command-text {
+    font-size: 1rem;
     display: flex;
     white-space: nowrap;
     align-items: center;
@@ -200,6 +202,8 @@ body {
     margin: 6px 5px;
     transition-duration: 0.1s;
     cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .command:hover, .user-button-text:hover, .user-button-x:hover {
@@ -216,12 +220,12 @@ body {
     flex-direction: column;
     padding: 15px;
     overflow: auto;
-    height: max(calc(490px - 112.77px), calc(70vh - 112.77px));
+    height: max(calc(400px - 112.77px), calc(70vh - 112.77px));
 }
 
 .input {
     font-family: monospace;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     overflow-wrap: break-word;
     margin-bottom: 3px;
 }
@@ -238,7 +242,7 @@ body {
 .result {
     text-align: right;
     font-family: monospace;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: grey;
     word-break: break-word;
     overflow-wrap: break-word;
