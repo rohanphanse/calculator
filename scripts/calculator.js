@@ -549,7 +549,7 @@ class Calculator {
                             if (typeof result === "string") {
                                 return result      
                             }
-                            tokens.splice(t, close - t + 1, result)
+                            tokens.splice(t, close - t + 1, new Paren([result]))
                         }
                         break
                     }
@@ -601,6 +601,14 @@ class Calculator {
         // console.log("evaluateSingle", tokens)
         if (tokens.length > 1) {
             // Count number of math functions
+            for (let i = 0; i < tokens.length; i++) {
+                if (tokens[i] instanceof Paren) {
+                    if (i > 0 && Array.isArray(tokens[i - 1])) {
+                        const A = tokens[i - 1]
+                        tokens.splice(i - 1, 2, "index", new Paren([A, tokens[i].tokens]))
+                    }
+                }
+            }
             let function_count = 0
             for (const t of tokens) {
                 if (typeof t === "string" && (isMathFunction(t) || t in this.functions)) {
@@ -622,6 +630,18 @@ class Calculator {
                         }
                     }
                 }
+                // Unwrap Paren
+                for (let i = 0; i < tokens.length; i++) {
+                    if (tokens[i] instanceof Paren) {
+                        if (i > 0 && Array.isArray(tokens[i - 1])) {
+                            const A = tokens[i - 1]
+                            tokens.splice(i - 1, 2, "index", new Paren([A, tokens[i].tokens]))
+                            // console.log("index", tokens)
+                        } else if (tokens[i].tokens.length === 0 && is_multipliable(tokens[i].tokens[0])) {
+                            tokens[i] = tokens[i].tokens[0]
+                        }
+                    }
+                }
                 // Recount
                 let calc_function_count = 0
                 for (const t of tokens) {
@@ -633,6 +653,13 @@ class Calculator {
             }
 
             // Add multiplication signs between adjacent numbers
+            for (let i = 0; i < tokens.length; i++) {
+                if (tokens[i] instanceof Paren) {
+                    if (tokens[i].tokens.length === 1 && is_multipliable(tokens[i].tokens[0])) {
+                        tokens[i] = tokens[i].tokens[0]
+                    }
+                }
+            }
             for (let t = 0; t < tokens.length - 1; t++) {
                 if (is_multipliable(tokens[t]) && is_multipliable(tokens[t + 1])) {
                     tokens.splice(t + 1, 0, "*")
@@ -679,6 +706,7 @@ class Calculator {
 
     // Evaluate expression with operator/symbol
     evaluateOperator(tokens) {
+        // console.log("evaluateOperator", tokens)
         // Filter order of operations array so only used operations are present
         let used_operations = ORDER_OF_OPERATIONS.map(list => list.filter(e => tokens.includes(e))).filter(e => e.length)
         // console.log("evaluateOperator", tokens, used_operations)
@@ -696,6 +724,7 @@ class Calculator {
                 }
             }
         } else {
+            // console.log("evaluateOperator error")
             return "Execution error"
         }
     }
@@ -742,6 +771,23 @@ class Calculator {
                         fail = false
                     }
                 }
+                if (tokens[index] === ":") {
+                    operation = OPERATIONS[":2"]
+                    params = operation.schema.map((i) => tokens[i + index])
+                    param_types = get_param_types(params)
+                    // console.log(":2", params)
+                    if (!check_param_types(param_types, operation.types)) {
+                        operation = OPERATIONS[":3"]
+                        params = operation.schema.map((i) => tokens[i + index])
+                        param_types = get_param_types(params)
+                        // console.log(":3", params)
+                        if (check_param_types(param_types, operation.types)) {
+                            fail = false
+                        }
+                    } else {
+                        fail = false
+                    }
+                }
                 if (["^", "*", "/"].includes(tokens[index])) {
                     if (index < tokens.length - 2 && tokens[index + 1] == "-" && typeof tokens[index + 2] == "number") {
                         const v = -tokens[index + 2]
@@ -780,7 +826,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            console.log("exec error", err)
+            // console.log("exec error", err)
             return `${operation.name} error > execution error`
         }
     }

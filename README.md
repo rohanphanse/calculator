@@ -25,3 +25,7 @@ As a challenge to myself, I decided not to use any external libraries. The entir
 ## Functional features like lambda capture and currying
 
 <img src = "https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_3.png" alt = "demo of lambda capture and currying" />
+
+## Unit conversions, linear algebra operations, and more!
+
+<img src = "https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_4.png" alt = "demo of built-in functions" />

@@ -273,3 +273,48 @@ function gcd(a, b) {
     }
     return a
 }
+
+function process_index(A, I) {
+    if (!Array.isArray(A) && I.length > 0) {
+        return "Invalid indices"
+    }
+    if (I.length === 0) {
+        return A
+    }
+    if (Array.isArray(I[0]) && I[0].length === 2) {
+        if (typeof I[0][0] === "number" && typeof I[0][1] === "number") { 
+            let start = 0
+            let end = A.length
+            if (I[0][0] != -1) {
+                start = I[0][0] - 1
+            }
+            if (I[0][1] != -1) {
+                end = I[0][1]
+            }
+            let result = []
+            for (let r = start; r < end; r++) {
+                let ret = process_index(A[r], I.slice(1))
+                if (typeof ret === "string") {
+                    return ret
+                }
+                result.push(ret)
+            }
+            return result
+        }
+    } else if (!Array.isArray(I[0])) {
+        if (I[0] instanceof Operation && I[0].op === ":") {
+            let result = []
+            for (const row of A) {
+                let ret = process_index(row, I.slice(1))
+                if (typeof ret === "string") {
+                    return ret
+                }
+                result.push(ret)
+            }
+            return result
+        } else if (typeof I[0] === "number") {
+            return process_index(A[I[0] - 1], I.slice(1))
+        }
+    }
+    return "Invalid indices"
+}

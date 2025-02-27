@@ -60,7 +60,7 @@ const ORDER_OF_OPERATIONS = [
     [":"],
     ["!"],              // Unary operations
     ["^", "%", "mod"],         // Exponentiation and modulus
-    ["choose", "perm"],
+    ["choose", "perm", "cross"],
     ["to"],
     UNITS,
     ["/", "*"],         // Division then multiplication
@@ -72,7 +72,7 @@ const ORDER_OF_OPERATIONS = [
 
 // Subsets
 const CONSTANTS = ["pi", "e", "phi", "inf", "units"]
-const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":"]
+const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save"]
@@ -551,7 +551,9 @@ const OPERATIONS = {
                 if (result.includes(NaN)) {
                     return "Invalid format error"
                 }
-                let response = `Roots of ${a}${x}^2 + ${b}${x} + ${c} = 0\n`
+                let b_part = b == 0 ? "" : ` ${b < 0 ? "-" : "+"} ${Math.abs(b)}${x}`
+                let c_part = c == 0 ? "" : ` ${c < 0 ? "-" : "+"} ${Math.abs(c)}`
+                let response = `Roots of ${a == 1 ? "" : a}${x}^2${b_part}${c_part} = 0\n`
                 if (result.length === 2) {
                     response += `${x} = ${result[0]} or ${x} = ${result[1]}`
                 } else if (result.length === 1) {
@@ -590,7 +592,10 @@ const OPERATIONS = {
                 if (result.includes(NaN)) {
                     return "Invalid format error"
                 }
-                let response = `Roots of ${a}${x}^3 + ${b}${x}^2 + ${c}${x} + ${d} = 0\n`
+                let b_part = b == 0 ? "" : ` ${b < 0 ? "-" : "+"} ${Math.abs(b)}${x}^2`
+                let c_part = c == 0 ? "" : ` ${c < 0 ? "-" : "+"} ${Math.abs(c)}${x}`
+                let d_part = d == 0 ? "" : ` ${d < 0 ? "-" : "+"} ${Math.abs(d)}`
+                let response = `Roots of ${a == 1 ? "" : a}${x}^3${b_part}${c_part}${d_part} = 0\n`
                 if (result.length === 3) {
                     response += `${x} = ${result[0]} or ${x} = ${result[1]} or ${x} = ${result[2]}`
                 } else if (result.length === 2) {
@@ -688,27 +693,39 @@ const OPERATIONS = {
         vars: ["x"],
         types: [TA]
     },
-    "slice": {
-        name: "Get sublist of list",
-        func: (list, start, end) => {
-            if (end !== undefined) {
-                return list.slice(start - 1, end)
-            } else {
-                return list.slice(start - 1)
-            }
-        },
+    "index": {
+        name: "Index",
+        func: (A, I) => process_index(A, I),
         schema: [1],
-        vars: ["x", "start", "end"],
-        types: [TL(TA), TN, TO(TN)],
-        example: "Example: slice([10, 20, 30, 40, 50], 2, 4) -> [20, 30, 40]"
+        vars: ["A", "I"],
+        types: [TL(TA), TL(TA)]
     },
     ":": {
-        name: "Get list element by index",
-        func: (x, i) => x[i - 1],
+        name: "Range pair",
+        func: (a, b) => {
+            return [a, b]
+        },
         schema: [-1, 1],
-        vars: ["x", "i"],
-        types: [TL(TA), TN],
-        example: "Example:\nb = [2, 4, [6, 8]]\nb:1 -> 2\nb:3:1 -> 6"
+        vars: ["a", "b"],
+        types: [TN, TN]
+    },
+    ":2": {
+        name: "Range pair",
+        func: (a) => {
+            return [-1, a]
+        },
+        schema: [1],
+        vars: ["a"],
+        types: [TN]
+    },
+    ":3": {
+        name: "Range pair",
+        func: (a) => {
+            return [a, -1]
+        },
+        schema: [-1],
+        vars: ["a"],
+        types: [TN]
     },
     "len": {
         name: "List length",
@@ -800,18 +817,22 @@ const OPERATIONS = {
     "tran": {
         name: "Transpose",
         func: (m) => {
-            const tm = []
-            for (let j = 0; j < m[0].length; j++) {
-                tm.push([])
-                for (let i = 0; i < m.length; i++) {
-                    tm[j].push(m[i][j])
+            if (Array.isArray(m[0])) {
+                const tm = []
+                for (let j = 0; j < m[0].length; j++) {
+                    tm.push([])
+                    for (let i = 0; i < m.length; i++) {
+                        tm[j].push(m[i][j])
+                    }
                 }
+                return tm;
+            } else {
+                return m.map((x) => [x])
             }
-            return tm;
         },
         schema: [1],
         vars: ["m"],
-        types: [TL(TL(TN))]
+        types: [TOR(TL(TL(TN)), TL(TN))]
     },
     "inv": {
         name: "Inverse",

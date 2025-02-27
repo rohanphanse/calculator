@@ -190,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function ansAutoFill(event) {
         const e = event.target.innerText
         // First character is symbol
-        if (e.trim().length === 1 && SYMBOLS.includes(e) && !["-", "~", ...UNITS].includes(e)) {
+        if (e.trim().length === 1 && SYMBOLS.includes(e) && !["-", "~", ":", ...UNITS].includes(e)) {
             userInput.innerHTML = `ans${["!", "^"].includes(e) ? "" : " "}${e}${["^"].includes(e) ? "" : "&nbsp"}`
             positionCaret(userInput, userInput.innerText.length)
         }
