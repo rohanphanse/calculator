@@ -318,3 +318,44 @@ function process_index(A, I) {
     }
     return "Invalid indices"
 }
+
+function parse_if(str) {
+    const tokens = str.match(/\bif\b|\bthen\b|\belse\b|[^\s]+/g)
+    let index = 0
+    function parse_if_expr() {
+        if (tokens[index] === "if") {
+            index++
+            let condition = []
+            while (tokens[index] !== "then") {
+                condition.push(tokens[index++])
+            }
+            index++
+            let then_branch = parse_if_expr()
+            let else_branch = null
+            if (tokens[index] === "else") {
+                index++
+                else_branch = parse_if_expr()
+            }
+            return { cond: condition.join(" "), then: then_branch, else: else_branch }
+        } else {
+            let expr = []
+            while (index < tokens.length && !["if", "then", "else"].includes(tokens[index])) {
+                expr.push(tokens[index++])
+            }
+            return expr.join(" ")
+        }
+    }
+    return parse_if_expr()
+}
+
+function eval_if(if_st, calc) {
+    if (typeof if_st === "string") {
+        return calc.calculate(if_st, { noAns: true, noRound: true })
+    }
+    const value = calc.calculate(if_st.cond, { noAns: true })
+    if (value) {
+        return eval_if(if_st.then, calc)
+    } else {
+        return eval_if(if_st.else, calc)
+    }
+}

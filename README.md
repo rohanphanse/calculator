@@ -4,13 +4,13 @@ An intuitive and easy-to-use web calculator with the power of functional program
 
 My goal for this project was to create a web calculator that offered standard calculator functions as well as more powerful features from programming languages through a simple and accessible syntax.
 
-As a challenge to myself, I decided not to use any external libraries. The entire calculator including the parser, evaluation engine, and UI was implemented with around 2000 lines of JavaScript code!
+As a challenge to myself, I decided not to use any external libraries. The entire calculator including the parser, evaluation engine, and UI was implemented with around 3000 lines of JavaScript code!
 
-**Functional programming features:** map, reduce, functions as first-class objects, anonymous functions, type checking, lambda capture, currying
+**Functional programming features:** map, filter, reduce, functions as first-class objects, anonymous functions, type checking, lambda capture, currying, conditional logic
 
 **Terminal features:** up and down arrow keys move through history, use `help` on any function or keyword to learn how to use it
 
-**Additional features:** option to locally save user-defined functions, base conversions, polynomial root solvers
+**Additional features:** locally save user-defined variables and functions, base and unit conversions, polynomial root solvers, linear algebra
 
 **Link to demo: <a href = "https://rohanphanse.github.io/calculator/">https://rohanphanse.github.io/calculator</a>**
 
@@ -22,10 +22,10 @@ As a challenge to myself, I decided not to use any external libraries. The entir
 
 <img src = "https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_2.png" alt = "demo of custom variables and functions" />
 
-## Functional features like lambda capture and currying
+## Use functional paradigms like lambda capture and currying
 
 <img src = "https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_3.png" alt = "demo of lambda capture and currying" />
 
-## Unit conversions, linear algebra operations, and more!
+## Unit conversions, linear algebra, and more!
 
 <img src = "https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_4.png" alt = "demo of built-in functions" />

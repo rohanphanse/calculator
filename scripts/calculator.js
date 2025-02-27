@@ -65,17 +65,13 @@ class Calculator {
                 }
             }
         }
-        if (expression.includes("=")) {
-            // Only 1 equals sign
-            if ((expression.match(/=/g) || []).length === 1) {
-                const before_equals = expression.split("=")[0]
-                if (before_equals.includes("(") && before_equals.includes(")")) {
-                    return this.declareFunction(expression)
-                } else {
-                    return this.declareVariable(expression)
-                }
+        let eq_i = expression.indexOf("=")
+        if (eq_i !== -1 && eq_i > 0 && eq_i < expression.length - 1 && expression[eq_i + 1] !== "=" && !["<", ">", "!"].includes(expression[eq_i - 1])) {
+            const before_equals = expression.slice(0, eq_i)
+            if (before_equals.includes("(") && before_equals.includes(")")) {
+                return this.declareFunction(expression)
             } else {
-                return "Variable assignment error"
+                return this.declareVariable(expression)
             }
         }
         // Loop through string
@@ -124,7 +120,13 @@ class Calculator {
             } else if (/^[a-zA-Z]+$/i.test(expression.charAt(i))) {
                 const string = this.peek(expression, i, "string")
                 // Function parameter
-                if (options?.functionParameters?.includes(string)) {
+                if (string === "if") {
+                    let if_st = parse_if(expression.slice(i))
+                    // console.log("if", if_st)
+                    i += if_st.length - 1
+                    tokens.push("eval_if")
+                    tokens.push(if_st)
+                } else if (options?.functionParameters?.includes(string)) {
                     tokens.push(string)
                     i += string.length - 1
                 // Operation
@@ -140,6 +142,9 @@ class Calculator {
                         return "Answer error"
                     }
                 // Variable
+                } else if (string in this.parameter_context) {
+                    tokens.push(this.parameter_context[string])
+                    i += string.length - 1
                 } else if (string in this.variables) {
                     tokens.push(this.variables[string])
                     i += string.length - 1
@@ -270,12 +275,17 @@ class Calculator {
     }
 
     declareFunction(expression, options = {}) {
+        // console.log("declareFunction", expression)
         try {
-            expression = expression.split("=").map((x) => x.trim())
+            const eq_i = expression.indexOf("=")
+            expression = [
+                expression.slice(0, eq_i).trim(), 
+                expression.slice(eq_i + 1).trim()  
+            ]
             // console.log("declareFunction", expression)
-            if (expression.length !== 2) {
-                return "Function equals error"
-            }
+            // if (expression.length !== 2) {
+            //     return "Function equals error"
+            // }
             if (!(count(expression[0], "(") === 1 
                 && count(expression[0], ")") === 1 
                 && expression[0].indexOf("(") < expression[0].indexOf(")")
@@ -364,6 +374,7 @@ class Calculator {
     }
 
     evaluateFunction(tokens, index) {
+        // console.log("evaluateFunction", tokens, index)
         this.overflow_count++
         if (this.overflow_count > this.overflow_max) {
             return "Overflow error: too many function calls"
@@ -401,6 +412,7 @@ class Calculator {
             }
             // console.log("this.functions", this.functions)
             const result = this.evaluate(value, { noAns: true, noRound: true })
+            // console.log("result", result)
             for (let i = 0; i < func_parameters.length; i++) {
                 delete this.parameter_context[func_parameters[i]]
             }
@@ -534,11 +546,20 @@ class Calculator {
                         const close = tokens.indexOf(`)${i + 1}`)
                         if (close - t === 1) {
                             // Previous token is math function, () => []
-                            if (isMathFunction(tokens[t - 1]) || tokens[t - 1] in this.functions) {
+                            if (t > 0 && isMathFunction(tokens[t - 1]) || tokens[t - 1] in this.functions) {
                                 tokens.splice(t, close - t + 1, new Paren([]))
                             }
                         } else if (tokens.slice(t + 1, close).includes(",")) {
-                            const array = this.initializeArray(tokens.slice(t + 1, close))
+                            const ts = tokens.slice(t + 1, close)
+                            for (let i = 0; i < ts.length; i++) {
+                                if (ts[i] instanceof Paren) {
+                                    if (i > 0 && Array.isArray(ts[i - 1])) {
+                                        const result = this.evaluateSingle([ts[i - 1], ts[i]])
+                                        ts.splice(i - 1, 2, result)
+                                    }
+                                }
+                            }
+                            const array = this.initializeArray(ts)
                             if (typeof array === "string") {
                                 return array
                             } 
@@ -549,7 +570,11 @@ class Calculator {
                             if (typeof result === "string") {
                                 return result      
                             }
-                            tokens.splice(t, close - t + 1, new Paren([result]))
+                            if (result instanceof Operation && result.op !== ":") {
+                                tokens.splice(t, close - t + 1, result)
+                            } else {
+                                tokens.splice(t, close - t + 1, new Paren([result]))
+                            }
                         }
                         break
                     }
@@ -600,7 +625,7 @@ class Calculator {
     evaluateSingle(tokens) {
         // console.log("evaluateSingle", tokens)
         if (tokens.length > 1) {
-            // Count number of math functions
+            // Index
             for (let i = 0; i < tokens.length; i++) {
                 if (tokens[i] instanceof Paren) {
                     if (i > 0 && Array.isArray(tokens[i - 1])) {
@@ -609,6 +634,7 @@ class Calculator {
                     }
                 }
             }
+            // Count number of math functions
             let function_count = 0
             for (const t of tokens) {
                 if (typeof t === "string" && (isMathFunction(t) || t in this.functions)) {
@@ -691,7 +717,7 @@ class Calculator {
         }
 
         // One token to evaluate
-        if (typeof tokens[0] === "number" || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation) {
+        if (typeof tokens[0] === "number" || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean") {
             return tokens[0]
         } else if (CONSTANTS.includes(tokens[0])) {
             return OPERATIONS[tokens[0]].func()
@@ -835,13 +861,18 @@ class Calculator {
     calculate(expression, options = {}) {
         // console.log("calculate", expression)
         this.overflow_count = 0
-        const tokens = this.parse(expression)
-        // console.log("parse", tokens)
-        if (Array.isArray(tokens)) {
-            return this.evaluate(tokens, options)
-        } else {
-            return tokens
+        let result
+        expression = expression.split(";")
+        for (const e of expression) {
+            const tokens = this.parse(e)
+            // console.log("parse", tokens)
+            if (Array.isArray(tokens)) {
+                result = this.evaluate(tokens, options)
+            } else {
+                result = tokens
+            }
         }
+        return result
     }
 }
 

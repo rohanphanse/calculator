@@ -1,6 +1,7 @@
+let calculator
 document.addEventListener("DOMContentLoaded", () => {
     // Calculator
-    const calculator = new Calculator()
+    calculator = new Calculator()
 
     // Data
     let history = []
@@ -200,7 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function handleKeyDown(event) {
         const user_input = userInput.innerText.trim()
         // Enter key
-        if (event.keyCode === 13) {
+        if (!event.shiftKey && event.keyCode === 13) {
             // Prevent newline from enter key
             event.preventDefault()
             // Prevent empty queries
@@ -261,7 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     fs = fs.slice(0, index) + calculator.functions[name].string + fs.slice(index + name.length)
                                 }
                                 // console.log("fs", fs)
-                                output = `Saved ${fs}`
+                                output = `Saved ${fs.replaceAll(",", ", ")}`
                                 let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
                                 saved_functions[op] = fs
                                 localStorage.setItem("saved_functions", JSON.stringify(saved_functions))
@@ -275,7 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 let value = JSON.stringify(calculator.variables[op])
                                 value = value.replace(/\{"op":"([^"]+)"\}/g, "$1")
                                 value = value.replaceAll('"', "")
-                                output = `Saved ${op} = ${value}`
+                                output = `Saved ${op} = ${value.replaceAll(",", ", ")}`
                                 let saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")
                                 saved_variables[op] = value
                                 localStorage.setItem("saved_variables", JSON.stringify(saved_variables))

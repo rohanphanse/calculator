@@ -66,16 +66,20 @@ const ORDER_OF_OPERATIONS = [
     ["/", "*"],         // Division then multiplication
     ["-"],        // Sutraction, negation, and then addition
     ["+"],
+    ["==", "!=", "<", ">", ">=", "<="],
+    ["not"],
+    ["and"],
+    ["or"],
     ["~", "&", "|", "xor"],
     ["<<", ">>"],
 ]
 
 // Subsets
-const CONSTANTS = ["pi", "e", "phi", "inf", "units"]
-const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross"]
+const CONSTANTS = ["pi", "e", "phi", "inf", "units", "true", "false"]
+const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
-const KEYWORDS = ["ans", "clear", "help", "save"]
+const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else"]
 const LIST_OPERATIONS = ["mean", "median", "sd", "sort", "sum", "len", "max", "min", "concat", "zeros"]
 
 // Types
@@ -88,6 +92,7 @@ const TF = "function"
 const TO = (t) => `optional[${t}]`
 const TI = "invalid"
 const TU = "unit"
+const TB = "bool"
 const bases = { "0b": 2, "0x": 16, "0o": 8 }
 
 // Operations
@@ -652,6 +657,27 @@ const OPERATIONS = {
         calc: true,
         example: "Example:\nf(x) = x^2\nmap(range(1, 5), @f)\nOutput: [1, 4, 9, 16, 25]"
     },
+    "filter": {
+        name: "Filter",
+        func: (list, func, calc) => {
+            let output = []
+            for (const e of list) {
+                let tokens = [func.op, new Paren([e])]
+                let result = calc.evaluate(tokens, { noAns: true, noRound: true })
+                if (typeof result === "string") {
+                    return result
+                }
+                if (result) {
+                    output.push(e)
+                }
+            }
+            return output
+        },
+        schema: [1],
+        vars: ["x", "f"],
+        types: [TL(TA), TF],
+        calc: true,
+    },
     "reduce": {
         name: "Reduce",
         func: (list, func, calc) => {
@@ -993,7 +1019,110 @@ const OPERATIONS = {
         schema: [],
         vars: [],
         types: []
-    }
+    },
+    "==": {
+        name: "Equal",
+        func: (a, b) => {
+            return a === b
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TA, TA]
+    },
+    "!=": {
+        name: "Not equal",
+        func: (a, b) => {
+            return a !== b
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TA, TA]
+    },
+    "true": {
+        name: "True",
+        func: () => true,
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "false": {
+        name: "False",
+        func: () => false,
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "eval_if": {
+        name: "Evaluate if statement",
+        func: (if_st, calc) => eval_if(if_st, calc),
+        schema: [1],
+        vars: [],
+        types: [TI],
+        calc: true,
+    },
+    "<": {
+        name: "Less than",
+        func: (a, b) => {
+            return a < b
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TA, TA]
+    },
+    "<=": {
+        name: "Less than or equal",
+        func: (a, b) => {
+            return a <= b
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TA, TA]
+    },
+    ">": {
+        name: "Greater than",
+        func: (a, b) => {
+            return a > b
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TA, TA]
+    },
+    ">=": {
+        name: "Greater than or equal",
+        func: (a, b) => {
+            return a >= b
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TA, TA]
+    },
+    "and": {
+        name: "And",
+        func: (a, b) => {
+            return a && b ? true : false
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TA, TA]
+    },
+    "or": {
+        name: "Or",
+        func: (a, b) => {
+            return a || b ? true : false
+        },
+        schema: [-1, 1],
+        vars: ["a", "b"],
+        types: [TA, TA]
+    },
+    "not": {
+        name: "Not",
+        func: (x) => {
+            return !x ? true : false
+        },
+        schema: [1],
+        vars: ["x"],
+        types: [TA]
+    },
 }
 for (let i = 0; i < UNITS.length; i++) {
     OPERATIONS[UNITS[i]] = {
@@ -1068,6 +1197,8 @@ function get_param_types(params) {
     for (const p of params) {
         if (typeof p === "number") {
             type_list.push(TN)
+        } else if (typeof p === "boolean") {
+            type_list.push(TB)
         } else if (p instanceof String) {
             type_list.push(TS)
         } else if (Array.isArray(p)) {
