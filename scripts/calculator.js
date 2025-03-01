@@ -223,7 +223,7 @@ class Calculator {
                 check = (n) => isNaN(n)
                 break
             case "string":
-                check = (e) => !/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(e)
+                check = (e) => !/^[a-zA-Z][a-zA-Z0-9_']*$/i.test(e)
                 break
         }
         while (index + length <= string.length) {
@@ -244,7 +244,7 @@ class Calculator {
             let [name, value] = expression.split("=").map((x) => x.trim())
             let status = 0
             // Name is alphabetic
-            if (/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name)) {
+            if (/^[a-zA-Z][a-zA-Z0-9_']*$/i.test(name)) {
                 // Name is an operation or keyword
                 if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.functions) {
                     return "Variable assignment error > name taken error"
@@ -293,7 +293,7 @@ class Calculator {
                 return "Function declaration error > parentheses error"
             }
             const name = expression[0].slice(0, expression[0].indexOf("("))
-            if (!options?.ignore_name && !/^[a-zA-Z][a-zA-Z0-9_]*$/i.test(name)) {
+            if (!options?.ignore_name && !/^[a-zA-Z][a-zA-Z0-9_']*$/i.test(name)) {
                 return "Function declaration error > name error"
             }
             if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.variables) {
@@ -307,7 +307,7 @@ class Calculator {
             )) {
                 return "Function declaration error > invalid parameters"
             }
-            const value = this.parse(expression[1], { functionParameters: parameters, ignore_vars: options.ignore_vars })      
+            const value = this.parse(expression[1], { functionParameters: [...parameters, name], ignore_vars: options.ignore_vars })      
     
             if (typeof value === "string") {
                 return `Function declaration error > ${value}` 
@@ -750,7 +750,7 @@ class Calculator {
                 }
             }
         } else {
-            // console.log("evaluateOperator error")
+            console.log("evaluateOperator error")
             return "Execution error"
         }
     }
@@ -852,7 +852,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            // console.log("exec error", err)
+            console.log("exec error", err)
             return `${operation.name} error > execution error`
         }
     }

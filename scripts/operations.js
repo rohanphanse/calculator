@@ -1123,6 +1123,51 @@ const OPERATIONS = {
         vars: ["x"],
         types: [TA]
     },
+    "diff": {
+        name: "Differentiation",
+        func: (f, calc) => {
+            if (f instanceof Operation) {
+                f = f.op
+            }
+            const tokens = calc.functions[f].value
+            for (let i = 0; i < tokens.length; i++) {
+                if (typeof tokens[i] === "string") {
+                    if (tokens[i].startsWith("(")) {
+                        tokens[i] = "("
+                    }
+                    if (tokens[i].startsWith(")")) {
+                        tokens[i] = ")"
+                    }
+                }
+            }
+            const symbols = ["+", "-", "*", "/", "^", "(", ")", "sin", "cos", "ln"]
+            for (let i = 0; i < tokens.length - 1; i++) {
+                if (!symbols.includes(tokens[i]) && !symbols.includes(tokens[i + 1])) {
+                    tokens.splice(i + 1, 0, "*")
+                } 
+                if (!symbols.includes(tokens[i]) && tokens[i + 1] === "(") {
+                    tokens.splice(i + 1, 0, "*")
+                }
+                if (!symbols.includes(tokens[i]) && ["sin", "cos", "ln"].includes(tokens[i + 1])) {
+                    tokens.splice(i + 1, 0, "*")
+                }
+            }
+            // console.log("diff tokens", tokens)
+            const x = calc.functions[f].parameters[0]
+            const expressionTree = diff_tree(tokens)
+            let derivative = differentiate(expressionTree, x)
+            output = tree_to_string(diff_natural_simplify(derivative))
+            if (f.startsWith("@")) {
+                f = "f"
+            }
+            calc.calculate(`${f}'(${x}) = ${output}`)
+            return new String(`${f}'(${x}) = ${output}\nDerivative ${f}' declared`)
+        },
+        schema: [1],
+        vars: ["f"],
+        types: [TF],
+        calc: true
+    }
 }
 for (let i = 0; i < UNITS.length; i++) {
     OPERATIONS[UNITS[i]] = {

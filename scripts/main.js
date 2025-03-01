@@ -301,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         result.style.textAlign = "left"
                         result.style.margin = "10px 0 10px 20%"
                     }
-                    if (typeof output !== "string" && output < 100) {
+                    if (`${output}`.length < 100) {
                         result.style.cursor = "pointer"
                         result.addEventListener("click", (event) => {
                             event.preventDefault()

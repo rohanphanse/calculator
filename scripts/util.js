@@ -359,3 +359,386 @@ function eval_if(if_st, calc) {
         return eval_if(if_st.else, calc)
     }
 }
+
+// Credit to Claude for differentiation code
+function differentiate(node, variable) {
+    // console.log("differentiate", node, variable)
+    if (!node) return null
+    if (typeof node.value === "number") {
+        return { value: 0 }
+    }
+    if (typeof node.value === "string") {
+        if (node.value === variable) {
+            return { value: 1 }
+        }
+        return { value: 0 }
+    }
+    switch (node.op) {
+        case "+":
+        case "-":
+            return {
+                op: node.op,
+                left: differentiate(node.left, variable),
+                right: differentiate(node.right, variable)
+            }
+        case "*":
+            return {
+                op: "+",
+                left: { op: "*", left: differentiate(node.left, variable), right: node.right },
+                right: { op: "*", left: node.left, right: differentiate(node.right, variable) }
+            }
+        case "/":
+            return {
+                op: "/",
+                left: { op: "-", left: { op: "*", left: differentiate(node.left, variable), right: node.right },
+                right: { op: "*", left: node.left, right: differentiate(node.right, variable) } }, right: { op: "^", left: node.right, right: { value: 2 } }
+            }
+            
+        case "^":
+            if (
+                typeof node.left?.value === "string" && 
+                node.left.value === variable && 
+                typeof node.right?.value === "number"
+            ) {
+                const exponent = node.right.value
+                return {
+                    op: "*",
+                    left: { value: exponent },
+                    right: { op: "^", left: { value: variable }, right: { value: exponent - 1 } }
+                }
+            }
+            else {
+                if (
+                    typeof node.left?.value === "number" && 
+                    typeof node.right?.value === "string" && 
+                    node.right.value === variable
+                ) {
+                    return {
+                        op: "*",
+                        left: { op: "*", left: { op: "ln", arg: node.left }, right: node },
+                        right: differentiate(node.right, variable)
+                    }
+                }
+                else {
+                    return {
+                        op: "*",
+                        left: { op: "*", left: node.right, right: { op: "^", left: node.left, right: { op: "-",  left: node.right, right: { value: 1 } } } },
+                        right: differentiate(node.left, variable)
+                    }
+                }
+            }
+        case "sin":
+            return {
+                op: "*",
+                left: { op: "cos", arg: node.arg },
+                right: differentiate(node.arg, variable)
+            }
+        case "cos":
+            return {
+                op: "*",
+                left: { op: "*", left: { value: -1 }, right: { op: "sin", arg: node.arg } },
+                right: differentiate(node.arg, variable)
+            }
+        case "exp":
+            return {
+                op: "*",
+                left: { op: "exp", arg: node.arg },
+                right: differentiate(node.arg, variable)
+            }
+        case "ln":
+            return {
+                op: "*",
+                left: { op: "/", left: { value: 1 }, right: node.arg },
+                right: differentiate(node.arg, variable)
+            }
+        default:
+            return { value: 0 }
+    }
+}
+
+function diff_simplify(node) {
+    // console.log("diff_simplify", node)
+    if (!node) return null
+    if (node.left) node.left = diff_simplify(node.left)
+    if (node.right) node.right = diff_simplify(node.right)
+    if (node.arg) node.arg = diff_simplify(node.arg)
+    if ((node.op === "+" || node.op === "-") && is_zero(node.right)) {
+        return node.left
+    }
+    if (node.op === "+" && is_zero(node.left)) {
+        return node.right
+    }
+    if (node.op === "*") {
+        if (is_zero(node.left) || is_zero(node.right)) {
+            return { value: 0 }
+        }
+        if (is_one(node.left)) {
+            return node.right
+        }
+        if (is_one(node.right)) {
+            return node.left
+        }
+        if (typeof node.left?.value === "number" && typeof node.right?.value === "string") {
+            return { type: "coefficient", coefficient: node.left.value, variable: node.right.value }
+        }
+    }
+    if (node.op === "/" && is_one(node.right)) {
+        return node.left
+    }
+    if (node.op === "^") {
+        if (is_zero(node.right)) {
+            return { value: 1 }
+        }
+        if (is_one(node.right)) {
+            return node.left
+        }
+        if (is_zero(node.left)) {
+            return { value: 0 }
+        }
+    }
+    if (node.op && node.left && typeof node.left.value === "number" && node.right && typeof node.right.value === "number") {
+        const a = node.left.value
+        const b = node.right.value
+        switch (node.op) {
+            case "+": return { value: a + b }
+            case "-": return { value: a - b }
+            case "*": return { value: a * b }
+            case "/": return { value: a / b }
+            case "^": return { value: Math.pow(a, b) }
+        }
+    }
+    if ((node.op === "+" || node.op === "-") && node.left?.type === "coefficient" && node.right?.type === "coefficient" && node.left.variable === node.right.variable) {
+        const newCoefficient = node.op === "+" ? node.left.coefficient + node.right.coefficient : node.left.coefficient - node.right.coefficient
+        return { type: "coefficient", coefficient: newCoefficient,variable: node.left.variable }
+    }
+    return node
+}
+
+function is_zero(node) {
+    return node && typeof node.value === "number" && node.value === 0
+}
+
+function is_one(node) {
+    return node && typeof node.value === "number" && node.value === 1
+}
+
+function diff_tree(tokens) {
+    // console.log("diff_tree", tokens)
+    let index = 0
+    function parse_expr() {
+        let node = parse_term()
+        while (index < tokens.length && ["+", "-"].includes(tokens[index])) {
+            const op = tokens[index]
+            index++
+            node = { op: op, left: node, right: parse_term() }
+        }
+        return node
+    }
+    function parse_term() {
+        let node = parse_power()
+        while (index < tokens.length && (tokens[index] === "*" || tokens[index] === "/")) {
+            const op = tokens[index]
+            index++
+            node = { op: op, left: node, right: parse_power() }
+        }
+        if (typeof node?.value === "number" && index < tokens.length && typeof tokens[index] === "string" && /^[a-zA-Z]$/.test(tokens[index])) {
+            const variable = { value: tokens[index] }
+            index++
+            return { op: "*", left: node, right: variable }
+        }
+        return node
+    }
+    function parse_power() {
+        let base = parse_factor()
+        if (index < tokens.length && tokens[index] === "^") {
+            index++
+            if (base && typeof base.value === "string" && base.value === "e") {
+                const exponent = parse_factor()
+                return { op: "exp", arg: exponent }
+            } else {
+                const exponent = parse_factor()
+                return { op: "^", left: base, right: exponent }
+            }
+        }
+        return base
+    }
+    function parse_factor() {
+        if (index >= tokens.length) return null
+        const token = tokens[index]
+        if (typeof token === "number") {
+            index++
+            return { value: token }
+        }
+        else if (typeof token === "string" && /^[a-zA-Z]$/.test(token)) {
+            index++
+            return { value: token }
+        }
+        else if (token.startsWith("(")) {
+            index++
+            const expr = parse_expr()
+            if (tokens[index].startsWith(")")) {
+                index++
+            }
+            return expr
+        }
+        else if (["sin", "cos", "ln"].includes(token)) {
+            index++
+            if (tokens[index].startsWith("(")) {
+                index++
+                const arg = parse_expr()
+                if (tokens[index].startsWith(")")) {
+                    index++
+                }
+                return { op: token, arg: arg }
+            }
+        }
+        return null
+    }
+    return parse_expr()
+}
+
+function diff_natural_simplify(node) {
+    // console.log("diff_natural_simplify", node)
+    node = diff_simplify(node);
+    if (node.op === "*" && typeof node.left?.value === "number" && typeof node.right?.value === "string") {
+        return { type: "coefficient", coefficient: node.left.value, variable: node.right.value }
+    }
+    if (node.left) node.left = diff_natural_simplify(node.left)
+    if (node.right) node.right = diff_natural_simplify(node.right)
+    if (node.arg) node.arg = diff_natural_simplify(node.arg)
+    if (node.op === "-" && node.right && node.right.op === "-") {
+        return node.right.right
+    }
+    if ((node.op === "sin" || node.op === "cos") && node.arg && node.arg.op === "-") {
+        return {
+            op: node.op,
+            arg: {
+                op: "negate",
+                arg: node.arg.right
+            }
+        }
+    }
+    if (node.op === "*" && node.right && node.right.op === "sin" && 
+        node.left && node.left.op === "cos" && 
+        node.left.arg && node.left.arg.op === "negate") {
+        return {
+            op: "*",
+            left: node.left,
+            right: node.right
+        }
+    }
+    if (node.op === "*" && is_negative_one(node.left)) {
+        return {
+            op: "negate",
+            arg: node.right
+        }
+    }
+    if (node.op === "*" && is_negative_one(node.right)) {
+        return {
+            op: "negate",
+            arg: node.left
+        }
+    }
+    return node
+}
+
+function is_negative_one(node) {
+    return node && typeof node.value === "number" && node.value === -1
+}
+
+function tree_to_string(node) {
+    // console.log("tree_to_string", node)
+    if (!node) return ""
+    if (node.op === "negate") {
+        const argStr = tree_to_string(node.arg)
+        if (node.arg.op === "+" || node.arg.op === "-") {
+            return `-(${argStr})`
+        } else {
+            return `-${argStr}`
+        }
+    }
+    if (node.type === "coefficient") {
+        if (node.coefficient === 1) {
+            return node.variable
+        } else if (node.coefficient === -1) {
+            return `-${node.variable}`
+        } else {
+            return `${node.coefficient}${node.variable}`
+        }
+    }
+    if (typeof node.value !== "undefined") {
+        return node.value.toString()
+    }
+    let leftStr, rightStr, argStr
+    switch (node.op) {
+        case "+":
+            leftStr = tree_to_string(node.left)
+            rightStr = tree_to_string(node.right)
+            if (rightStr.startsWith("-")) {
+                return `${leftStr} - ${rightStr.substring(1)}`
+            }
+            return `${leftStr} + ${rightStr}`
+        case "-":
+            leftStr = tree_to_string(node.left)
+            rightStr = tree_to_string(node.right)
+            return `${leftStr}${leftStr.length > 0 ? " " : ""}-${leftStr.length > 0 ? " " : ""}${rightStr}`
+        case "*":
+            leftStr = tree_to_string(node.left)
+            rightStr = tree_to_string(node.right)
+            if (typeof node.left?.value === "number") {
+                const value = node.left.value
+                if (value === 1) {
+                    return rightStr
+                }
+                if (value === -1) {
+                    if (node.right.op === "+" || node.right.op === "-") {
+                        return `-(${rightStr})`
+                    } else {
+                        return `-${rightStr}`
+                    }
+                }
+                if (typeof node.right?.value === "string") {
+                    return `${leftStr}${rightStr}`
+                }
+            }
+            if (node.left?.op === "+" || node.left?.op === "-") {
+                leftStr = `(${leftStr})`
+            }
+            if (node.right?.op === "+" || node.right?.op === "-") {
+                rightStr = `(${rightStr})`
+            }
+            
+            return `${leftStr} * ${rightStr}`
+        case "/":
+            leftStr = tree_to_string(node.left)
+            rightStr = tree_to_string(node.right)
+            if (node.left?.op) {
+                leftStr = `(${leftStr})`
+            }
+            if (node.right?.op) {
+                rightStr = `(${rightStr})`
+            }
+            return `${leftStr} / ${rightStr}`
+        case "^":
+            leftStr = tree_to_string(node.left)
+            rightStr = tree_to_string(node.right)
+            if (node.left?.op) {
+                leftStr = `(${leftStr})`
+            }
+            return `${leftStr}^${rightStr}`
+        case "sin":
+        case "cos":
+        case "exp":
+        case "ln":
+            argStr = tree_to_string(node.arg)
+            if (node.arg?.op === "negate") {
+                const innerArg = tree_to_string(node.arg.arg)
+                return `${node.op}(-${innerArg})`
+            } else if (argStr.startsWith("- ")) {
+                return `${node.op}(-${argStr.substring(2)})`
+            }
+            return `${node.op}(${argStr})`
+        default:
+            return ""
+    }
+}
