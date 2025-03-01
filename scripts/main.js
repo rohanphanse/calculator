@@ -85,13 +85,22 @@ document.addEventListener("DOMContentLoaded", () => {
             const u = userInput.innerText 
             let t = button.dataset.text || button.innerText
             let length = t.length
-            if (t.includes("|") && !button.dataset.override) {
-                const pipe_index = t.indexOf("|")
-                t = t.slice(0, pipe_index) + t.slice(pipe_index + 1)
-                length = pipe_index
-            }
-            userInput.innerText = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
-            positionCaret(userInput, index + length)
+            // if (t.includes("|") && !button.dataset.override) {
+            //     const pipe_index = t.indexOf("|")
+            //     t = t.slice(0, pipe_index) + t.slice(pipe_index + 1)
+            //     length = pipe_index
+            // }
+            // ${u.slice(0, index)}${t}${u.slice(index, u.length)}
+            userInput.innerText = `help ${t}`
+            userInput.dispatchEvent(new KeyboardEvent("keydown", {
+                key: "Enter",
+                code: "Enter",
+                which: 13,
+                keyCode: 13,
+                bubbles: true,
+                cancelable: true
+            }))
+            // positionCaret(userInput, userInput.innerText.length)
         })
     }
 

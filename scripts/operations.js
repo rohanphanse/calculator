@@ -1210,6 +1210,27 @@ const HELP = {
         schema: [1],
         vars: ["func"],
         types: [TF]
+    },
+    "if": {
+        name: "If statement",
+        schema: [],
+        vars: [],
+        types: [],
+        example: "Example: if x > 10 then 10 else x \nif x == 20 then 2 else if x == 10 then 1 else 0"
+    },
+    "then": {
+        name: "If statement",
+        schema: [],
+        vars: [],
+        types: [],
+        example: "Example: if x > 10 then 10 else x \nif x == 20 then 2 else if x == 10 then 1 else 0"
+    },
+    "else": {
+        name: "If statement",
+        schema: [],
+        vars: [],
+        types: [],
+        example: "Example: if x > 10 then 10 else x \nif x == 20 then 2 else if x == 10 then 1 else 0"
     }
 }
 
