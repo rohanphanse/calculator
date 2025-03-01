@@ -35,7 +35,8 @@ function roundArray(a, p = 0) {
 }
 
 function set_precision(value, p) {
-    if (value === 0) return 0
+    console.log(value)
+    if (value === 0 || !value.toString().includes(".")) return value
     return parseFloat(value.toPrecision(p))
 }
 

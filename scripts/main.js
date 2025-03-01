@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
  
     // States
     let UPDATE_DIGITS = false
+    let DRAGGING = false
 
     // Elements
     const interface = document.getElementById("interface")
@@ -85,22 +86,25 @@ document.addEventListener("DOMContentLoaded", () => {
             const u = userInput.innerText 
             let t = button.dataset.text || button.innerText
             let length = t.length
-            // if (t.includes("|") && !button.dataset.override) {
-            //     const pipe_index = t.indexOf("|")
-            //     t = t.slice(0, pipe_index) + t.slice(pipe_index + 1)
-            //     length = pipe_index
-            // }
-            // ${u.slice(0, index)}${t}${u.slice(index, u.length)}
-            userInput.innerText = `help ${t}`
-            userInput.dispatchEvent(new KeyboardEvent("keydown", {
-                key: "Enter",
-                code: "Enter",
-                which: 13,
-                keyCode: 13,
-                bubbles: true,
-                cancelable: true
-            }))
-            // positionCaret(userInput, userInput.innerText.length)
+            if (t.includes("|") && !button.dataset.override) {
+                const pipe_index = t.indexOf("|")
+                t = t.slice(0, pipe_index) + t.slice(pipe_index + 1)
+                length = pipe_index
+            }
+            if (u.length === 0) {
+                userInput.innerText = `help ${t.replaceAll("()", "")}`
+                userInput.dispatchEvent(new KeyboardEvent("keydown", {
+                    key: "Enter",
+                    code: "Enter",
+                    which: 13,
+                    keyCode: 13,
+                    bubbles: true,
+                    cancelable: true
+                }))
+            } else {
+                userInput.innerText = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
+                positionCaret(userInput, index + length)
+            }
         })
     }
 
@@ -395,42 +399,40 @@ function enableDragToScroll(element) {
         y: 0 
     }
 
-    // Handle mouse down
     function handleMouseDown(event) {
-        CAN_PRESS = false
-
-        // Update position
+        DRAGGING = false
         pos = {
             left: element.scrollLeft,
             top: element.scrollTop,
             x: event.clientX,
             y: event.clientY,
-        };
-
-        // Add mouse event listeners
+        }
         document.addEventListener("mousemove", handleMouseMove)
         document.addEventListener("mouseup", handleMouseUp)
     }
 
-    // Handle mouse move
-    const handleMouseMove = function(event) {
-        // Distance mouse has been moved
+    const handleMouseMove = (event) => {
         const dx = event.clientX - pos.x
         const dy = event.clientY - pos.y
+        element.scrollTop = pos.top - dy
+        element.scrollLeft = pos.left - dx
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            DRAGGING = true
+        }
+    }
 
-        // Scroll the element
-        element.scrollTop = pos.top - dy;
-        element.scrollLeft = pos.left - dx;
-    };
-
-    // Handle mouse up
-    const handleMouseUp = function() {
-        CAN_PRESS = true
-
-        // Remove mouse event listeners
+    const handleMouseUp = (event) => {
         document.removeEventListener("mousemove", handleMouseMove)
         document.removeEventListener("mouseup", handleMouseUp)
-    };
+        if (DRAGGING) {
+            const preventClick = (e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                element.removeEventListener("click", preventClick, true)
+            };
+            element.addEventListener("click", preventClick, true)
+        }
+    }
 
     // Attach the handler
     element.addEventListener("mousedown", handleMouseDown)

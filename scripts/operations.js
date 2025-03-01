@@ -1,6 +1,6 @@
 // Units
 const UNITS = ["km", "meter", "cm", "mm", "um", "nm", "ft", "mi", "kg", "gram", "mg", "lb", "oz", "se", "mn", "hr", "ms", "day", "yr", "ly", "wk", "joule", "cal", "kcal", "au", "kjoule", "ev", "byte", "kb", "mb", "gb", "tb", "pb", "eb", "zb", "yb", "m3", "cm3", "liter", "gal", "ml", "ft3", "in", "kel", "cel", "far"]
-const UNIT_NAMES = { "km": "Kilometer", "meter": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Killogram", "gram": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "se": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "joule": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kjoule": "Kilojoule", "ev": "Electron Volt", "byte": "Byte", "kb": "Kilobyte", "mb": "Megabyte", "gb": "Gigabyte", "tb": "Terabyte", "pb": "Petabyte", "eb": "Exabyte", "zb": "Zettabyte", "yb": "Yottabyte", "m3": "Cubic Meter", "cm3": "Cubic Centimer", "liter": "Liter", "gal": "Gallon", "ml": "Milliiter", "ft3": "Cubic Foot", "in": "Inch", "kel": "Kelvin", "cel": "Celcius", "far": "Fahrenheit" }
+const UNIT_NAMES = { "km": "Kilometer", "meter": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Kilogram", "gram": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "se": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "joule": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kjoule": "Kilojoule", "ev": "Electron Volt", "byte": "Byte", "kb": "Kilobyte", "mb": "Megabyte", "gb": "Gigabyte", "tb": "Terabyte", "pb": "Petabyte", "eb": "Exabyte", "zb": "Zettabyte", "yb": "Yottabyte", "m3": "Cubic Meter", "cm3": "Cubic Centimer", "liter": "Liter", "gal": "Gallon", "ml": "Milliiter", "ft3": "Cubic Foot", "in": "Inch", "kel": "Kelvin", "cel": "Celcius", "far": "Fahrenheit" }
 const FROM_UNITS = {
     "km": 1000,
     "meter": 1,
@@ -57,15 +57,15 @@ for (const u in FROM_UNITS) {
 }
 // Order of operations
 const ORDER_OF_OPERATIONS = [
-    [":"],
     ["!"],              // Unary operations
-    ["^", "%", "mod"],         // Exponentiation and modulus
+    ["^", "mod"],         // Exponentiation and modulus
     ["choose", "perm", "cross"],
     ["to"],
     UNITS,
     ["/", "*"],         // Division then multiplication
     ["-"],        // Sutraction, negation, and then addition
     ["+"],
+    [":"],
     ["==", "!=", "<", ">", ">=", "<="],
     ["not"],
     ["and"],
@@ -76,7 +76,7 @@ const ORDER_OF_OPERATIONS = [
 
 // Subsets
 const CONSTANTS = ["pi", "e", "phi", "inf", "units", "true", "false"]
-const SYMBOLS = ["+", "-", "*", "/", "^", "!", "%", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not"]
+const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else"]
@@ -115,7 +115,8 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))]
+        types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
+        example: "Examples:\n  1. Add numbers: 2 + 2 -> 4\n  2. Add tensors: [[[1, 2]]] + [[[2, 1]]] -> [[[3, 3]]]\n  3. Add numbers and tensors: 2 + [1, 2] -> [3, 4]"
     },
     "-": {
         name: "Subtraction",
@@ -185,7 +186,8 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TOR(TN, TOR(TL(TL(TN)), TL(TN))), TOR(TN, TOR(TL(TL(TN)), TL(TN)))]
+        types: [TOR(TN, TOR(TL(TN), TL(TL(TN)))), TOR(TN, TOR(TL(TN), TL(TL(TN))))],
+        example: "Examples:\n  1. Multiply numbers: 2 * 2 -> 4\n  2. Dot product: [1, 2] * [3, 4] -> 11\n  3. Matrix multiplication:\n     [[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]"
     },
     "/": {
         name: "Division",
@@ -207,13 +209,6 @@ const OPERATIONS = {
         schema: [-1],
         vars: ["x"],
         types: [TN]
-    },
-    "%": {
-        name: "Modulus",
-        func: (a, b) => a % b,
-        schema: [-1, 1],
-        vars: ["a", "b"],
-        types: [TN, TN]
     },
     "mod": {
         name: "Modulus",
@@ -469,7 +464,7 @@ const OPERATIONS = {
         types: [TL(TN)]
     },
     "sort": {
-        name: "Sort in non-decreasing order",
+        name: "Sort",
         func: (nums) => {
             return [...nums].sort((a, b) => a - b)
         },
@@ -621,21 +616,22 @@ const OPERATIONS = {
         calc: true
     },
     "range": {
-        name: "Inclusive range",
-        func: (a, b) => {
+        name: "Range",
+        func: (a, b, step = 1) => {
             let range = []
             if (!b) {
                 b = a
                 a = 1
             }
-            for (let n = a; n <= b; n++) {
+            for (let n = a; n <= b; n += step) {
                 range.push(n)
             }
             return range
         },
         schema: [1],
-        vars: ["start", "end"],
-        types: [TN, TO(TN)]
+        vars: ["start", "end", "step"],
+        types: [TN, TO(TN), TO(TN)],
+        example: "Examples:\n  1. range(5) -> [1, 2, 3, 4, 5]\n  2. range(3, 5) -> [3, 4, 5]\n  3. range(3, 5, 0.5) -> [3, 3.5, 4, 4.5, 5]"
     },
     "map": {
         name: "Map",
@@ -655,7 +651,7 @@ const OPERATIONS = {
         vars: ["x", "f"],
         types: [TL(TA), TF],
         calc: true,
-        example: "Example:\nf(x) = x^2\nmap(range(1, 5), @f)\nOutput: [1, 4, 9, 16, 25]"
+        example: "Examples:\n  1. f(x) = x^2; map(range(1, 3), f) -> [1, 4, 9]\n  2. map(range(1, 3), @(x) = x^2) -> [1, 4, 9]"
     },
     "filter": {
         name: "Filter",
@@ -677,6 +673,7 @@ const OPERATIONS = {
         vars: ["x", "f"],
         types: [TL(TA), TF],
         calc: true,
+        example: "Examples:\n  1. f(a) = a mod 2; filter(range(5), f) -> [1, 3, 5]\n  2. filter(range(5), @(a) = a mod 2) -> [1, 3, 5]"
     },
     "reduce": {
         name: "Reduce",
@@ -709,15 +706,17 @@ const OPERATIONS = {
         vars: ["x", "f"],
         types: [TL(TA), TF],
         calc: true,
+        example: "Examples:\n  1. reduce(range(5), *) -> 120\n  2. reduce([1, -2, 10, 5], \n       @(x, y) = if x > y then x else y) -> 10"
     },
     "type": {
-        name: "Type check",
+        name: "Type",
         func: (x) => {
             return new String(get_param_types([x])[0])
         },
         schema: [1],
         vars: ["x"],
-        types: [TA]
+        types: [TA],
+        example: "Examples:\n  1. type(pi) -> number\n  2. type(0b101) -> string\n  3. type([1, 2, 3]) -> list[number]\n  4. type([[1, 2], [3, 4]]) -> list[list[number]]\n  5. type([1, 0b101, [2]]) -> list[any]\n  6. type(true) -> bool\n  7. type(km) -> unit\n  8. type(sin) -> function"
     },
     "index": {
         name: "Index",
@@ -727,13 +726,14 @@ const OPERATIONS = {
         types: [TL(TA), TL(TA)]
     },
     ":": {
-        name: "Range pair",
+        name: "Slice",
         func: (a, b) => {
             return [a, b]
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TN, TN]
+        types: [TN, TN],
+        example: "Examples: A = [[1, 2, 3], [4, 5, 6, 7]]\n  1. A(2) -> [4, 5, 6]\n  2. A(2, 2:3) -> [5, 6]\n  3. A(2, 2:) -> [5, 6, 7]\n  4. A(1, :2) -> [1, 2]\n  5. A(:, 1) -> [1, 4]"
     },
     ":2": {
         name: "Range pair",
@@ -786,7 +786,7 @@ const OPERATIONS = {
         calc: true
     },
     "concat": {
-        name: "Concatenate lists together",
+        name: "Concatenate lists",
         func: (lists) => {
             let ans = []
             for (const l of lists) {
@@ -800,7 +800,8 @@ const OPERATIONS = {
         },
         schema: [1],
         vars: ["a"],
-        types: [TL(TA)]
+        types: [TL(TA)],
+        example: "Examples:\n  1. concat([1, 2], [3, 4]) -> [1, 2, 3, 4]\n  2. concat([1, 2], 3, 4) -> [1, 2, 3, 4]"
     },
     "rref": {
         name: "Reduced Row Echelon Form (RREF)",
@@ -817,12 +818,13 @@ const OPERATIONS = {
         types: [TL(TL(TN))]
     },
     "zeros": {
-        name: "Create tensor filled with zeros",
+        name: "Create zero tensor",
         func: (dims) => create_zero_tensor(dims),
         schema: [1],
         vars: ["dims"],
         types: [TL(TA)],
-    },
+        example: "Examples:\n  1. zeros(2, 2) -> [[0, 0], [0, 0]]\n  2. zeros(1, 2, 3) -> [[[0, 0, 0], [0, 0, 0]]]"
+ },
     "ident": {
         name: "Create identity matrix",
         func: (n) => {
@@ -986,7 +988,7 @@ const OPERATIONS = {
         schema: [-2, -1, 1],
         vars: ["n", "u1", "u2"],
         types: [TN, TU, TU],
-        example: "Example:\n5 km to mi -> 3.10686\n30 cel to far -> 86"
+        example: "Tip: See all supported units by typing `units`\nExamples:\n  1. 5 km to mi -> 3.10686\n  2. C = cel; F = far; 30 C to F -> 86\n"
     },
     "to2":  {
         name: "Convert units",
@@ -1185,10 +1187,10 @@ const HELP = {
         schema: [1],
         vars: ["(...params) = value"],
         types: [TF],
-        example: "Example: map(range(1, 5), @(x) = x^2)"
+        example: "Examples:\n  1. @(x) = x^2\n  2. @(x, y) = x + y\n  3. @() = 1"
     },
     "clear": {
-        name: "Clear calculator",
+        name: "Clear",
         schema: [],
         vars: [],
         types: []
@@ -1200,37 +1202,37 @@ const HELP = {
         types: [TF]
     },
     "ans": {
-        name: "Answer - stored result of last calculation",
+        name: "Answer",
         schema: [],
         vars: [],
         types: []
     },
     "save": {
-        name: "Save user-defined function",
+        name: "Save",
         schema: [1],
-        vars: ["func"],
-        types: [TF]
+        vars: ["x"],
+        types: ["variable | function"]
     },
     "if": {
         name: "If statement",
         schema: [],
         vars: [],
         types: [],
-        example: "Example: if x > 10 then 10 else x \nif x == 20 then 2 else if x == 10 then 1 else 0"
+        example: "Examples:\n  1. if x > 10 then 10 else x \n  2. if x == 20 then 2 else if x == 10 then 1 else 0"
     },
     "then": {
         name: "If statement",
         schema: [],
         vars: [],
         types: [],
-        example: "Example: if x > 10 then 10 else x \nif x == 20 then 2 else if x == 10 then 1 else 0"
+        example: "Examples:\n  1. if x > 10 then 10 else x \n  2. if x == 20 then 2 else if x == 10 then 1 else 0"
     },
     "else": {
         name: "If statement",
         schema: [],
         vars: [],
         types: [],
-        example: "Example: if x > 10 then 10 else x \nif x == 20 then 2 else if x == 10 then 1 else 0"
+        example: "Examples:\n  1. if x > 10 then 10 else x \n  2. if x == 20 then 2 else if x == 10 then 1 else 0"
     }
 }
 

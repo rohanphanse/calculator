@@ -864,6 +864,7 @@ class Calculator {
         let result
         expression = expression.split(";")
         for (const e of expression) {
+            if (e.length === 0) continue
             const tokens = this.parse(e)
             // console.log("parse", tokens)
             if (Array.isArray(tokens)) {
