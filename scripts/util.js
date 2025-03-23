@@ -25,8 +25,14 @@ function roundArray(a, p = 0) {
     for (let i = 0; i < a.length; i++) {
         if (typeof a[i] === "number") {
             a[i] = set_precision(a[i], p)
-        } else if (typeof a[i] === "object" && "op" in a[i]) {
-            a[i] = a[i].op
+        } else if (typeof a[i] === "object" && !(a[i] instanceof String)) {
+            if ("op" in a[i]) {
+                a[i] = a[i].op
+            } else if ("n" in a[i]) {
+                a[i] = `${a[i].n}/${a[i].d}`
+            } else if ("c" in a[i]) {
+                a[i] = `${a[i].c}`
+            }
         } else if (Array.isArray(a[i])) {
             a[i] = roundArray(a[i], p)
         } 
@@ -35,7 +41,6 @@ function roundArray(a, p = 0) {
 }
 
 function set_precision(value, p) {
-    console.log(value)
     if (value === 0 || !value.toString().includes(".")) return value
     return parseFloat(value.toPrecision(p))
 }
@@ -259,11 +264,18 @@ function matmul_scalar(A, s) {
 }
 
 function factorial(n) {
+    if (n > 200) {
+        return Infinity
+    }
     let value = 1
     for (let i = 2; i <= n; i++) {
         value *= i
     }
     return value
+}
+
+function is_close(a, b, tol = 1e-9) {
+    return Math.abs(a - b) <= tol
 }
 
 function gcd(a, b) {
@@ -273,6 +285,10 @@ function gcd(a, b) {
         a = temp
     }
     return a
+}
+
+function lcm(a, b) {
+    return a * b / gcd(a, b)
 }
 
 function process_index(A, I) {
@@ -290,7 +306,7 @@ function process_index(A, I) {
                 start = I[0][0] - 1
             }
             if (I[0][1] != -1) {
-                end = I[0][1]
+                end = Math.min(A.length, I[0][1])
             }
             let result = []
             for (let r = start; r < end; r++) {
@@ -361,6 +377,29 @@ function eval_if(if_st, calc) {
     }
 }
 
+function add_fractions(f1, f2) {
+    let v = [f1.n, f1.d, f2.n, f2.d]
+    let no_frac = false
+    for (let i = 0; i < 4; i++) {
+        if (v[i] instanceof Constant) {
+            v[i] = v[i].value()
+            no_frac = true
+        }
+    }
+    if (no_frac) {
+        return v[0] / v[1] + v[2] / v[3]
+    }
+    let d = lcm(v[1], v[3])
+    let n = d / v[1] * v[0] + d / v[3] * v[2]
+    return new Fraction(n, d)
+}
+
+function subtract_fractions(f1, f2) {
+    let d = lcm(f1.d, f2.d)
+    let n = d / f1.d * f1.n - d / f2.d * f2.n
+    return new Fraction(n, d)
+}
+
 // Credit to Claude for differentiation code
 function differentiate(node, variable) {
     // console.log("differentiate", node, variable)
@@ -394,13 +433,8 @@ function differentiate(node, variable) {
                 left: { op: "-", left: { op: "*", left: differentiate(node.left, variable), right: node.right },
                 right: { op: "*", left: node.left, right: differentiate(node.right, variable) } }, right: { op: "^", left: node.right, right: { value: 2 } }
             }
-            
         case "^":
-            if (
-                typeof node.left?.value === "string" && 
-                node.left.value === variable && 
-                typeof node.right?.value === "number"
-            ) {
+            if (typeof node.left?.value === "string" && node.left.value === variable && typeof node.right?.value === "number") {
                 const exponent = node.right.value
                 return {
                     op: "*",
@@ -409,11 +443,7 @@ function differentiate(node, variable) {
                 }
             }
             else {
-                if (
-                    typeof node.left?.value === "number" && 
-                    typeof node.right?.value === "string" && 
-                    node.right.value === variable
-                ) {
+                if (typeof node.left?.value === "number" && typeof node.right?.value === "string" && node.right.value === variable) {
                     return {
                         op: "*",
                         left: { op: "*", left: { op: "ln", arg: node.left }, right: node },

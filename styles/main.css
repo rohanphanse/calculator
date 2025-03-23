@@ -227,7 +227,12 @@ body {
     height: max(calc(400px - 112.77px), calc(70vh - 112.77px));
 }
 
+.input-row {
+    display: flex;
+}
+
 .input {
+    min-width: 1ch;
     font-family: monospace;
     font-size: 1.1rem;
     overflow-wrap: break-word;
@@ -241,6 +246,15 @@ body {
 
 .input[placeholder]:empty:focus::before {
     content: "";
+}
+
+.input-autocomplete {
+    color: #b1b1b1; 
+    font-family: monospace;
+    font-size: 1.1rem;
+    overflow-wrap: break-word;
+    margin-bottom: 3px;
+    flex-grow: 1;
 }
 
 .result {

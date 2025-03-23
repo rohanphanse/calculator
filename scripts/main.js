@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Elements
     const interface = document.getElementById("interface")
     let userInput = document.getElementsByClassName("input")[0]
+    let userInputAutocomplete = document.getElementsByClassName("input-autocomplete")[0]
     
     const angleButton = document.getElementById("angle-button")
     const digitsInput = document.getElementById("digits-input")
@@ -30,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // User input event listeners
     userInput.addEventListener("keydown", handleKeyDown)
     userInput.addEventListener("input", ansAutoFill)
+    userInputAutocomplete.addEventListener("click", handleAutocompleteClick)
 
     // Angle button
     angleButton.addEventListener("click", event => {
@@ -118,11 +120,9 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSavedFunctions(saved_functions)
     renderSavedVariables(saved_variables)
     for (const f in saved_functions) {
-        // console.log(saved_functions)
         calculator.calculate(saved_functions[f])
     }
     for (const v in saved_variables) {
-        // console.log(`${v} = ${JSON.stringify(saved_variables[v]).replace('"', "")}`)
         calculator.calculate(`${v} = ${JSON.stringify(saved_variables[v]).replaceAll('"', "")}`)
     }
     calculator.ans = null
@@ -202,6 +202,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Auto fill answer
     function ansAutoFill(event) {
+        let user_input = userInput.innerText.trim()
+        // Autocomplete
+        userInputAutocomplete.innerText = ""
+        let search_terms = [...Object.keys(OPERATIONS), ...Object.keys(HELP), ...Object.keys(calculator.variables), ...Object.keys(calculator.functions)]
+        let words = user_input.split(" ")
+        let last_word = words[words.length - 1]
+        let matches = []
+        for (const search_term of search_terms) {
+            if (search_term.startsWith(last_word)) {
+                matches.push(search_term)
+            } 
+        }
+        if (matches.length === 1 && matches[0].length - last_word.length >= 2) {
+            if (matches[0] === last_word) {
+                userInputAutocomplete.innerText = ""
+            } else {
+                userInputAutocomplete.innerText = matches[0].slice(last_word.length)
+                user_input = userInput.innerText
+                positionCaret(userInput, user_input.length)
+            }
+        }
         const e = event.target.innerText
         // First character is symbol
         if (e.trim().length === 1 && SYMBOLS.includes(e) && !["-", "~", ":", ...UNITS].includes(e)) {
@@ -212,13 +233,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle key down for user input
     function handleKeyDown(event) {
-        const user_input = userInput.innerText.trim()
+        let user_input = userInput.innerText.trim()
         // Enter key
-        if (!event.shiftKey && event.keyCode === 13) {
+        if (event.keyCode === 13) {
             // Prevent newline from enter key
             event.preventDefault()
+            if (userInputAutocomplete.innerText.length > 0) {
+                userInput.innerText += userInputAutocomplete.innerText
+                userInputAutocomplete.innerText = ""
+                positionCaret(userInput, userInput.innerText.length)
+                return
+            }
             // Prevent empty queries
-            if (user_input.length) {
+            if (user_input.length || event.shiftKey) {
                 history_index = history.length
                 history.push(user_input)
                 history_current = ""
@@ -268,20 +295,22 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (!op.startsWith("@") && op in calculator.functions) {
                             try {   
                                 let fs = calculator.functions[op].string
-                                while (fs.includes("@") && fs.charAt(fs.indexOf("@") + 1) !== "(") {
+                                while (fs.includes("@")) {
                                     const index = fs.indexOf("@")
-                                    let name = fs.slice(fs.indexOf("@"))
-                                    name = name.slice(0, name.indexOf("("))
-                                    fs = fs.slice(0, index) + calculator.functions[name].string + fs.slice(index + name.length)
+                                    let name = fs.slice(fs.lastIndexOf("@"))
+                                    if (name.indexOf(")") !== -1) {
+                                        name = name.slice(0, name.indexOf(")"))
+                                    }
+                                    fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#") + fs.slice(index + name.length)
                                 }
-                                // console.log("fs", fs)
+                                fs = fs.replaceAll("#", "@")
                                 output = `Saved ${fs.replaceAll(",", ", ")}`
                                 let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
                                 saved_functions[op] = fs
                                 localStorage.setItem("saved_functions", JSON.stringify(saved_functions))
                                 renderSavedFunctions(saved_functions)
                             } catch (err) {
-                                // console.log(err)
+                                // console.log("save error", err)
                                 output = `Save error`
                             }
                         } else if (op in calculator.variables) {
@@ -303,9 +332,17 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     } else {
                         // Calculate output
-                        output = calculator.calculate(user_input)
+                        if (event.shiftKey) {
+                            if (user_input.length === 0) {
+                                history.pop()
+                                user_input = history[history.length - 1]
+                                userInput.innerText = user_input
+                            }
+                            output = calculator.calculate(user_input, { no_fraction: true, no_constant: true })
+                        } else {
+                            output = calculator.calculate(user_input)
+                        }
                     }
-
                     // Result
                     const result = document.createElement("pre")
                     result.className = "result"
@@ -314,7 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         result.style.textAlign = "left"
                         result.style.margin = "10px 0 10px 20%"
                     }
-                    if (`${output}`.length < 100) {
+                    if (typeof output !== "string" && `${output}`.length < 100) {
                         result.style.cursor = "pointer"
                         result.addEventListener("click", (event) => {
                             event.preventDefault()
@@ -335,12 +372,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Remove event listeners
                 userInput.removeEventListener("keydown", handleKeyDown)
                 userInput.removeEventListener("input", ansAutoFill)
+                userInputAutocomplete.removeEventListener("click", handleAutocompleteClick)
                 // User input is now last input
                 userInput = input
-                interface.append(input)
+                const autocomplete = document.createElement("div")
+                autocomplete.classList.add("input-autocomplete")
+                userInputAutocomplete = autocomplete
+                const inputRow = document.createElement("div")
+                inputRow.classList.add("input-row")
+                inputRow.append(input)
+                inputRow.append(autocomplete)
+                interface.append(inputRow)
                 // Add event listeners
                 userInput.addEventListener("keydown", handleKeyDown)
                 userInput.addEventListener("input", ansAutoFill)
+                userInputAutocomplete.addEventListener("click", handleAutocompleteClick)
 
                 userInput.focus() 
             }
@@ -385,6 +431,12 @@ document.addEventListener("DOMContentLoaded", () => {
             event.preventDefault()
             positionCaret(userInput, userInput.innerText.length)
         }
+    }
+
+    function handleAutocompleteClick(event) {
+        event.preventDefault()
+        positionCaret(userInput, userInput.innerText.length)
+        userInput.focus()
     }
 })
 

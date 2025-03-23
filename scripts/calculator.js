@@ -129,6 +129,9 @@ class Calculator {
                 } else if (options?.functionParameters?.includes(string)) {
                     tokens.push(string)
                     i += string.length - 1
+                } else if (["pi", "e"].includes(string)) {
+                    tokens.push(new Constant(string)) 
+                    i += string.length - 1
                 // Operation
                 } else if (string in OPERATIONS) {
                     tokens.push(string)
@@ -591,6 +594,12 @@ class Calculator {
         if (options.noRound) {
             return final_result
         }
+        if (options.no_fraction && final_result instanceof Fraction) {
+            final_result = final_result.value()
+        }
+        if (options.no_constant && final_result instanceof Constant) {
+            final_result = final_result.value()
+        }
         if (typeof final_result === "number") {
             return set_precision(final_result, this.digits)
         } else if (Array.isArray(final_result)) {
@@ -716,8 +725,16 @@ class Calculator {
             }
         }
 
+        if (tokens[0] instanceof Paren) {
+            if (tokens[0].tokens.length != 1) {
+                return "Parentheses error"
+            } else {
+                tokens[0] = tokens[0].tokens[0]
+            }
+        }
+
         // One token to evaluate
-        if (typeof tokens[0] === "number" || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean") {
+        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || tokens[0] instanceof Constant || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean") {
             return tokens[0]
         } else if (CONSTANTS.includes(tokens[0])) {
             return OPERATIONS[tokens[0]].func()
@@ -750,7 +767,7 @@ class Calculator {
                 }
             }
         } else {
-            console.log("evaluateOperator error")
+            // console.log("evaluateOperator error")
             return "Execution error"
         }
     }
@@ -829,17 +846,29 @@ class Calculator {
 
             // Convert angle for angle functions
             if (ANGLE_FUNCTIONS.includes(tokens[index]) && this.angle === "deg") {
-                params = params.map(n => n * Math.PI / 180)
+                params = params.map((n) => n * Math.PI / 180)
             }
-
             // Offset required if first parameter negative/before index
             const offset = operation.schema[0] < 0 ? operation.schema[0] : 0
             if (operation.calc) {
                 params.push(this)
             }
+            if (!operation.allow_fractions) {
+                params = params.map((n) => n instanceof Fraction ? n.value() : n)
+            }
+            if (!operation.allow_constants) {
+                params = params.map((n) => n instanceof Constant ? n.value() : n)
+            }
             let result = operation.func(...params)
             if (typeof result === "string") {
                 return `${operation.name} error > ${result}`
+            }
+            if (result instanceof Fraction && result.invalid) {
+                if (result.invalid === "0/0") {
+                    return `Invalid fraction`
+                } else if (result.invalid === "/0") {
+                    result = result.value()
+                }
             }
             if (typeof result === "number" && isNaN(result)) {
                 return `${operation.name} error > NaN error`
@@ -852,7 +881,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            console.log("exec error", err)
+            // console.log("exec error", err)
             return `${operation.name} error > execution error`
         }
     }

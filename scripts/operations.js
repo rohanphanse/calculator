@@ -76,7 +76,7 @@ const ORDER_OF_OPERATIONS = [
 
 // Subsets
 const CONSTANTS = ["pi", "e", "phi", "inf", "units", "true", "false"]
-const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not"]
+const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not", "mod"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
 const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else"]
@@ -99,9 +99,22 @@ const bases = { "0b": 2, "0x": 16, "0o": 8 }
 const OPERATIONS = {
     "+": {
         name: "Addition",
-        func: (a, b) => {
-            param_types = get_param_types([a, b])
+        func: (a, b) => {  
+            param_types = get_param_types([a, b]) 
             if (param_types[0] == TN && param_types[1] == TN) {
+                if (a instanceof Fraction && b instanceof Fraction) {
+                    return add_fractions(a, b)
+                } else if (a instanceof Fraction && Number.isInteger(b)) {
+                    return add_fractions(a, new Fraction(b, 1))
+                } else if (b instanceof Fraction && Number.isInteger(a)) {
+                    return add_fractions(new Fraction(a, 1), b)
+                }
+                if (a instanceof Fraction) {
+                    a = a.value()
+                }
+                if (b instanceof Fraction) {
+                    b = b.value()
+                }
                 return a + b
             } else if (param_types[0].startsWith("list") && param_types[1].startsWith("list") && param_types[0] == param_types[1]) {
                 return add_tensors(a, b)
@@ -116,13 +129,21 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
-        example: "Examples:\n  1. Add numbers: 2 + 2 -> 4\n  2. Add tensors: [[[1, 2]]] + [[[2, 1]]] -> [[[3, 3]]]\n  3. Add numbers and tensors: 2 + [1, 2] -> [3, 4]"
+        example: "Examples:\n  1. Add numbers: 2 + 2 -> 4\n  2. Add tensors: [[[1, 2]]] + [[[2, 1]]] -> [[[3, 3]]]\n  3. Add numbers and tensors: 2 + [1, 2] -> [3, 4]",
+        allow_fractions: true
     },
     "-": {
         name: "Subtraction",
         func: (a, b) => {
             param_types = get_param_types([a, b])
             if (param_types[0] == TN && param_types[1] == TN) {
+                if (a instanceof Fraction && b instanceof Fraction) {
+                    return subtract_fractions(a, b)
+                } else if (a instanceof Fraction && Number.isInteger(b)) {
+                    return subtract_fractions(a, new Fraction(b, 1))
+                } else if (b instanceof Fraction && Number.isInteger(a)) {
+                    return subtract_fractions(new Fraction(a, 1), b)
+                }
                 return a - b
             } else if (param_types[0].startsWith("list") && param_types[1].startsWith("list") && param_types[0] == param_types[1]) {
                 return add_tensors(a, b, -1)
@@ -136,7 +157,8 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))]
+        types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
+        allow_fractions: true
         
     },
     "neg": {
@@ -144,6 +166,11 @@ const OPERATIONS = {
         func: (n) => {
             param_type = get_param_types([n])[0]
             if (param_type == TN) {
+                if (n instanceof Fraction) {
+                    let copy = new Fraction(n.n, n.d)
+                    copy.neg = !n.neg
+                    return copy
+                }
                 return -n
             } else if (param_type.startsWith("list")) {
                 return add_tensors(n, n, -1, 0)
@@ -153,13 +180,21 @@ const OPERATIONS = {
         },
         schema: [1],
         vars: ["x"],
-        types: [TOR(TN, TL(TA))]
+        types: [TOR(TN, TL(TA))],
+        allow_fractions: true,
     },
     "*": {
         name: "Multiplication",
         func: (a, b) => {
             param_types = get_param_types([a, b])
             if (param_types[0] == TN && param_types[1] == TN) {
+                if (a instanceof Fraction && b instanceof Fraction) {
+                    return new Fraction(a.n * b.n, a.d * b.d)
+                } else if (a instanceof Fraction && Number.isInteger(b)) {
+                    return new Fraction(a.n * b, a.d)
+                } else if (b instanceof Fraction && Number.isInteger(a)) {
+                    return new Fraction(b.n * a, b.d)
+                }
                 return a * b
             } else if (param_types[0] == TL(TN) && param_types[1] == TL(TN)) {
                 if (a.length !== b.length) {
@@ -187,14 +222,36 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TOR(TN, TOR(TL(TN), TL(TL(TN)))), TOR(TN, TOR(TL(TN), TL(TL(TN))))],
-        example: "Examples:\n  1. Multiply numbers: 2 * 2 -> 4\n  2. Dot product: [1, 2] * [3, 4] -> 11\n  3. Matrix multiplication:\n     [[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]"
+        example: "Examples:\n  1. Multiply numbers: 2 * 2 -> 4\n  2. Dot product: [1, 2] * [3, 4] -> 11\n  3. Matrix multiplication:\n     [[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]",
+        allow_fractions: true
     },
     "/": {
         name: "Division",
-        func: (a, b) => a / b,
+        func: (a, b) => {
+            if (Number.isInteger(a) && Number.isInteger(b)) {
+                return new Fraction(a, b)
+            } else if (a instanceof Fraction && b instanceof Fraction) {
+                return new Fraction(a.n * b.d, a.d * b.n)
+            } else if (a instanceof Fraction && Number.isInteger(b)) {
+                return new Fraction(a.n, b * a.d)
+            } else if (b instanceof Fraction && Number.isInteger(a)) {
+                return new Fraction(a * b.d, b.n)
+            } else if (a instanceof Constant && Number.isInteger(b)) {
+                return new Fraction(a, b)
+            }
+            if (a instanceof Constant) {
+                a = a.value()
+            }
+            if (b instanceof Constant) {
+                b = b.value()
+            }
+            return a / b
+        },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TN, TN]
+        types: [TN, TN],
+        allow_fractions: true,
+        allow_constants: true
     },
     "^": {
         name: "Exponentiation",
@@ -285,14 +342,14 @@ const OPERATIONS = {
         func: () => Math.PI,
         schema: [],
         vars: [],
-        types: []
+        types: [],
     },
     "e": {
         name: "Euler's number",
         func: () => Math.E,
         schema: [],
         vars: [],
-        types: []
+        types: [],
     },
     "phi": {
         name: "Phi",
@@ -330,21 +387,39 @@ const OPERATIONS = {
     },
     "sin": {
         name: "Sine",
-        func: (theta) => Math.sin(theta),
+        func: (theta) => {
+            if (is_close(theta, Math.PI / 6)) {
+                return new Fraction(1, 2)
+            }
+            if (is_close(theta, Math.PI)) {
+                return 0
+            }
+            return Math.sin(theta)
+        },
         schema: [1],
         vars: ["x"],
         types: [TN]
     },
     "cos": {
         name: "Cosine",
-        func: (theta) => Math.cos(theta),
+        func: (theta) => {
+            if (is_close(theta, Math.PI / 3)) {
+                return new Fraction(1, 2)
+            }
+            if (is_close(theta, Math.PI / 2)) {
+                return 0
+            }
+            return Math.cos(theta)
+        },
         schema: [1],
         vars: ["x"],
         types: [TN]
     },
     "tan": {
         name: "Tangent",
-        func: (theta) => Math.tan(theta),
+        func: (theta) => {
+            return Math.tan(theta)
+        },
         schema: [1],
         vars: ["x"],
         types: [TN]
@@ -372,7 +447,15 @@ const OPERATIONS = {
     },
     "arcsin": {
         name: "Inverse sine",
-        func: (theta) => Math.asin(theta),
+        func: (theta) => {
+            if (is_close(theta, 0.5)) {
+                return new Fraction("pi", 6)
+            }
+            if (is_close(theta, -0.5)) {
+                return new Fraction("pi", -6)
+            }
+            return Math.asin(theta)
+        },
         schema: [1],
         vars: ["x"],
         types: [TN]
@@ -707,7 +790,7 @@ const OPERATIONS = {
         types: [TL(TA), TF],
         calc: true,
         example: "Examples:\n  1. reduce(range(5), *) -> 120\n  2. reduce([1, -2, 10, 5], \n       @(x, y) = if x > y then x else y) -> 10"
-    },
+    }, 
     "type": {
         name: "Type",
         func: (x) => {
@@ -733,7 +816,7 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TN, TN],
-        example: "Examples: A = [[1, 2, 3], [4, 5, 6, 7]]\n  1. A(2) -> [4, 5, 6]\n  2. A(2, 2:3) -> [5, 6]\n  3. A(2, 2:) -> [5, 6, 7]\n  4. A(1, :2) -> [1, 2]\n  5. A(:, 1) -> [1, 4]"
+        example: "Examples: A = [[1, 2, 3], [4, 5, 6, 7]]\n  1. A(2) -> [4, 5, 6, 7]\n  2. A(2, 2:3) -> [5, 6]\n  3. A(2, 2:) -> [5, 6, 7]\n  4. A(1, :2) -> [1, 2]\n  5. A(:, 1) -> [1, 4]"
     },
     ":2": {
         name: "Range pair",
@@ -767,14 +850,15 @@ const OPERATIONS = {
         func: (f, calc) => {
             if (f.op in calc.functions) {
                 let fs = calc.functions[f.op].string
-                while (fs.includes("@") && fs.charAt(fs.indexOf("@") + 1) !== "(") {
+                while (fs.includes("@")) {
                     const index = fs.indexOf("@")
-                    let name = fs.slice(fs.indexOf("@"))
+                    let name = fs.slice(fs.lastIndexOf("@"))
                     if (name.indexOf(")") !== -1) {
                         name = name.slice(0, name.indexOf(")"))
                     }
-                    fs = fs.slice(0, index) + calc.functions[name].string + fs.slice(index + name.length)
+                    fs = fs.slice(0, index) + calc.functions[name].string.replaceAll("@", "#") + fs.slice(index + name.length)
                 }
+                fs = fs.replaceAll("#", "@")
                 return new String(fs)
             } else {
                 return "Def error > can only view user-defined functions"
@@ -933,9 +1017,7 @@ const OPERATIONS = {
     },
     "lcm": {
         name: "Least common multiple",
-        func: (a, b) => {
-            return a * b / gcd(a, b)
-        },
+        func: (a, b) => lcm(a, b),
         schema: [1],
         vars: ["a", "b"],
         types: [TN, TN]
@@ -1174,7 +1256,7 @@ const OPERATIONS = {
 for (let i = 0; i < UNITS.length; i++) {
     OPERATIONS[UNITS[i]] = {
         name: UNIT_NAMES[UNITS[i]],
-        func: () => 1,
+        func: () => "Must be used with `to`",
         schema: [],
         vars: [],
         types: []
@@ -1259,11 +1341,75 @@ class Paren {
     }
 }
 
+class Fraction {
+    constructor(n, d) {
+        this.neg = false
+        this.invalid = false
+        if (typeof n === "number" && typeof d === "number") {
+            if (n === 0 && d === 0) {
+                this.invalid = "0/0"
+                return
+            }
+            if (d === 0) {
+                this.invalid = "/0"
+                this.n = n
+                this.d = d
+                return
+            }
+            this.neg = (n < 0) ^ (d < 0)
+            let my_gcd = gcd(Math.abs(n), Math.abs(d))
+            this.n = Math.abs(n) / my_gcd
+            this.d = Math.abs(d) / my_gcd
+        } else {
+            this.n = n
+            this.d = d
+            if (typeof n == "number" && this.n < 0) {
+                this.n = Math.abs(n)
+                this.neg = true
+            }
+            if (typeof d == "number" && this.d < 0) {
+                this.d = Math.abs(d)
+                this.neg = true
+            }
+        }
+    }
+
+    toString() {
+        if (this.n === 0) {
+            return n
+        }
+        if (this.d === 1) {
+            return `${this.neg ? "-" : ""}${this.n}`
+        }
+        return `${this.neg ? "-" : ""}${this.n}/${this.d}`
+    }
+
+    value() {
+        let n = this.n instanceof Constant ? this.n.value() : this.n
+        let d = this.d instanceof Constant ? this.d.value() : this.d
+        return n / d * (this.neg ? -1 : 1)
+    }
+}
+
+class Constant {
+    constructor(c) {
+        this.c = c
+    }
+
+    toString() {
+        return `${this.c}`
+    }
+
+    value() {
+        return OPERATIONS[this.c].func()
+    }
+}
+
 function get_param_types(params) {
     const type_list = []
     // console.log("get_param_types", params)
     for (const p of params) {
-        if (typeof p === "number") {
+        if (typeof p === "number" || p instanceof Fraction || p instanceof Constant) {
             type_list.push(TN)
         } else if (typeof p === "boolean") {
             type_list.push(TB)
