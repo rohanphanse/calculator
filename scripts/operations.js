@@ -639,11 +639,11 @@ const OPERATIONS = {
                 }
                 let b_part = b == 0 ? "" : ` ${b < 0 ? "-" : "+"} ${Math.abs(b)}${x}`
                 let c_part = c == 0 ? "" : ` ${c < 0 ? "-" : "+"} ${Math.abs(c)}`
-                let response = `Roots of ${a == 1 ? "" : a}${x}^2${b_part}${c_part} = 0\n`
+                let response = `\`${a == 1 ? "" : a}${x}^2${b_part}${c_part} = 0\`\n\Roots: `
                 if (result.length === 2) {
-                    response += `${x} = ${result[0]} or ${x} = ${result[1]}`
+                    response += `\`${x} = ${result[0]}\` or \`${x} = ${result[1]}\``
                 } else if (result.length === 1) {
-                    response += `${x} = ${result[0]}`
+                    response += `\`${x} = ${result[0]}\``
                 } else {
                     response += "No real solutions"
                 }
@@ -1227,7 +1227,7 @@ const OPERATIONS = {
                 f = "f"
             }
             calc.calculate(`${f}'(${x}) = ${output}`)
-            return new String(`${f}'(${x}) = ${output}\nDerivative ${f}' declared`)
+            return new String(`\`${f}'(${x}) = ${output}\`\nDerivative \`${f}'\` declared`)
         },
         schema: [1],
         vars: ["f"],

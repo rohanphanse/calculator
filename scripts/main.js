@@ -86,11 +86,13 @@ document.addEventListener("DOMContentLoaded", () => {
             event.preventDefault()
             const u = userInput.innerText 
             let t = button.dataset.text || button.innerText
-            let length = t.length
+            let length = t.length + 1
             if (t.includes("|") && !button.dataset.override) {
                 const pipe_index = t.indexOf("|")
                 t = t.slice(0, pipe_index) + t.slice(pipe_index + 1)
                 length = pipe_index
+            } else {
+                t += " "
             }
             if (u.length === 0) {
                 userInput.textContent = `help ${t.replaceAll("()", "")}`
@@ -326,10 +328,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                     if (name.indexOf(")") !== -1) {
                                         name = name.slice(0, name.indexOf(")"))
                                     }
-                                    fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#") + fs.slice(index + name.length)
+                                    fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#").trim() + fs.slice(index + name.length)
                                 }
                                 fs = fs.replaceAll("#", "@")
-                                output = `Saved ${fs.replaceAll(",", ", ")}`
+                                output = `Saved ${fs}`
                                 let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
                                 saved_functions[op] = fs
                                 localStorage.setItem("saved_functions", JSON.stringify(saved_functions))
@@ -393,8 +395,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     const result = document.createElement("pre")
                     result.className = "result"
                     result.textContent = output
-                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || (user_input.startsWith("trace") && output !== "N/A") || user_input.startsWith("def"))
+                    console.log(output)
+                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || (user_input.startsWith("trace") && output !== "N/A") || user_input.startsWith("def") || user_input.startsWith("type")) {
                         highlightSyntax(result)
+                    }
+                    if ((typeof output === "string" || output instanceof String) && output.includes("`")) {
+                        highlightSyntax(result, true)
+                    }
                     if (output.length > 30) {
                         result.style.textAlign = "left"
                         result.style.margin = "10px 0 10px 20%"

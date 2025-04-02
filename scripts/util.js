@@ -801,14 +801,16 @@ function tree_to_string(node) {
             return ""
     }
 }
+
 // Syntax highlight code generated with help from LLMs
-function highlightSyntax(element) {
+function highlightSyntax(element, backticks_mode = false) {
     const cursor_position = getCursorPosition(element)
     let text = element.innerHTML
     text = text.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
-    const keywords = ["if","then","else","def","save","help","clear","trace","to"]
+    const keywords = ["if", "then", "else", "def", "save", "help", "clear", "trace", "to"]
     let lines = text.split("\n")
-    let processed_lines = lines.map(line => {
+    let processed_lines
+    const process_line = (line) => {
         if (line.trim() === "") return line
         line = line.replace(
             /(^|\s|>|\(|\[|,|[-+*/%^=()])(-?(?:\d+\.?\d*|\.\d+))([a-zA-Z_][a-zA-Z0-9_]*)(?=\W|\]|,|\)|$|[-+*/%^=()])/g,
@@ -846,14 +848,21 @@ function highlightSyntax(element) {
             }
         )
         return line
-    })
+    }
+    if (backticks_mode) {
+        text = text.replace(/`([^`]+)`/g, (match, content) => {
+            return process_line(content) 
+        })
+        processed_lines = [text]
+    } else {
+        processed_lines = lines.map(process_line)
+    }
     text = processed_lines.join("\n")
     if (element.innerHTML !== text) {
         element.innerHTML = text
         setCursorPosition(element, cursor_position)
     }
 }
-
 
 function getCursorPosition(element, start_node = null, start_offset = null) {
     const selection = window.getSelection();
