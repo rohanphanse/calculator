@@ -27,7 +27,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const varBar = document.getElementById("var-bar")
     const calcContainer = document.getElementById("container")
     // Initial
-
     // User input event listeners
     userInput.addEventListener("keydown", handleKeyDown)
     userInput.addEventListener("input", ansAutoFill)
@@ -83,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     for (const button of commandButtons) {
         button.addEventListener("click", (event) => {
-            const index = window.getSelection().anchorOffset
+            const index = getCursorPosition(userInput)
             event.preventDefault()
             const u = userInput.innerText 
             let t = button.dataset.text || button.innerText
@@ -94,7 +93,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 length = pipe_index
             }
             if (u.length === 0) {
-                userInput.innerText = `help ${t.replaceAll("()", "")}`
+                userInput.textContent = `help ${t.replaceAll("()", "")}`
+                highlightSyntax(userInput)
                 userInput.dispatchEvent(new KeyboardEvent("keydown", {
                     key: "Enter",
                     code: "Enter",
@@ -104,8 +104,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     cancelable: true
                 }))
             } else {
-                userInput.innerText = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
-                positionCaret(userInput, index + length)
+                userInput.textContent = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
+                highlightSyntax(userInput)
+                setCursorPosition(userInput, index + length)
             }
         })
     }
@@ -128,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     calculator.ans = null
 
     function commandInsert(event) {
-        const index = window.getSelection().anchorOffset
+        const index = getCursorPosition(userInput)
         event.preventDefault()
         const u = userInput.innerText 
         let t = event.target.dataset.text || event.target.innerText
@@ -139,7 +140,8 @@ document.addEventListener("DOMContentLoaded", () => {
             length = pipe_index
         }
         userInput.innerText = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
-        positionCaret(userInput, index + length)
+        highlightSyntax(userInput)
+        setCursorPosition(userInput, index + length)
     }
 
     function renderSavedFunctions(saved_functions) {
@@ -202,9 +204,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Auto fill answer
     function ansAutoFill(event) {
-        let user_input = userInput.innerText.trim()
+        let user_input = userInput.innerText
         // Autocomplete
         userInputAutocomplete.innerText = ""
+        highlightSyntax(userInput)
         let search_terms = [...Object.keys(OPERATIONS), ...Object.keys(HELP), ...Object.keys(calculator.variables), ...Object.keys(calculator.functions)]
         let words = user_input.split(" ")
         let last_word = words[words.length - 1]
@@ -214,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 matches.push(search_term)
             } 
         }
-        if (matches.length === 1 && matches[0].length - last_word.length >= 2) {
+        if (matches.length === 1 && matches[0].length > 3) {
             if (matches[0] === last_word) {
                 userInputAutocomplete.innerText = ""
             } else {
@@ -234,23 +237,42 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle key down for user input
     function handleKeyDown(event) {
         let user_input = userInput.innerText.trim()
-        // Enter key
-        if (event.keyCode === 13) {
-            // Prevent newline from enter key
+        if (event.keyCode === 13 || event.key === "Tab") {
             event.preventDefault()
             if (userInputAutocomplete.innerText.length > 0) {
-                userInput.innerText += userInputAutocomplete.innerText
-                userInputAutocomplete.innerText = ""
-                positionCaret(userInput, userInput.innerText.length)
+                const original_text = userInput.textContent;
+                const autocomplete_text = userInputAutocomplete.textContent
+                const cursor_pos = getCursorPosition(userInput)
+                const new_text = original_text.slice(0, cursor_pos) + 
+                            autocomplete_text + 
+                            original_text.slice(cursor_pos);
+                userInput.textContent = new_text
+                highlightSyntax(userInput)
+                userInputAutocomplete.textContent = ""
+                setCursorPosition(userInput, cursor_pos + autocomplete_text.length)
                 return
             }
-            // Prevent empty queries
+            if (event.key == "Tab") return
             if (user_input.length || event.shiftKey) {
                 history_index = history.length
                 history.push(user_input)
                 history_current = ""
-                if (user_input === "clear") {
-                    interface.textContent = ""
+                if (user_input.startsWith("clear")) {
+                    if (user_input === "clear") {
+                        interface.textContent = ""
+                    } else {
+                        const match = user_input.match(/^clear\s+(\d+)$/)
+                        if (match) {
+                            const n = parseInt(match[1])
+                            const rows = Array.from(interface.children)
+                            interface.textContent = ""
+                            for (let i = 0; i < rows.length - Math.min(n * 2, rows.length) - 1; i++) {
+                                interface.appendChild(rows[i])
+                            }
+                        } else {
+                            output = "Clear error"
+                        }
+                    }
                 } else {
                     let output = ""
                     if (user_input.startsWith("help")) {
@@ -289,6 +311,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         } else {
                             output += "Welcome to Calculator! Learn about a function by typing `help func` where `func` is the name of a function such as `sin`..."
                         }
+                    } else if (user_input.startsWith("trace")) {
+                        const rest = user_input.slice(user_input.indexOf("trace") + "trace".length).trim()
+                        output = calculator.calculate(rest, { debug: true })
                     } else if (user_input.startsWith("save")) {
                         const op = user_input.slice(user_input.indexOf("save") + "save".length).trim()
                         // console.log("save", op)
@@ -296,7 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             try {   
                                 let fs = calculator.functions[op].string
                                 while (fs.includes("@")) {
-                                    const index = fs.indexOf("@")
+                                    const index = fs.lastIndexOf("@")
                                     let name = fs.slice(fs.lastIndexOf("@"))
                                     if (name.indexOf(")") !== -1) {
                                         name = name.slice(0, name.indexOf(")"))
@@ -330,13 +355,34 @@ document.addEventListener("DOMContentLoaded", () => {
                         } else {
                             output = `Save error > can only save user-defined variables and functions`
                         }
+                    } else if (user_input.startsWith("def")) {
+                        const op = user_input.slice(user_input.indexOf("def") + "def".length).trim()
+                        if (op in calculator.functions || (op in calculator.variables && calculator.variables[op] instanceof Operation)) {
+                            let fs = calculator.functions[op].string
+                            if (fs.length > 0 && fs[0] === "@") {
+                                fs = fs.replace("@", "#")
+                            }
+                            while (fs.includes("@")) {
+                                const index = fs.lastIndexOf("@")
+                                let name = fs.slice(fs.lastIndexOf("@"))
+                                if (name.indexOf(")") !== -1) {
+                                    name = name.slice(0, name.indexOf(")"))
+                                }
+                                fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#") + fs.slice(index + name.length)
+                            }
+                            fs = fs.replaceAll("#", "@")
+                            output = new String(fs)
+                        } else {
+                            output = "Def error > can only view user-defined functions"
+                        }
                     } else {
                         // Calculate output
                         if (event.shiftKey) {
                             if (user_input.length === 0) {
                                 history.pop()
                                 user_input = history[history.length - 1]
-                                userInput.innerText = user_input
+                                userInput.textContent = user_input
+                                highlightSyntax(userInput)
                             }
                             output = calculator.calculate(user_input, { no_fraction: true, no_constant: true })
                         } else {
@@ -346,7 +392,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Result
                     const result = document.createElement("pre")
                     result.className = "result"
-                    result.innerText = output
+                    result.textContent = output
+                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || (user_input.startsWith("trace") && output !== "N/A") || user_input.startsWith("def"))
+                        highlightSyntax(result)
                     if (output.length > 30) {
                         result.style.textAlign = "left"
                         result.style.margin = "10px 0 10px 20%"
@@ -356,7 +404,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         result.addEventListener("click", (event) => {
                             event.preventDefault()
                             userInput.innerText += result.innerText + " "
-                            positionCaret(userInput, userInput.innerText.length)
+                            highlightSyntax(userInput)
+                            setCursorPosition(userInput, userInput.innerText.length - 1)
                         })
                     }
                     interface.append(result)
@@ -366,7 +415,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const input = document.createElement("div")
                 input.className = "input"
                 input.contentEditable = "plaintext-only"
-
                 // Last input is designated as user input
                 userInput.contentEditable = false
                 // Remove event listeners
@@ -374,6 +422,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 userInput.removeEventListener("input", ansAutoFill)
                 userInputAutocomplete.removeEventListener("click", handleAutocompleteClick)
                 // User input is now last input
+                input.spellcheck = "false"
                 userInput = input
                 const autocomplete = document.createElement("div")
                 autocomplete.classList.add("input-autocomplete")
@@ -391,45 +440,74 @@ document.addEventListener("DOMContentLoaded", () => {
                 userInput.focus() 
             }
         } else if (event.keyCode === 57 && event.shiftKey) {
-            const index = window.getSelection().anchorOffset
-            event.preventDefault()
-            const u = userInput.innerText
-            userInput.innerText = `${u.slice(0, index)}()${u.slice(index, u.length)}`
-            positionCaret(userInput, index + 1)
+            event.preventDefault();
+            const cursorPos = getCursorPosition(userInput)
+            const fullText = userInput.textContent
+            const newText = fullText.slice(0, cursorPos) + "()" + fullText.slice(cursorPos)
+            userInput.textContent = newText
+            highlightSyntax(userInput)
+            setCursorPosition(userInput, cursorPos + 1)
         } else if (event.keyCode === 8) {
-            const index = window.getSelection().anchorOffset
-            const u = userInput.innerText
-            if ((u[index - 1] === "(" && u[index] === ")") || (u[index - 1] === "[" && u[index] === "]")) {
-                event.preventDefault()
-                userInput.innerText = u.slice(0, index - 1) + u.slice(index + 1)
-                positionCaret(userInput, index - 1)
+            event.preventDefault();
+            const selection = window.getSelection()
+            if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
+                const range = selection.getRangeAt(0)
+                const start_offset = getCursorPosition(userInput, range.startContainer, range.startOffset)
+                const end_offset = getCursorPosition(userInput, range.endContainer, range.endOffset)
+                const plain_text = userInput.textContent
+                const new_text = plain_text.slice(0, start_offset) + plain_text.slice(end_offset)
+                userInput.textContent = new_text
+                highlightSyntax(userInput)
+                setCursorPosition(userInput, start_offset)
+            } else { 
+                const cursor_pos = getCursorPosition(userInput)
+                const plain_text = userInput.textContent
+                if (cursor_pos > 0) {
+                    if ((plain_text[cursor_pos - 1] === "(" && plain_text[cursor_pos] === ")") ||
+                        (plain_text[cursor_pos - 1] === "[" && plain_text[cursor_pos] === "]")) {                        
+                        const new_text = plain_text.slice(0, cursor_pos - 1) + plain_text.slice(cursor_pos + 1)
+                        userInput.textContent = new_text
+                        highlightSyntax(userInput)
+                        setCursorPosition(userInput, cursor_pos - 1)
+                    } else {
+                        const new_text = plain_text.slice(0, cursor_pos - 1) + plain_text.slice(cursor_pos)
+                        userInput.textContent = new_text
+                        highlightSyntax(userInput)
+                        ansAutoFill(event)
+                        setCursorPosition(userInput, cursor_pos - 1)
+                    }
+                }
             }
         } else if (event.keyCode === 219) {
-            const index = window.getSelection().anchorOffset
             event.preventDefault()
-            const u = userInput.innerText
-            userInput.innerText = `${u.slice(0, index)}[]${u.slice(index, u.length)}`
-            positionCaret(userInput, index + 1)
+            const cursor_pos = getCursorPosition(userInput)
+            const full_text = userInput.textContent
+            const new_text = full_text.slice(0, cursor_pos) + "[]" + full_text.slice(cursor_pos)
+            userInput.textContent = new_text
+            highlightSyntax(userInput)
+            setCursorPosition(userInput, cursor_pos + 1)
         } else if (event.key === "ArrowUp") {
+            event.preventDefault()
             if (history_index >= 0 && history_index < history.length) {
-                if (history_index == history.length - 1) {
-                    history_current = user_input
+                if (history_index === history.length - 1) {
+                    history_current = userInput.textContent
                 }
-                userInput.innerText = history[history_index]
+                userInput.textContent = history[history_index]
+                highlightSyntax(userInput)
                 history_index = Math.max(history_index - 1, 0)
-                event.preventDefault()
-                positionCaret(userInput, userInput.innerText.length)
+                setCursorPosition(userInput, userInput.textContent.length)
             }
         } else if (event.key === "ArrowDown") {
             if (history.length === 0) return
-            if (history_index >= 0 && history_index < history.length - 1) {
-                history_index++
-                userInput.innerText = history[history_index]
-            } else {
-                userInput.innerText = history_current
-            }
             event.preventDefault()
-            positionCaret(userInput, userInput.innerText.length)
+            if (history_index < history.length - 1) {
+                history_index++
+                userInput.textContent = history[history_index]
+            } else {
+                userInput.textContent = history_current
+            }
+            highlightSyntax(userInput)
+            setCursorPosition(userInput, userInput.textContent.length)
         }
     }
 
@@ -481,7 +559,7 @@ function enableDragToScroll(element) {
                 e.preventDefault()
                 e.stopPropagation()
                 element.removeEventListener("click", preventClick, true)
-            };
+            }
             element.addEventListener("click", preventClick, true)
         }
     }

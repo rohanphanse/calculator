@@ -79,7 +79,7 @@ const CONSTANTS = ["pi", "e", "phi", "inf", "units", "true", "false"]
 const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not", "mod"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
-const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else"]
+const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else", "trace"]
 const LIST_OPERATIONS = ["mean", "median", "sd", "sort", "sum", "len", "max", "min", "concat", "zeros"]
 
 // Types
@@ -418,6 +418,9 @@ const OPERATIONS = {
     "tan": {
         name: "Tangent",
         func: (theta) => {
+            if (is_close_to_int(theta / Math.PI)) {
+                return 0
+            }
             return Math.tan(theta)
         },
         schema: [1],
@@ -845,30 +848,6 @@ const OPERATIONS = {
         vars: ["x"],
         types: [TL(TA)]
     },
-    "def": {
-        name: "View function definition",
-        func: (f, calc) => {
-            if (f.op in calc.functions) {
-                let fs = calc.functions[f.op].string
-                while (fs.includes("@")) {
-                    const index = fs.indexOf("@")
-                    let name = fs.slice(fs.lastIndexOf("@"))
-                    if (name.indexOf(")") !== -1) {
-                        name = name.slice(0, name.indexOf(")"))
-                    }
-                    fs = fs.slice(0, index) + calc.functions[name].string.replaceAll("@", "#") + fs.slice(index + name.length)
-                }
-                fs = fs.replaceAll("#", "@")
-                return new String(fs)
-            } else {
-                return "Def error > can only view user-defined functions"
-            }
-        },
-        schema: [1],
-        vars: ["func"],
-        types: [TF],
-        calc: true
-    },
     "concat": {
         name: "Concatenate lists",
         func: (lists) => {
@@ -1107,6 +1086,9 @@ const OPERATIONS = {
     "==": {
         name: "Equal",
         func: (a, b) => {
+            if (Array.isArray(a) && Array.isArray(b)) {
+                return tensors_equal(a, b)
+            }
             return a === b
         },
         schema: [-1, 1],
@@ -1273,9 +1255,9 @@ const HELP = {
     },
     "clear": {
         name: "Clear",
-        schema: [],
-        vars: [],
-        types: []
+        schema: [1],
+        vars: ["N"],
+        types: [TO(TN)],
     },
     "help": {
         name: "Help",
@@ -1315,7 +1297,19 @@ const HELP = {
         vars: [],
         types: [],
         example: "Examples:\n  1. if x > 10 then 10 else x \n  2. if x == 20 then 2 else if x == 10 then 1 else 0"
-    }
+    },
+    "trace": {
+        name: "Debug trace",
+        schema: [1],
+        vars: ["x"],
+        types: ["expression"],
+    },
+    "def": {
+        name: "View function definition",
+        schema: [1],
+        vars: ["func"],
+        types: [TF]
+    },
 }
 
 // Determine if string is name of math function 

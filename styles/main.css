@@ -260,7 +260,7 @@ body {
 .result {
     text-align: right;
     font-family: monospace;
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: grey;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -279,4 +279,19 @@ body {
 
 #angle-button {
     user-select: none;
+}
+
+.highlight-number {
+    color: rgb(87, 142, 88);
+    font-weight: bold; 
+}
+
+.highlight-word {
+    color: rgb(191, 66, 191);
+    font-weight: bold; 
+}
+
+.highlight-keyword {
+    color: rgb(63, 63, 214);
+    font-weight: bold; 
 }

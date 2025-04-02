@@ -200,6 +200,29 @@ function tensor_add_scalar(a1, s, c = 1) {
     return result
 }
 
+function tensors_equal(a1, a2) {
+    if (!Array.isArray(a1) || !Array.isArray(a2)) {
+        return false
+    }
+    if (a1.length !== a2.length) {
+        return false
+    }
+    for (let i = 0; i < a1.length; i++) {
+        if (Array.isArray(a1[i]) && Array.isArray(a2[i])) {
+            if (!tensors_equal(a1[i], a2[i])) {
+                return false
+            }
+        } else if (typeof a1[i] === "number" && typeof a2[i] === "number") {
+            if (a1[i] !== a2[i]) {
+                return false
+            }
+        } else {
+            return false
+        }
+    }
+    return true
+}
+
 function create_zero_tensor(dims) {
     if (dims.length === 0) {
       return 0
@@ -244,9 +267,9 @@ function matmul(A, B) {
     const result = Array(RA).fill(null).map(() => Array(CB).fill(0))
     for (let i = 0; i < RA; i++) {
         for (let j = 0; j < CB; j++) {
-        for (let k = 0; k < CA; k++) {
-            result[i][j] += A[i][k] * B[k][j]
-        }
+            for (let k = 0; k < CA; k++) {
+                result[i][j] += A[i][k] * B[k][j]
+            }
         }
     }
     return result
@@ -276,6 +299,11 @@ function factorial(n) {
 
 function is_close(a, b, tol = 1e-9) {
     return Math.abs(a - b) <= tol
+}
+
+function is_close_to_int(a, tol = 1e-9) {
+    const rounded = Math.round(a);
+    return Math.abs(a - rounded) <= tol;
 }
 
 function gcd(a, b) {
@@ -367,9 +395,9 @@ function parse_if(str) {
 
 function eval_if(if_st, calc) {
     if (typeof if_st === "string") {
-        return calc.calculate(if_st, { noAns: true, noRound: true })
+        return calc.calculate(if_st, { noAns: true, noRound: true, get_result: true, keep_debug: true })
     }
-    const value = calc.calculate(if_st.cond, { noAns: true })
+    const value = calc.calculate(if_st.cond, { noAns: true, get_result: true, keep_debug: true })
     if (value) {
         return eval_if(if_st.then, calc)
     } else {
@@ -773,3 +801,108 @@ function tree_to_string(node) {
             return ""
     }
 }
+// Syntax highlight code generated with help from LLMs
+function highlightSyntax(element) {
+    const cursor_position = getCursorPosition(element)
+    let text = element.innerHTML
+    text = text.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
+    const keywords = ["if","then","else","def","save","help","clear","trace","to"]
+    let lines = text.split("\n")
+    let processed_lines = lines.map(line => {
+        if (line.trim() === "") return line
+        line = line.replace(
+            /(^|\s|>|\(|\[|,|[-+*/%^=()])(-?(?:\d+\.?\d*|\.\d+))([a-zA-Z_][a-zA-Z0-9_]*)(?=\W|\]|,|\)|$|[-+*/%^=()])/g,
+            (match, prefix, number, word) => {
+                if (prefix.match(/[a-zA-Z_]$/)) return match
+                return `${prefix}<span class="highlight-number">${number}</span><span class="highlight-word">${word}</span>`
+            }
+        )
+        line = line.replace(
+            /(^|\s|>|\(|\[|,|[-+*/%^=()])(0x|0b|0o)(?![0-9a-zA-Z])(?!\w)/g,
+            (match, prefix, prefixNum) => {
+                if (prefix.match(/[a-zA-Z_]$/)) return match
+                return `${prefix}<span class="highlight-number">${prefixNum}</span>`
+            }
+        )
+        line = line.replace(
+            /(^|\s|>|\(|\[|,|[-+*/%^=()])(-?(?:0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+|\d+\.?\d*|\.\d+)(?!\w))/g,
+            (match, prefix, number) => {
+                if (prefix.match(/[a-zA-Z_]$/)) return match
+                return `${prefix}<span class="highlight-number">${number}</span>`
+            }
+        )
+        keywords.forEach(keyword => {
+            const regex = new RegExp(`(^|\\s|>|\\()${keyword}(?=$|\\s|\\W|\\)|>)`, "g")
+            line = line.replace(regex, (match, prefix) => {
+                if (prefix === ">" || line.includes(`<${keyword}`)) return match
+                return `${prefix}<span class="highlight-keyword">${keyword}</span>`
+            })
+        })
+        line = line.replace(
+            /(^|\s|>|\(|\[|,|[-+*/%^=:()])([a-zA-Z_][a-zA-Z0-9_]*)(?![^<]*>)/g,
+            (match, prefix, word) => {
+                if (keywords.includes(word)) return match
+                return `${prefix}<span class="highlight-word">${word}</span>`
+            }
+        )
+        return line
+    })
+    text = processed_lines.join("\n")
+    if (element.innerHTML !== text) {
+        element.innerHTML = text
+        setCursorPosition(element, cursor_position)
+    }
+}
+
+
+function getCursorPosition(element, start_node = null, start_offset = null) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return 0
+    const range = selection.getRangeAt(0)
+    const new_range = range.cloneRange()
+    new_range.selectNodeContents(element)
+    if (start_node && start_offset !== null) {
+        new_range.setEnd(start_node, start_offset)
+    } else {
+        new_range.setEnd(range.endContainer, range.endOffset)
+    }
+    return new_range.toString().length
+}
+  
+function setCursorPosition(element, position) {
+    if (!document.contains(element)) return
+    const node_info = find_node_and_offset_position(element, position)
+    if (!node_info) return
+    const { node, offset } = node_info
+    const range = document.createRange()
+    range.setStart(node, offset)
+    range.collapse(true)
+    const selection = window.getSelection()
+    selection.removeAllRanges()
+    selection.addRange(range)
+}
+  
+function find_node_and_offset_position(root_node, target_position) {
+    let current_position = 0
+    function find_position(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+        const node_length = node.nodeValue.length
+        if (current_position <= target_position && target_position <= current_position + node_length) {
+            return {
+            node: node,
+            offset: target_position - current_position
+            }
+        }
+        current_position += node_length
+        } 
+        else if (node.nodeType === Node.ELEMENT_NODE) {
+        for (let i = 0; i < node.childNodes.length; i++) {
+            const result = find_position(node.childNodes[i])
+            if (result) return result
+        }
+        }
+        return null
+    }
+    return find_position(root_node)
+}
+

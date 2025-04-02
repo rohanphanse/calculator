@@ -13,6 +13,9 @@ class Calculator {
         this.overflow_max = 100000
         this.lambda_counter = 0
         this.parameter_context = {}
+        this.debug = false
+        this.debug_log = []
+        this.debug_depth = 0
     }
 
     // Parse raw expression into tokens
@@ -414,7 +417,26 @@ class Calculator {
                 }
             }
             // console.log("this.functions", this.functions)
+            let debug_str
+            if (this.debug) {
+                let debug_params = []
+                for (const p of parameters) {
+                    if (typeof p === "object" && p.cond) {
+                        // console.log("skip")
+                    } else {
+                        debug_params.push(this.evaluate([p], { noAns: true }))
+                    }
+                }
+                debug_str = `${tokens[index]}(${debug_params.join(", ")})`
+                this.debug_log.push([this.debug_depth, debug_str])
+                this.debug_depth++
+            }
             const result = this.evaluate(value, { noAns: true, noRound: true })
+            if (this.debug) {
+                const result_string = this.evaluate(value, { noAns: true })
+                this.debug_depth--
+                this.debug_log.push([this.debug_depth, `${debug_str} -> ${result_string}`])
+            }
             // console.log("result", result)
             for (let i = 0; i < func_parameters.length; i++) {
                 delete this.parameter_context[func_parameters[i]]
@@ -850,18 +872,32 @@ class Calculator {
             }
             // Offset required if first parameter negative/before index
             const offset = operation.schema[0] < 0 ? operation.schema[0] : 0
-            if (operation.calc) {
-                params.push(this)
-            }
             if (!operation.allow_fractions) {
                 params = params.map((n) => n instanceof Fraction ? n.value() : n)
             }
             if (!operation.allow_constants) {
                 params = params.map((n) => n instanceof Constant ? n.value() : n)
             }
-            let result = operation.func(...params)
+            let result
+            if (operation.calc) {
+                result = operation.func(...params, this)
+            } else {
+                result = operation.func(...params)
+            }
             if (typeof result === "string") {
                 return `${operation.name} error > ${result}`
+            }
+            if (this.debug && !SYMBOLS.includes(tokens[index]) && !["eval_if", "index"].includes(tokens[index])) {
+                const result_string = this.evaluate([result], { noAns: true })
+                let debug_params = []
+                for (const p of params) {
+                    if (typeof p === "object" && p.cond) {
+                        // console.log("skip")
+                    } else {
+                        debug_params.push(this.evaluate([p], { noAns: true }))
+                    }
+                }
+                this.debug_log.push([this.debug_depth, `${tokens[index]}(${debug_params.join(", ")}) -> ${result_string}`])
             }
             if (result instanceof Fraction && result.invalid) {
                 if (result.invalid === "0/0") {
@@ -888,7 +924,15 @@ class Calculator {
 
     // Calculate numerical result from raw expression
     calculate(expression, options = {}) {
+        if (!options.keep_debug) {
+            this.debug_log = []
+            this.debug = false
+            this.debug_depth = 0
+        }
         // console.log("calculate", expression)
+        if (options.debug) {
+            this.debug = true
+        }
         this.overflow_count = 0
         let result
         expression = expression.split(";")
@@ -901,6 +945,20 @@ class Calculator {
             } else {
                 result = tokens
             }
+        }
+        if (this.debug && !options.get_result) {
+            let debug_output = ""
+            for (let i = 0; i < this.debug_log.length; i++) {
+                let e = this.debug_log[i]
+                if (i === this.debug_log.length - 1 || !this.debug_log[i + 1][1].includes(e[1])) {
+                    for (let j = 0; j < e[0]; j++) {
+                        debug_output += "|  "
+                    }
+                    debug_output += e[1]
+                    debug_output += "\n"
+                }
+            }
+            result = debug_output || "N/A"
         }
         return result
     }
