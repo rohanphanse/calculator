@@ -32,6 +32,8 @@ function roundArray(a, p = 0) {
                 a[i] = `${a[i].n}/${a[i].d}`
             } else if ("c" in a[i]) {
                 a[i] = `${a[i].c}`
+            } else if ("b" in a[i]) {
+                a[i] = `${a[i].b}`
             }
         } else if (Array.isArray(a[i])) {
             a[i] = roundArray(a[i], p)
@@ -110,8 +112,26 @@ function isInt32(n) {
     return n >= -2147483648 && n <= 2147483647
 }
 
-// Credit for following functions: Google Generative AI
+function convert_to_decimal(n, radix = 10) {
+    if (n instanceof BaseNumber) {
+        n = n.b
+    }
+    n = n.toString()
+    for (const base in bases) {
+        if (n.toString().startsWith(base)) {
+            n = n.slice(2)
+            radix = bases[base]
+            break
+        }
+    }
+    const N = parseInt(n, radix)
+    if (n.length === 32 && n[0] === "1") {
+        return N - Math.pow(2, 32)
+    }
+    return N
+}
 
+// Credit for following functions: Google Generative AI
 function rref(m) {
     m = m.map(row => [...row]) // Copy matrix
     const R = m.length
@@ -805,59 +825,148 @@ function tree_to_string(node) {
 // Syntax highlight code generated with help from LLMs
 function highlightSyntax(element, backticks_mode = false) {
     const cursor_position = getCursorPosition(element)
-    let text = element.innerHTML
-    text = text.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
+    let text = element.innerHTML.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
     const keywords = ["if", "then", "else", "def", "save", "help", "clear", "trace", "to"]
-    let lines = text.split("\n")
-    let processed_lines
-    const process_line = (line) => {
-        if (line.trim() === "") return line
-        line = line.replace(
-            /(^|\s|>|\(|\[|,|[-+*/%^=()])(-?(?:\d+\.?\d*|\.\d+))([a-zA-Z_][a-zA-Z0-9_]*)(?=\W|\]|,|\)|$|[-+*/%^=()])/g,
-            (match, prefix, number, word) => {
-                if (prefix.match(/[a-zA-Z_]$/)) return match
-                return `${prefix}<span class="highlight-number">${number}</span><span class="highlight-word">${word}</span>`
-            }
-        )
-        line = line.replace(
-            /(^|\s|>|\(|\[|,|[-+*/%^=()])(0x|0b|0o)(?![0-9a-zA-Z])(?!\w)/g,
-            (match, prefix, prefixNum) => {
-                if (prefix.match(/[a-zA-Z_]$/)) return match
-                return `${prefix}<span class="highlight-number">${prefixNum}</span>`
-            }
-        )
-        line = line.replace(
-            /(^|\s|>|\(|\[|,|[-+*/%^=()])(-?(?:0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+|\d+\.?\d*|\.\d+)(?!\w))/g,
-            (match, prefix, number) => {
-                if (prefix.match(/[a-zA-Z_]$/)) return match
-                return `${prefix}<span class="highlight-number">${number}</span>`
-            }
-        )
-        keywords.forEach(keyword => {
-            const regex = new RegExp(`(^|\\s|>|\\()${keyword}(?=$|\\s|\\W|\\)|>)`, "g")
-            line = line.replace(regex, (match, prefix) => {
-                if (prefix === ">" || line.includes(`<${keyword}`)) return match
-                return `${prefix}<span class="highlight-keyword">${keyword}</span>`
+    const process_line = (text) => {
+        const matches = []
+        // Handle complete base numbers (0b101, 0xFF, etc.)
+        const complete_base_regex = /(^|\s|>|\(|\[|,|[-+*/%^=()])(0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)(?!\w)/g
+        let match
+        while ((match = complete_base_regex.exec(text)) !== null) {
+            const prefix = match[1]
+            const number = match[2]
+            matches.push({
+                start: match.index + prefix.length,
+                end: match.index + prefix.length + number.length,
+                replacement: `<span class="highlight-number">${number}</span>`,
+                priority: 1
             })
-        })
-        line = line.replace(
-            /(^|\s|>|\(|\[|,|[-+*/%^=:()])([a-zA-Z_][a-zA-Z0-9_]*)(?![^<]*>)/g,
-            (match, prefix, word) => {
-                if (keywords.includes(word)) return match
-                return `${prefix}<span class="highlight-word">${word}</span>`
+        }
+        // Handle number followed by word (i.e. 12abc)
+        const number_var_regex = /(\d+)([a-zA-Z_][a-zA-Z0-9_]*)/g
+        while ((match = number_var_regex.exec(text)) !== null) {
+            const number = match[1]
+            const varName = match[2]
+            const already_matched = matches.some(m => 
+                m.start <= match.index && 
+                m.end >= match.index + number.length + varName.length
+            )
+            if (!already_matched) {
+                matches.push({
+                    start: match.index,
+                    end: match.index + number.length,
+                    replacement: `<span class="highlight-number">${number}</span>`,
+                    priority: 2
+                })
+                matches.push({
+                    start: match.index + number.length,
+                    end: match.index + number.length + varName.length,
+                    replacement: `<span class="highlight-word">${varName}</span>`,
+                    priority: 2.5
+                })
             }
-        )
-        return line
+        }
+        // Handle base prefixes without proper digits
+        const base_prefix_regex = /(^|\s|>|\(|\[|,|[-+*/%^=()])(0x|0b|0o)(?!\w)/g
+        while ((match = base_prefix_regex.exec(text)) !== null) {
+            const prefix = match[1]
+            const basePrefix = match[2]
+            const already_matched = matches.some(m => 
+                m.start <= match.index + prefix.length && 
+                m.end >= match.index + match[0].length
+            )
+            if (!already_matched) {
+                matches.push({
+                    start: match.index + prefix.length,
+                    end: match.index + match[0].length,
+                    replacement: `<span class="highlight-number">${basePrefix}</span>`,
+                    priority: 3
+                })
+            }
+        }
+        // Handle decimal numbers
+        const decimal_regex = /(^|\s|>|\(|\[|,|[-+*/%^=()])(-?\d+\.?\d*|\.\d+)(?![a-zA-Z0-9_])/g
+        while ((match = decimal_regex.exec(text)) !== null) {
+            const prefix = match[1]
+            const number = match[2]
+            const already_matched = matches.some(m => 
+                m.start <= match.index + prefix.length && 
+                m.end >= match.index + prefix.length + number.length
+            )
+            if (!already_matched) {
+                matches.push({
+                    start: match.index + prefix.length,
+                    end: match.index + prefix.length + number.length,
+                    replacement: `<span class="highlight-number">${number}</span>`,
+                    priority: 4
+                })
+            }
+        }
+        // Handle words
+        const word_regex = /(^|\s|>|\(|\[|,|[-+*/%^=()])([a-zA-Z_][a-zA-Z0-9_]*)(?![^<]*>)/g
+        while ((match = word_regex.exec(text)) !== null) {
+            const prefix = match[1]
+            const word = match[2]
+            if (!keywords.includes(word)) {
+                const already_matched = matches.some(m => 
+                    (m.start <= match.index + prefix.length && 
+                    m.end >= match.index + match[0].length) ||
+                    matches.some(nm => nm.end === match.index + prefix.length)
+                )
+                if (!already_matched) {
+                    matches.push({
+                        start: match.index + prefix.length,
+                        end: match.index + prefix.length + word.length,
+                        replacement: `<span class="highlight-word">${word}</span>`,
+                        priority: 5
+                    })
+                }
+            }
+        }
+        // Handle keywords
+        const keyword_regex = new RegExp(`(^|\\s|>|\\()(${keywords.join("|")})(?=$|\\s|\\W|\\)|>)`, "g")
+        while ((match = keyword_regex.exec(text)) !== null) {
+            const prefix = match[1]
+            const keyword = match[2]
+            matches.push({
+                start: match.index + prefix.length,
+                end: match.index + prefix.length + keyword.length,
+                replacement: `<span class="highlight-keyword">${keyword}</span>`,
+                priority: 6
+            })
+        }
+        // Resolve match overlaps in order of priority
+        matches.sort((a, b) => {
+            if (a.start !== b.start) return a.start - b.start
+            return a.priority - b.priority
+        })
+        
+        let result = ""
+        let lastIndex = 0
+        const final_matches = []
+        for (let i = 0; i < matches.length; i++) {
+            const current = matches[i]
+            const overlaps = final_matches.some(m => 
+                (current.start < m.end && current.end > m.start)
+            )
+            if (!overlaps) {
+                final_matches.push(current)
+            }
+        }
+        final_matches.sort((a, b) => a.start - b.start)
+        for (const match of final_matches) {
+            result += text.substring(lastIndex, match.start)
+            result += match.replacement
+            lastIndex = match.end
+        }
+        result += text.substring(lastIndex)
+        return result
     }
     if (backticks_mode) {
-        text = text.replace(/`([^`]+)`/g, (match, content) => {
-            return process_line(content) 
-        })
-        processed_lines = [text]
+        text = text.replace(/`([^`]+)`/g, (match, content) => process_line(content))
     } else {
-        processed_lines = lines.map(process_line)
+        text = text.split("\n").map(process_line).join("\n")
     }
-    text = processed_lines.join("\n")
     if (element.innerHTML !== text) {
         element.innerHTML = text
         setCursorPosition(element, cursor_position)

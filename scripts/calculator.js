@@ -109,7 +109,7 @@ class Calculator {
                     }
                     const str = this.peek(expression, i + 1, "string")
                     if (check(str.slice(1))) {
-                        tokens.push(new String(`0${str}`))
+                        tokens.push(new BaseNumber(`0${str}`))
                         i += str.length
                     } else {
                         return "Invalid base string"
@@ -141,7 +141,7 @@ class Calculator {
                     i += string.length - 1
                 // Ans keyword
                 } else if (string === "ans") {
-                    if (typeof this.ans !== "string") {
+                    if (typeof this.ans !== "string" && this.ans !== null) {
                         tokens.push(string)
                         i += string.length - 1
                     } else {
@@ -756,7 +756,7 @@ class Calculator {
         }
 
         // One token to evaluate
-        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || tokens[0] instanceof Constant || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean") {
+        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || tokens[0] instanceof Constant || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean" || tokens[0] instanceof BaseNumber) {
             return tokens[0]
         } else if (CONSTANTS.includes(tokens[0])) {
             return OPERATIONS[tokens[0]].func()
@@ -877,6 +877,9 @@ class Calculator {
             }
             if (!operation.allow_constants) {
                 params = params.map((n) => n instanceof Constant ? n.value() : n)
+            }
+            if (!operation.allow_base_numbers) {
+                params = params.map((n) => n instanceof BaseNumber ? convert_to_decimal(n) : n)
             }
             let result
             if (operation.calc) {

@@ -211,6 +211,8 @@ document.addEventListener("DOMContentLoaded", () => {
         userInputAutocomplete.innerText = ""
         highlightSyntax(userInput)
         let search_terms = [...Object.keys(OPERATIONS), ...Object.keys(HELP), ...Object.keys(calculator.variables), ...Object.keys(calculator.functions)]
+        let removed_terms = ["eval_if", "index"]
+        search_terms = search_terms.filter((x) => !removed_terms.includes(x))
         let words = user_input.split(" ")
         let last_word = words[words.length - 1]
         let matches = []
@@ -225,14 +227,16 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 userInputAutocomplete.innerText = matches[0].slice(last_word.length)
                 user_input = userInput.innerText
-                positionCaret(userInput, user_input.length)
+                setCursorPosition(userInput, userInput.innerText.length)
             }
         }
         const e = event.target.innerText
         // First character is symbol
         if (e.trim().length === 1 && SYMBOLS.includes(e) && !["-", "~", ":", ...UNITS].includes(e)) {
-            userInput.innerHTML = `ans${["!", "^"].includes(e) ? "" : " "}${e}${["^"].includes(e) ? "" : "&nbsp"}`
-            positionCaret(userInput, userInput.innerText.length)
+            userInput.innerHTML = `ans${["!", "^"].includes(e) ? "" : " "}${e}${["^"].includes(e) ? "" : " "}`
+            highlightSyntax(userInput)
+            const cursor_pos = ["^", "!"].includes(e) ? `ans${e}`.length : `ans ${e} `.length
+            setCursorPosition(userInput, cursor_pos)
         }
     }
 
@@ -259,6 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 history_index = history.length
                 history.push(user_input)
                 history_current = ""
+                let output = ""
                 if (user_input.startsWith("clear")) {
                     if (user_input === "clear") {
                         interface.textContent = ""
@@ -275,177 +280,174 @@ document.addEventListener("DOMContentLoaded", () => {
                             output = "Clear error"
                         }
                     }
-                } else {
-                    let output = ""
-                    if (user_input.startsWith("help")) {
-                        const op = user_input.slice(user_input.indexOf("help") + "help".length).trim()
-                        if (OPERATIONS[op] || HELP[op]) {
-                            let e = OPERATIONS[op] || HELP[op]
-                            output = `Name: ${e.name}\nUsage: `
-                            if (e.schema.length == 0) {
-                                output += op
-                            } else if (e.schema[0] < 0 || SYMBOLS.includes(op) || HELP[op]) {
-                                if (e.schema[0] === -2) {
-                                    output += `${e.vars[0]} ${e.vars[1]} ${op}`
-                                } else if (e.schema[0] === -1) {
-                                    output += `${e.vars[0]}${["!"].includes(op) ? "" : " "}${op}`
-                                } else {
-                                    output += `${op}${HELP[op] && op !== "@" ? " " : ""}${e.vars[0]}`
-                                }
-                                for (let i = 1; i < e.vars.length; i++) {
-                                    if (e.schema[i] < 0) continue
-                                    output += ` ${e.vars[i]}`
-                                }
-                                output += `\nTypes: ${e.vars[0]}: ${e.types[0]}`
-                                for (let i = 1; i < e.vars.length; i++) {
-                                    output += `, ${e.vars[i]}: ${e.types[i]}`
-                                }
+                } else if (user_input.startsWith("help")) {
+                    const op = user_input.slice(user_input.indexOf("help") + "help".length).trim()
+                    if (OPERATIONS[op] || HELP[op]) {
+                        let e = OPERATIONS[op] || HELP[op]
+                        output = `Name: ${e.name}\nUsage: `
+                        if (e.schema.length == 0) {
+                            output += op
+                        } else if (e.schema[0] < 0 || SYMBOLS.includes(op) || HELP[op]) {
+                            if (e.schema[0] === -2) {
+                                output += `${e.vars[0]} ${e.vars[1]} ${op}`
+                            } else if (e.schema[0] === -1) {
+                                output += `${e.vars[0]}${["!"].includes(op) ? "" : " "}${op}`
                             } else {
-                                output += `${op}(${e.vars[0]}: ${e.types[0]}`
-                                for (let i = 1; i < e.vars.length; i++) {
-                                    output += `, ${e.vars[i]}: ${e.types[i]}`
-                                }
-                                output += ")"
+                                output += `${op}${HELP[op] && op !== "@" ? " " : ""}${e.vars[0]}`
                             }
-                            if (e.example) {
-                                output += `\n${e.example}`
+                            for (let i = 1; i < e.vars.length; i++) {
+                                if (e.schema[i] < 0) continue
+                                output += ` ${e.vars[i]}`
                             }
-                        } else {
-                            output += "Welcome to Calculator! Learn about a function by typing `help func` where `func` is the name of a function such as `sin`..."
-                        }
-                    } else if (user_input.startsWith("trace")) {
-                        const rest = user_input.slice(user_input.indexOf("trace") + "trace".length).trim()
-                        output = calculator.calculate(rest, { debug: true })
-                    } else if (user_input.startsWith("save")) {
-                        const op = user_input.slice(user_input.indexOf("save") + "save".length).trim()
-                        // console.log("save", op)
-                        if (!op.startsWith("@") && op in calculator.functions) {
-                            try {   
-                                let fs = calculator.functions[op].string
-                                while (fs.includes("@")) {
-                                    const index = fs.lastIndexOf("@")
-                                    let name = fs.slice(fs.lastIndexOf("@"))
-                                    if (name.indexOf(")") !== -1) {
-                                        name = name.slice(0, name.indexOf(")"))
-                                    }
-                                    fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#").trim() + fs.slice(index + name.length)
-                                }
-                                fs = fs.replaceAll("#", "@")
-                                output = `Saved ${fs}`
-                                let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
-                                saved_functions[op] = fs
-                                localStorage.setItem("saved_functions", JSON.stringify(saved_functions))
-                                renderSavedFunctions(saved_functions)
-                            } catch (err) {
-                                // console.log("save error", err)
-                                output = `Save error`
-                            }
-                        } else if (op in calculator.variables) {
-                            try {
-                                let value = JSON.stringify(calculator.variables[op])
-                                value = value.replace(/\{"op":"([^"]+)"\}/g, "$1")
-                                value = value.replaceAll('"', "")
-                                output = `Saved ${op} = ${value.replaceAll(",", ", ")}`
-                                let saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")
-                                saved_variables[op] = value
-                                localStorage.setItem("saved_variables", JSON.stringify(saved_variables))
-                                renderSavedVariables(saved_variables)
-                            } catch (err) {
-                                // console.log(err)
-                                output = `Save error`
+                            output += `\nTypes: ${e.vars[0]}: ${e.types[0]}`
+                            for (let i = 1; i < e.vars.length; i++) {
+                                output += `, ${e.vars[i]}: ${e.types[i]}`
                             }
                         } else {
-                            output = `Save error > can only save user-defined variables and functions`
+                            output += `${op}(${e.vars[0]}: ${e.types[0]}`
+                            for (let i = 1; i < e.vars.length; i++) {
+                                output += `, ${e.vars[i]}: ${e.types[i]}`
+                            }
+                            output += ")"
                         }
-                    } else if (user_input.startsWith("def")) {
-                        const op = user_input.slice(user_input.indexOf("def") + "def".length).trim()
-                        if (op in calculator.functions || (op in calculator.variables && calculator.variables[op] instanceof Operation)) {
+                        if (e.example) {
+                            output += `\n${e.example}`
+                        }
+                    } else {
+                        output += "Welcome to Calculator! Learn about a function by typing `help func` where `func` is the name of a function such as `sin`..."
+                    }
+                } else if (user_input.startsWith("trace")) {
+                    const rest = user_input.slice(user_input.indexOf("trace") + "trace".length).trim()
+                    output = calculator.calculate(rest, { debug: true })
+                } else if (user_input.startsWith("save")) {
+                    const op = user_input.slice(user_input.indexOf("save") + "save".length).trim()
+                    // console.log("save", op)
+                    if (!op.startsWith("@") && op in calculator.functions) {
+                        try {   
                             let fs = calculator.functions[op].string
-                            if (fs.length > 0 && fs[0] === "@") {
-                                fs = fs.replace("@", "#")
-                            }
                             while (fs.includes("@")) {
                                 const index = fs.lastIndexOf("@")
                                 let name = fs.slice(fs.lastIndexOf("@"))
                                 if (name.indexOf(")") !== -1) {
                                     name = name.slice(0, name.indexOf(")"))
                                 }
-                                fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#") + fs.slice(index + name.length)
+                                fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#").trim() + fs.slice(index + name.length)
                             }
                             fs = fs.replaceAll("#", "@")
-                            output = new String(fs)
-                        } else {
-                            output = "Def error > can only view user-defined functions"
+                            output = `Saved ${fs}`
+                            let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
+                            saved_functions[op] = fs
+                            localStorage.setItem("saved_functions", JSON.stringify(saved_functions))
+                            renderSavedFunctions(saved_functions)
+                        } catch (err) {
+                            // console.log("save error", err)
+                            output = `Save error`
+                        }
+                    } else if (op in calculator.variables) {
+                        try {
+                            let value = JSON.stringify(calculator.variables[op])
+                            value = value.replace(/\{"op":"([^"]+)"\}/g, "$1")
+                            value = value.replaceAll('"', "")
+                            output = `Saved ${op} = ${value.replaceAll(",", ", ")}`
+                            let saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")
+                            saved_variables[op] = value
+                            localStorage.setItem("saved_variables", JSON.stringify(saved_variables))
+                            renderSavedVariables(saved_variables)
+                        } catch (err) {
+                            // console.log(err)
+                            output = `Save error`
                         }
                     } else {
-                        // Calculate output
-                        if (event.shiftKey) {
-                            if (user_input.length === 0) {
-                                history.pop()
-                                user_input = history[history.length - 1]
-                                userInput.textContent = user_input
-                                highlightSyntax(userInput)
-                            }
-                            output = calculator.calculate(user_input, { no_fraction: true, no_constant: true })
-                        } else {
-                            output = calculator.calculate(user_input)
+                        output = `Save error > can only save user-defined variables and functions`
+                    }
+                } else if (user_input.startsWith("def")) {
+                    const op = user_input.slice(user_input.indexOf("def") + "def".length).trim()
+                    if (op in calculator.functions || (op in calculator.variables && calculator.variables[op] instanceof Operation)) {
+                        let fs = calculator.functions[op].string
+                        if (fs.length > 0 && fs[0] === "@") {
+                            fs = fs.replace("@", "#")
                         }
+                        while (fs.includes("@")) {
+                            const index = fs.lastIndexOf("@")
+                            let name = fs.slice(fs.lastIndexOf("@"))
+                            if (name.indexOf(")") !== -1) {
+                                name = name.slice(0, name.indexOf(")"))
+                            }
+                            fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#") + fs.slice(index + name.length)
+                        }
+                        fs = fs.replaceAll("#", "@")
+                        output = new String(fs)
+                    } else {
+                        output = "Def error > can only view user-defined functions"
                     }
-                    // Result
-                    const result = document.createElement("pre")
-                    result.className = "result"
-                    result.textContent = output
-                    console.log(output)
-                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || (user_input.startsWith("trace") && output !== "N/A") || user_input.startsWith("def") || user_input.startsWith("type")) {
-                        highlightSyntax(result)
-                    }
-                    if ((typeof output === "string" || output instanceof String) && output.includes("`")) {
-                        highlightSyntax(result, true)
-                    }
-                    if (output.length > 30) {
-                        result.style.textAlign = "left"
-                        result.style.margin = "10px 0 10px 20%"
-                    }
-                    if (typeof output !== "string" && `${output}`.length < 100) {
-                        result.style.cursor = "pointer"
-                        result.addEventListener("click", (event) => {
-                            event.preventDefault()
-                            userInput.innerText += result.innerText + " "
+                } else {
+                    // Calculate output
+                    if (event.shiftKey) {
+                        if (user_input.length === 0) {
+                            history.pop()
+                            user_input = history[history.length - 1]
+                            userInput.textContent = user_input
                             highlightSyntax(userInput)
-                            setCursorPosition(userInput, userInput.innerText.length - 1)
-                        })
+                        }
+                        output = calculator.calculate(user_input, { no_fraction: true, no_constant: true })
+                    } else {
+                        output = calculator.calculate(user_input)
                     }
-                    interface.append(result)
                 }
-                
-                // Input
-                const input = document.createElement("div")
-                input.className = "input"
-                input.contentEditable = "plaintext-only"
-                // Last input is designated as user input
-                userInput.contentEditable = false
-                // Remove event listeners
-                userInput.removeEventListener("keydown", handleKeyDown)
-                userInput.removeEventListener("input", ansAutoFill)
-                userInputAutocomplete.removeEventListener("click", handleAutocompleteClick)
-                // User input is now last input
-                input.spellcheck = "false"
-                userInput = input
-                const autocomplete = document.createElement("div")
-                autocomplete.classList.add("input-autocomplete")
-                userInputAutocomplete = autocomplete
-                const inputRow = document.createElement("div")
-                inputRow.classList.add("input-row")
-                inputRow.append(input)
-                inputRow.append(autocomplete)
-                interface.append(inputRow)
-                // Add event listeners
-                userInput.addEventListener("keydown", handleKeyDown)
-                userInput.addEventListener("input", ansAutoFill)
-                userInputAutocomplete.addEventListener("click", handleAutocompleteClick)
-
-                userInput.focus() 
+                // Result
+                const result = document.createElement("pre")
+                result.className = "result"
+                result.textContent = output
+                // console.log(output)
+                if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || user_input.startsWith("def") || user_input.startsWith("type")) {
+                    highlightSyntax(result)
+                }
+                if ((typeof output === "string" || output instanceof String) && output.includes("`")) {
+                    highlightSyntax(result, true)
+                }
+                if (output.length > 30) {
+                    result.style.textAlign = "left"
+                    result.style.margin = "10px 0 10px 20%"
+                }
+                if (typeof output !== "string" && `${output}`.length < 100) {
+                    result.style.cursor = "pointer"
+                    result.addEventListener("click", (event) => {
+                        event.preventDefault()
+                        userInput.innerText += result.innerText + " "
+                        highlightSyntax(userInput)
+                        setCursorPosition(userInput, userInput.innerText.length - 1)
+                    })
+                }
+                interface.append(result)
             }
+            
+            // Input
+            const input = document.createElement("div")
+            input.className = "input"
+            input.contentEditable = "plaintext-only"
+            // Last input is designated as user input
+            userInput.contentEditable = false
+            // Remove event listeners
+            userInput.removeEventListener("keydown", handleKeyDown)
+            userInput.removeEventListener("input", ansAutoFill)
+            userInputAutocomplete.removeEventListener("click", handleAutocompleteClick)
+            // User input is now last input
+            input.spellcheck = "false"
+            userInput = input
+            const autocomplete = document.createElement("div")
+            autocomplete.classList.add("input-autocomplete")
+            userInputAutocomplete = autocomplete
+            const inputRow = document.createElement("div")
+            inputRow.classList.add("input-row")
+            inputRow.append(input)
+            inputRow.append(autocomplete)
+            interface.append(inputRow)
+            // Add event listeners
+            userInput.addEventListener("keydown", handleKeyDown)
+            userInput.addEventListener("input", ansAutoFill)
+            userInputAutocomplete.addEventListener("click", handleAutocompleteClick)
+
+            userInput.focus() 
         } else if (event.keyCode === 57 && event.shiftKey) {
             event.preventDefault();
             const cursorPos = getCursorPosition(userInput)

@@ -562,9 +562,9 @@ const OPERATIONS = {
         name: "Decimal to binary",
         func: (n) => {
             if (isInt32(n)) {
-                return new String("0b" + (n >>> 0).toString(2))
+                return new BaseNumber("0b" + (n >>> 0).toString(2))
             }
-            return new String("0b" + n.toString(2))
+            return new BaseNumber("0b" + n.toString(2))
         },
         schema: [1],
         vars: ["x"],
@@ -574,9 +574,9 @@ const OPERATIONS = {
         name: "Decimal to hexadecimal",
         func: (n) => {
             if (isInt32(n)) {
-                return new String("0x" + (n >>> 0).toString(16))
+                return new BaseNumber("0x" + (n >>> 0).toString(16))
             }
-            return new String("0x" + n.toString(16))
+            return new BaseNumber("0x" + n.toString(16))
         },
         schema: [1],
         vars: ["number"],
@@ -587,9 +587,9 @@ const OPERATIONS = {
         name: "Decimal to octal",
         func: (n) => {
             if (isInt32(n)) {
-                return new String("0o" + (n >>> 0).toString(8))
+                return new BaseNumber("0o" + (n >>> 0).toString(8))
             }
-            return new String("0o" + n.toString(8))
+            return new BaseNumber("0o" + n.toString(8))
         },
         schema: [1],
         vars: ["number"],
@@ -598,24 +598,11 @@ const OPERATIONS = {
     },
     "dec": {
         name: "Convert to decimal",
-        func: (n, radix = 10) => {
-            n = n.toString()
-            for (const base in bases) {
-                if (n.toString().startsWith(base)) {
-                    n = n.slice(2)
-                    radix = bases[base]
-                    break
-                }
-            }
-            const N = parseInt(n, radix)
-            if (n.length === 32 && n[0] === "1") {
-                return N - Math.pow(2, 32)
-            }
-            return N
-        },
+        func: (n, radix = 10) => convert_to_decimal(n, radix),
         schema: [1],
         vars: ["x", "radix"],
-        types: [TOR(TN, TS), TO(TN)]
+        types: [TN, TO(TN)],
+        allow_base_numbers: true,
     },
     "quad": {
         name: "Solve quadratic in form of f(x) = ax^2 + bx + c = 0",
@@ -1385,6 +1372,16 @@ class Fraction {
     }
 }
 
+class BaseNumber {
+    constructor(b) {
+        this.b = b
+    }
+
+    toString() {
+        return `${this.b}`
+    }
+}
+
 class Constant {
     constructor(c) {
         this.c = c
@@ -1403,7 +1400,7 @@ function get_param_types(params) {
     const type_list = []
     // console.log("get_param_types", params)
     for (const p of params) {
-        if (typeof p === "number" || p instanceof Fraction || p instanceof Constant) {
+        if (typeof p === "number" || p instanceof Fraction || p instanceof Constant || p instanceof BaseNumber) {
             type_list.push(TN)
         } else if (typeof p === "boolean") {
             type_list.push(TB)
