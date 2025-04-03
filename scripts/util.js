@@ -830,7 +830,7 @@ function highlightSyntax(element, backticks_mode = false) {
     const process_line = (text) => {
         const matches = []
         // Handle complete base numbers (0b101, 0xFF, etc.)
-        const complete_base_regex = /(^|\s|>|\(|\[|,|[-+*/%^=()])(0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)(?!\w)/g
+        const complete_base_regex = /(^|\s|>|\(|\[|,|[-+*/%^=:()])(0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)(?!\w)/g
         let match
         while ((match = complete_base_regex.exec(text)) !== null) {
             const prefix = match[1]
@@ -885,7 +885,7 @@ function highlightSyntax(element, backticks_mode = false) {
             }
         }
         // Handle decimal numbers
-        const decimal_regex = /(^|\s|>|\(|\[|,|[-+*/%^=()])(-?\d+\.?\d*|\.\d+)(?![a-zA-Z0-9_])/g
+        const decimal_regex = /(^|\s|>|<|\(|\[|,|[-+*/%^=:()&|])(-?\d+\.?\d*|\.\d+)(?![a-zA-Z0-9_])/g
         while ((match = decimal_regex.exec(text)) !== null) {
             const prefix = match[1]
             const number = match[2]
@@ -903,7 +903,7 @@ function highlightSyntax(element, backticks_mode = false) {
             }
         }
         // Handle words
-        const word_regex = /(^|\s|>|\(|\[|,|[-+*/%^=()])([a-zA-Z_][a-zA-Z0-9_]*)(?![^<]*>)/g
+        const word_regex = /(^|\s|>|\(|\[|,|[-+*/%^=:()])([a-zA-Z_][a-zA-Z0-9_]*)(?![^<]*>)/g
         while ((match = word_regex.exec(text)) !== null) {
             const prefix = match[1]
             const word = match[2]

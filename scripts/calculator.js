@@ -622,6 +622,9 @@ class Calculator {
         if (options.no_constant && final_result instanceof Constant) {
             final_result = final_result.value()
         }
+        if (options.no_base_number && final_result instanceof BaseNumber) {
+            final_result = convert_to_decimal(final_result)
+        }
         if (typeof final_result === "number") {
             return set_precision(final_result, this.digits)
         } else if (Array.isArray(final_result)) {

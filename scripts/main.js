@@ -389,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             userInput.textContent = user_input
                             highlightSyntax(userInput)
                         }
-                        output = calculator.calculate(user_input, { no_fraction: true, no_constant: true })
+                        output = calculator.calculate(user_input, { no_fraction: true, no_constant: true, no_base_number: true })
                     } else {
                         output = calculator.calculate(user_input)
                     }
