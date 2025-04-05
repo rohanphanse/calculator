@@ -846,10 +846,13 @@ function highlightSyntax(element, backticks_mode = false) {
         const number_var_regex = /(\d+)([a-zA-Z_][a-zA-Z0-9_]*)/g
         while ((match = number_var_regex.exec(text)) !== null) {
             const number = match[1]
-            const varName = match[2]
+            const var_name = match[2]
+            if (var_name.length === 1 && ["e", "E"].includes(var_name) && text.substring(match.index + number.length + 1, match.index + number.length + 2).match(/[+\-\d]/)) {
+                continue
+            }
             const already_matched = matches.some(m => 
                 m.start <= match.index && 
-                m.end >= match.index + number.length + varName.length
+                m.end >= match.index + number.length + var_name.length
             )
             if (!already_matched) {
                 matches.push({
@@ -860,8 +863,8 @@ function highlightSyntax(element, backticks_mode = false) {
                 })
                 matches.push({
                     start: match.index + number.length,
-                    end: match.index + number.length + varName.length,
-                    replacement: `<span class="highlight-word">${varName}</span>`,
+                    end: match.index + number.length + var_name.length,
+                    replacement: `<span class="highlight-word">${var_name}</span>`,
                     priority: 2.5
                 })
             }
@@ -885,7 +888,7 @@ function highlightSyntax(element, backticks_mode = false) {
             }
         }
         // Handle decimal numbers
-        const decimal_regex = /(^|\s|>|<|\(|\[|,|[-+*/%^=:()&|])(-?\d+\.?\d*|\.\d+)(?![a-zA-Z0-9_])/g
+        const decimal_regex = /(^|\s|[><=+\-*/%^&|:(),\[\]])(-?\d+\.?\d*(?:[eE][+\-]?\d+)?|\.\d+(?:[eE][+\-]?\d+)?)(?![a-zA-Z0-9_])/g
         while ((match = decimal_regex.exec(text)) !== null) {
             const prefix = match[1]
             const number = match[2]
@@ -1023,4 +1026,3 @@ function find_node_and_offset_position(root_node, target_position) {
     }
     return find_position(root_node)
 }
-

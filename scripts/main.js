@@ -243,15 +243,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle key down for user input
     function handleKeyDown(event) {
         let user_input = userInput.innerText.trim()
-        if (event.keyCode === 13 || event.key === "Tab") {
+        if (event.key === "Enter" && !event.shiftKey && user_input.length == 0) {
+            event.preventDefault()
+            return
+        }
+        if (event.key === "Enter" || event.key === "Tab") {
             event.preventDefault()
             if (userInputAutocomplete.innerText.length > 0) {
-                const original_text = userInput.textContent;
+                const original_text = userInput.textContent
                 const autocomplete_text = userInputAutocomplete.textContent
                 const cursor_pos = getCursorPosition(userInput)
                 const new_text = original_text.slice(0, cursor_pos) + 
                             autocomplete_text + 
-                            original_text.slice(cursor_pos);
+                            original_text.slice(cursor_pos)
                 userInput.textContent = new_text
                 highlightSyntax(userInput)
                 userInputAutocomplete.textContent = ""
@@ -321,7 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     output = calculator.calculate(rest, { debug: true })
                 } else if (user_input.startsWith("save")) {
                     const op = user_input.slice(user_input.indexOf("save") + "save".length).trim()
-                    // console.log("save", op)
                     if (!op.startsWith("@") && op in calculator.functions) {
                         try {   
                             let fs = calculator.functions[op].string
@@ -334,7 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#").trim() + fs.slice(index + name.length)
                             }
                             fs = fs.replaceAll("#", "@")
-                            output = `Saved ${fs}`
+                            output = `Saved \`${fs}\``
                             let saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
                             saved_functions[op] = fs
                             localStorage.setItem("saved_functions", JSON.stringify(saved_functions))
@@ -348,7 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             let value = JSON.stringify(calculator.variables[op])
                             value = value.replace(/\{"op":"([^"]+)"\}/g, "$1")
                             value = value.replaceAll('"', "")
-                            output = `Saved ${op} = ${value.replaceAll(",", ", ")}`
+                            output = `Saved \`${op} = ${value.replaceAll(",", ", ")}\``
                             let saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")
                             saved_variables[op] = value
                             localStorage.setItem("saved_variables", JSON.stringify(saved_variables))
@@ -399,7 +402,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 result.className = "result"
                 result.textContent = output
                 // console.log(output)
-                if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || user_input.startsWith("def") || user_input.startsWith("type")) {
+                if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || user_input.startsWith("type") || typeof output === "boolean") {
                     highlightSyntax(result)
                 }
                 if ((typeof output === "string" || output instanceof String) && output.includes("`")) {
@@ -457,7 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
             highlightSyntax(userInput)
             setCursorPosition(userInput, cursorPos + 1)
         } else if (event.keyCode === 8) {
-            event.preventDefault();
+            event.preventDefault()
             const selection = window.getSelection()
             if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
                 const range = selection.getRangeAt(0)
@@ -472,8 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const cursor_pos = getCursorPosition(userInput)
                 const plain_text = userInput.textContent
                 if (cursor_pos > 0) {
-                    if ((plain_text[cursor_pos - 1] === "(" && plain_text[cursor_pos] === ")") ||
-                        (plain_text[cursor_pos - 1] === "[" && plain_text[cursor_pos] === "]")) {                        
+                    if ((plain_text[cursor_pos - 1] === "(" && plain_text[cursor_pos] === ")") || (plain_text[cursor_pos - 1] === "[" && plain_text[cursor_pos] === "]")) {
                         const new_text = plain_text.slice(0, cursor_pos - 1) + plain_text.slice(cursor_pos + 1)
                         userInput.textContent = new_text
                         highlightSyntax(userInput)
@@ -522,7 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function handleAutocompleteClick(event) {
         event.preventDefault()
-        positionCaret(userInput, userInput.innerText.length)
+        setCursorPosition(userInput, userInput.textContent.length)
         userInput.focus()
     }
 })

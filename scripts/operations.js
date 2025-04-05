@@ -1402,7 +1402,7 @@ function get_param_types(params) {
     for (const p of params) {
         if (typeof p === "number" || p instanceof Fraction || p instanceof Constant || p instanceof BaseNumber) {
             type_list.push(TN)
-        } else if (typeof p === "boolean") {
+        } else if (typeof p === "boolean" || ["true", "false"].includes(p)) {
             type_list.push(TB)
         } else if (p instanceof String) {
             type_list.push(TS)

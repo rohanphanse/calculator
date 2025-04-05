@@ -222,24 +222,23 @@ class Calculator {
     // Peek ahead from given index in string and return substring which satisfies given criteria
     peek(string, index, type) {
         let length = 1
-        // Check function determines if string fails a certain criteria
-        let check = undefined
-        switch (type) {
-            case "number":
-                check = (n) => isNaN(n)
-                break
-            case "string":
-                check = (e) => !/^[a-zA-Z][a-zA-Z0-9_']*$/i.test(e)
-                break
-        }
         while (index + length <= string.length) {
-            if (string.charAt(index).trim().length === 0) {
-                continue
+            if (string.charAt(index).trim().length === 0) continue
+            const s = string.substr(index, length)
+            let fail = false
+            switch (type) {
+                case "number":
+                    if (/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(s)) break
+                    if (/[eE][+-]?\d*$/.test(s)) {
+                        if (/^[+-]?\d/.test(string.substr(index + length))) break
+                    }
+                    fail = true
+                    break
+                case "string":
+                    fail = !/^[a-zA-Z][a-zA-Z0-9_']*$/i.test(s)
             }
+            if (fail) break
             length++
-            if (check(string.substr(index, length))) {
-                break
-            }
         }
         return string.substr(index, length - 1)
     }
@@ -361,7 +360,7 @@ class Calculator {
             }
 
             for (let a = 0; a < array.length; a++) {
-                if (!Array.isArray(array[a][0])) {
+                if (!Array.isArray(array[a][0]) || array[a].length > 2) {
                     const result = this.evaluate(array[a], { noAns: true, noRound: true })
                     if (typeof result === "string") {
                         throw "Error"
@@ -508,7 +507,7 @@ class Calculator {
 
     // Evaluate numerical result from tokens
     evaluate(tokens, options = {}) {
-        // console.log("evaluate", tokens)
+        // console.log("evaluate", JSON.stringify(tokens))
         this.overflow_count++
         if (this.overflow_count > this.overflow_max) {
             return "Overflow error: too many function calls"
@@ -657,7 +656,7 @@ class Calculator {
 
     // Evaluate expression without parentheses
     evaluateSingle(tokens) {
-        // console.log("evaluateSingle", tokens)
+        // console.log("evaluateSingle", JSON.stringify(tokens))
         if (tokens.length > 1) {
             // Index
             for (let i = 0; i < tokens.length; i++) {

@@ -237,6 +237,7 @@ body {
     font-size: 1.1rem;
     overflow-wrap: break-word;
     margin-bottom: 3px;
+    white-space: pre-wrap;
 }
 
 .input[placeholder]:empty::before {
@@ -294,4 +295,9 @@ body {
 .highlight-keyword {
     color: rgb(63, 63, 214);
     font-weight: bold; 
+}
+
+.tab-space {
+    white-space: pre;
+    user-select: none;
 }
