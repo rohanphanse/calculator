@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let history_index = -1
     let history_current = ""
     let display_mode = localStorage.getItem("display_mode") || "default"
+    let last_output = null
  
     // States
     let UPDATE_DIGITS = false
@@ -387,10 +388,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Calculate output
                     if (event.shiftKey) {
                         if (user_input.length === 0) {
-                            history.pop()
-                            user_input = history[history.length - 1]
-                            userInput.textContent = user_input
-                            highlightSyntax(userInput)
+                            if (last_output instanceof Fraction || last_output instanceof BaseNumber) {
+                                userInput.textContent = `${last_output}`
+                                user_input = `${last_output}`
+                                highlightSyntax(userInput)
+                            } else {
+                                return
+                            }
                         }
                         output = calculator.calculate(user_input, { no_fraction: true, no_constant: true, no_base_number: true })
                     } else {
@@ -401,14 +405,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const result = document.createElement("pre")
                 result.className = "result"
                 result.textContent = output
-                // console.log(output)
+                last_output = output
                 if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || user_input.startsWith("type") || typeof output === "boolean") {
                     highlightSyntax(result)
                 }
                 if ((typeof output === "string" || output instanceof String) && output.includes("`")) {
                     highlightSyntax(result, true)
                 }
-                if (output.length > 30) {
+                if (`${output}`.length > 30) {
                     result.style.textAlign = "left"
                     result.style.margin = "10px 0 10px 20%"
                 }

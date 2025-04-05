@@ -296,8 +296,3 @@ body {
     color: rgb(63, 63, 214);
     font-weight: bold; 
 }
-
-.tab-space {
-    white-space: pre;
-    user-select: none;
-}
