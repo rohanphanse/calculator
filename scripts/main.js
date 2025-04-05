@@ -416,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     result.style.textAlign = "left"
                     result.style.margin = "10px 0 10px 20%"
                 }
-                if (typeof output !== "string" && `${output}`.length < 100) {
+                if (typeof output !== "string" && !(output instanceof String) && `${output}`.length < 100) {
                     result.style.cursor = "pointer"
                     result.addEventListener("click", (event) => {
                         event.preventDefault()
@@ -463,7 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userInput.textContent = newText
             highlightSyntax(userInput)
             setCursorPosition(userInput, cursorPos + 1)
-        } else if (event.keyCode === 8) {
+        } else if (event.key === "Backspace" && !event.metaKey) {
             event.preventDefault()
             const selection = window.getSelection()
             if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
@@ -492,6 +492,16 @@ document.addEventListener("DOMContentLoaded", () => {
                         setCursorPosition(userInput, cursor_pos - 1)
                     }
                 }
+            }
+        } else if (event.key === "Backspace" && event.metaKey) {
+            event.preventDefault();
+            const cursor_pos = getCursorPosition(userInput)
+            const plain_text = userInput.textContent
+            if (cursor_pos > 0) {
+                const new_text = plain_text.slice(cursor_pos);
+                userInput.textContent = new_text
+                highlightSyntax(userInput)
+                setCursorPosition(userInput, 0)
             }
         } else if (event.keyCode === 219) {
             event.preventDefault()
