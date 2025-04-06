@@ -317,6 +317,13 @@ function factorial(n) {
     return value
 }
 
+function flatten(a) {
+    if (!Array.isArray(a)) {
+        return [a]
+    }
+    return a.reduce((acc, val) => acc.concat(flatten(val)), [])
+}
+
 function is_close(a, b, tol = 1e-9) {
     return Math.abs(a - b) <= tol
 }
@@ -347,13 +354,13 @@ function process_index(A, I) {
         return A
     }
     if (Array.isArray(I[0]) && I[0].length === 2) {
-        if (typeof I[0][0] === "number" && typeof I[0][1] === "number") { 
+        if ((typeof I[0][0] === "number" || I[0][0] === false) && (typeof I[0][1] === "number" || I[0][1] === false)) { 
             let start = 0
             let end = A.length
-            if (I[0][0] != -1) {
+            if (I[0][0] !== false) {
                 start = I[0][0] - 1
             }
-            if (I[0][1] != -1) {
+            if (I[0][1] !== false) {
                 end = Math.min(A.length, I[0][1])
             }
             let result = []
@@ -378,6 +385,9 @@ function process_index(A, I) {
             }
             return result
         } else if (typeof I[0] === "number") {
+            if (I[0] < 0) {
+                return process_index(A[A.length + I[0]], I.slice(1))
+            }
             return process_index(A[I[0] - 1], I.slice(1))
         }
     }
@@ -385,32 +395,58 @@ function process_index(A, I) {
 }
 
 function parse_if(str) {
-    const tokens = str.match(/\bif\b|\bthen\b|\belse\b|[^\s]+/g)
-    let index = 0
-    function parse_if_expr() {
-        if (tokens[index] === "if") {
-            index++
-            let condition = []
-            while (tokens[index] !== "then") {
-                condition.push(tokens[index++])
-            }
-            index++
-            let then_branch = parse_if_expr()
-            let else_branch = null
-            if (tokens[index] === "else") {
+    try {
+        const tokens = str.match(/\bif\b|\bthen\b|\belse\b|[^\s]+/g)
+        let index = 0
+        function parse_if_expr() {
+            if (tokens[index] === "if") {
                 index++
-                else_branch = parse_if_expr()
+                if (index >= tokens.length) {
+                    throw "Error: Missing condition after 'if'"
+                }
+                let condition = []
+                while (index < tokens.length && tokens[index] !== "then") {
+                    condition.push(tokens[index++])
+                }
+                if (index >= tokens.length || tokens[index] !== "then") {
+                    throw "Error: Missing 'then' after condition"
+                }
+                if (condition.length === 0) {
+                    throw "Error: Empty condition in if expression"
+                }
+                index++
+                if (index >= tokens.length) {
+                    throw "Error: Missing expression after 'then'"
+                }
+                let then_branch = parse_if_expr()
+                let else_branch = null
+                if (index < tokens.length && tokens[index] === "else") {
+                    index++
+                    if (index >= tokens.length) {
+                        throw "Error: Missing expression after 'else'"
+                    }
+                    else_branch = parse_if_expr()
+                }
+                return { 
+                    cond: condition.join(" "), 
+                    then: then_branch, 
+                    else: else_branch 
+                }
+            } else {
+                let expr = []
+                while (index < tokens.length && !["if", "then", "else"].includes(tokens[index])) {
+                    expr.push(tokens[index++])
+                }
+                if (expr.length === 0) {
+                    throw "Error: Empty conditional expression"
+                }
+                return expr.join(" ")
             }
-            return { cond: condition.join(" "), then: then_branch, else: else_branch }
-        } else {
-            let expr = []
-            while (index < tokens.length && !["if", "then", "else"].includes(tokens[index])) {
-                expr.push(tokens[index++])
-            }
-            return expr.join(" ")
         }
+        return parse_if_expr()
+    } catch (error) {
+        return error 
     }
-    return parse_if_expr()
 }
 
 function eval_if(if_st, calc) {
@@ -823,10 +859,11 @@ function tree_to_string(node) {
 }
 
 // Syntax highlight code generated with help from LLMs
-function highlightSyntax(element, backticks_mode = false) {
+function highlightSyntax(element, backticks_mode = false, highlight_types = false) {
     const cursor_position = getCursorPosition(element)
     let text = element.innerHTML.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
     const keywords = ["if", "then", "else", "def", "save", "help", "clear", "trace", "to"]
+    const types = ["number", "list", "string", "any", "function", "optional", "variable", "unit", "expression"]
     const process_line = (text) => {
         const matches = []
         // Handle complete base numbers (0b101, 0xFF, etc.)
@@ -906,11 +943,11 @@ function highlightSyntax(element, backticks_mode = false) {
             }
         }
         // Handle words
-        const word_regex = /(^|\s|>|\(|\[|,|[-+*/%^=:()])([a-zA-Z_][a-zA-Z0-9_]*)(?![^<]*>)/g
+        const word_regex = /(^|\s|>|\(|\[|,|[-+*/%^=:.()])([a-zA-Z_][a-zA-Z0-9_]*)(?![^<]*>)/g
         while ((match = word_regex.exec(text)) !== null) {
             const prefix = match[1]
             const word = match[2]
-            if (!keywords.includes(word)) {
+            if (!keywords.includes(word) && (!highlight_types || !types.includes(word))) {
                 const already_matched = matches.some(m => 
                     (m.start <= match.index + prefix.length && 
                     m.end >= match.index + match[0].length) ||
@@ -927,7 +964,7 @@ function highlightSyntax(element, backticks_mode = false) {
             }
         }
         // Handle keywords
-        const keyword_regex = new RegExp(`(^|\\s|>|\\()(${keywords.join("|")})(?=$|\\s|\\W|\\)|>)`, "g")
+        const keyword_regex = new RegExp(`(^|\\s|>|\\(|\\[)(${keywords.join("|")})(?=$|\\s|\\W|\\)|>|\\])`, "g")
         while ((match = keyword_regex.exec(text)) !== null) {
             const prefix = match[1]
             const keyword = match[2]
@@ -937,6 +974,21 @@ function highlightSyntax(element, backticks_mode = false) {
                 replacement: `<span class="highlight-keyword">${keyword}</span>`,
                 priority: 6
             })
+        }
+        if (highlight_types) {
+            for (const type_name of types) {
+                const type_regex = new RegExp(`(^|\\s|>|\\(|\\[)(${type_name})(?=$|\\s|\\W|\\)|>|\\])`, "g")
+                while ((match = type_regex.exec(text)) !== null) {
+                    const prefix = match[1]
+                    const keyword = match[2]
+                    matches.push({
+                        start: match.index + prefix.length,
+                        end: match.index + prefix.length + keyword.length,
+                        replacement: `<span class="highlight-type-${type_name.toLowerCase()}">${keyword}</span>`,
+                        priority: 6
+                    })
+                }
+            }
         }
         // Resolve match overlaps in order of priority
         matches.sort((a, b) => {

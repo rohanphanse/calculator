@@ -13,6 +13,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // States
     let UPDATE_DIGITS = false
     let DRAGGING = false
+    let theme = localStorage.getItem("theme") || "light"
+    if (theme === "dark") {
+        document.documentElement.classList.add("disable-transitions")
+        document.documentElement.classList.toggle("dark")
+        void document.documentElement.offsetWidth
+        setTimeout(() => {
+            document.documentElement.classList.remove("disable-transitions")
+        }, 0)
+    }
 
     // Elements
     const interface = document.getElementById("interface")
@@ -22,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const angleButton = document.getElementById("angle-button")
     const digitsInput = document.getElementById("digits-input")
     const displayButton = document.getElementById("display-button")
+    const themeButton = document.getElementById("theme-button")
     const commandButtons = document.getElementsByClassName("command")
     const commandBar = document.getElementById("command-bar")
     const userBar = document.getElementById("user-bar")
@@ -69,6 +79,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 calculator.digits = Math.round(+e)
             }
         }
+    })
+
+    themeButton.addEventListener("click", () => {
+        document.documentElement.classList.add("disable-transitions")
+        document.documentElement.classList.toggle("dark")
+        void document.documentElement.offsetWidth
+        setTimeout(() => {
+            document.documentElement.classList.remove("disable-transitions")
+        }, 0)
+        localStorage.setItem("theme", theme === "light" ? "dark" : "light")
     })
 
     // Click event listener on document for handling digits input value
@@ -166,7 +186,22 @@ document.addEventListener("DOMContentLoaded", () => {
             userButton.append(cmd)
             userButton.append(button)
             userBar.append(userButton)
-            cmd.addEventListener("click", commandInsert)
+            cmd.addEventListener("click", (event) => {
+                if (userInput.innerText.length === 0) {
+                    userInput.textContent = `def ${`${f}`.replaceAll("()", "")}`
+                    highlightSyntax(userInput)
+                    userInput.dispatchEvent(new KeyboardEvent("keydown", {
+                        key: "Enter",
+                        code: "Enter",
+                        which: 13,
+                        keyCode: 13,
+                        bubbles: true,
+                        cancelable: true
+                    }))
+                } else {
+                    commandInsert(event)
+                }
+            })
             button.addEventListener("click", (event) => {
                 const new_saved_functions = JSON.parse(localStorage.getItem("saved_functions") || "{}")
                 delete new_saved_functions[f]
@@ -289,31 +324,32 @@ document.addEventListener("DOMContentLoaded", () => {
                     const op = user_input.slice(user_input.indexOf("help") + "help".length).trim()
                     if (OPERATIONS[op] || HELP[op]) {
                         let e = OPERATIONS[op] || HELP[op]
-                        output = `Name: ${e.name}\nUsage: `
+                        output = `Name: ${e.name}\nUsage: \``
                         if (e.schema.length == 0) {
-                            output += op
+                            output += op + "\`"
                         } else if (e.schema[0] < 0 || SYMBOLS.includes(op) || HELP[op]) {
                             if (e.schema[0] === -2) {
                                 output += `${e.vars[0]} ${e.vars[1]} ${op}`
                             } else if (e.schema[0] === -1) {
                                 output += `${e.vars[0]}${["!"].includes(op) ? "" : " "}${op}`
                             } else {
-                                output += `${op}${HELP[op] && op !== "@" ? " " : ""}${e.vars[0]}`
+                                output += `${op}${HELP[op] && op !== "@" ? " " : ""}${["not"].includes(op) ? " " : ""}${e.vars[0]}`
                             }
                             for (let i = 1; i < e.vars.length; i++) {
                                 if (e.schema[i] < 0) continue
                                 output += ` ${e.vars[i]}`
                             }
-                            output += `\nTypes: ${e.vars[0]}: ${e.types[0]}`
+                            output += `\`\nTypes: \`${e.vars[0]}: ${e.types[0]}`
                             for (let i = 1; i < e.vars.length; i++) {
                                 output += `, ${e.vars[i]}: ${e.types[i]}`
                             }
+                            output += "\`"
                         } else {
                             output += `${op}(${e.vars[0]}: ${e.types[0]}`
                             for (let i = 1; i < e.vars.length; i++) {
                                 output += `, ${e.vars[i]}: ${e.types[i]}`
                             }
-                            output += ")"
+                            output += ")\`"
                         }
                         if (e.example) {
                             output += `\n${e.example}`
@@ -406,11 +442,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 result.className = "result"
                 result.textContent = output
                 last_output = output
-                if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || user_input.startsWith("type") || typeof output === "boolean") {
-                    highlightSyntax(result)
+                console.log(output)
+                if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || typeof output === "boolean" || output instanceof Constant) {
+                    console.log("active")
+                    highlightSyntax(result, false, true)
                 }
                 if ((typeof output === "string" || output instanceof String) && output.includes("`")) {
-                    highlightSyntax(result, true)
+                    highlightSyntax(result, true, true)
                 }
                 if (`${output}`.length > 30) {
                     result.style.textAlign = "left"
@@ -456,7 +494,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             userInput.focus() 
         } else if (event.keyCode === 57 && event.shiftKey) {
-            event.preventDefault();
+            event.preventDefault()
             const cursorPos = getCursorPosition(userInput)
             const fullText = userInput.textContent
             const newText = fullText.slice(0, cursorPos) + "()" + fullText.slice(cursorPos)
@@ -494,11 +532,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
         } else if (event.key === "Backspace" && event.metaKey) {
-            event.preventDefault();
+            event.preventDefault()
             const cursor_pos = getCursorPosition(userInput)
             const plain_text = userInput.textContent
             if (cursor_pos > 0) {
-                const new_text = plain_text.slice(cursor_pos);
+                const new_text = plain_text.slice(cursor_pos)
                 userInput.textContent = new_text
                 highlightSyntax(userInput)
                 setCursorPosition(userInput, 0)

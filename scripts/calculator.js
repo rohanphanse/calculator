@@ -125,7 +125,9 @@ class Calculator {
                 // Function parameter
                 if (string === "if") {
                     let if_st = parse_if(expression.slice(i))
-                    // console.log("if", if_st)
+                    if (typeof if_st === "string") {
+                        return if_st
+                    }
                     i += if_st.length - 1
                     tokens.push("eval_if")
                     tokens.push(if_st)
@@ -922,7 +924,6 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            // console.log("exec error", err)
             return `${operation.name} error > execution error`
         }
     }

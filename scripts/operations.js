@@ -129,7 +129,7 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
-        example: "Examples:\n  1. Add numbers: 2 + 2 -> 4\n  2. Add tensors: [[[1, 2]]] + [[[2, 1]]] -> [[[3, 3]]]\n  3. Add numbers and tensors: 2 + [1, 2] -> [3, 4]",
+        example: "Examples:\n  1. Add numbers: \`2 + 2 -> 4\`\n  2. Add tensors: \`[[[1, 2]]] + [[[2, 1]]] -> [[[3, 3]]]\`\n  3. Add numbers and tensors: \`2 + [1, 2] -> [3, 4]\`",
         allow_fractions: true
     },
     "-": {
@@ -222,7 +222,7 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TOR(TN, TOR(TL(TN), TL(TL(TN)))), TOR(TN, TOR(TL(TN), TL(TL(TN))))],
-        example: "Examples:\n  1. Multiply numbers: 2 * 2 -> 4\n  2. Dot product: [1, 2] * [3, 4] -> 11\n  3. Matrix multiplication:\n     [[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]",
+        example: "Examples:\n  1. Multiply numbers: \`2 * 2 -> 4\`\n  2. Dot product: \`[1, 2] * [3, 4] -> 11\`\n  3. Matrix multiplication:\n     \`[[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]\`",
         allow_fractions: true
     },
     "/": {
@@ -668,13 +668,13 @@ const OPERATIONS = {
                 let b_part = b == 0 ? "" : ` ${b < 0 ? "-" : "+"} ${Math.abs(b)}${x}^2`
                 let c_part = c == 0 ? "" : ` ${c < 0 ? "-" : "+"} ${Math.abs(c)}${x}`
                 let d_part = d == 0 ? "" : ` ${d < 0 ? "-" : "+"} ${Math.abs(d)}`
-                let response = `Roots of ${a == 1 ? "" : a}${x}^3${b_part}${c_part}${d_part} = 0\n`
+                let response = `\`${a == 1 ? "" : a}${x}^3${b_part}${c_part}${d_part} = 0\`\nRoots: `
                 if (result.length === 3) {
-                    response += `${x} = ${result[0]} or ${x} = ${result[1]} or ${x} = ${result[2]}`
+                    response += `\`${x} = ${result[0]}\` or \`${x} = ${result[1]}\` or \`${x} = ${result[2]}\``
                 } else if (result.length === 2) {
-                    response += `${x} = ${result[0]} or ${x} = ${result[1]}`
+                    response += `\`${x} = ${result[0]}\` or \`${x} = ${result[1]}\``
                 } else if (result.length === 1) {
-                    response += `${x} = ${result[0]}`
+                    response += `\`${x} = ${result[0]}\``
                 } else {
                     response += "No real solutions"
                 }
@@ -704,7 +704,7 @@ const OPERATIONS = {
         schema: [1],
         vars: ["start", "end", "step"],
         types: [TN, TO(TN), TO(TN)],
-        example: "Examples:\n  1. range(5) -> [1, 2, 3, 4, 5]\n  2. range(3, 5) -> [3, 4, 5]\n  3. range(3, 5, 0.5) -> [3, 3.5, 4, 4.5, 5]"
+        example: "Examples:\n  1. \`range(5) -> [1, 2, 3, 4, 5]\`\n  2. \`range(3, 5) -> [3, 4, 5]\`\n  3. \`range(3, 5, 0.5) -> [3, 3.5, 4, 4.5, 5]\`"
     },
     "map": {
         name: "Map",
@@ -724,7 +724,7 @@ const OPERATIONS = {
         vars: ["x", "f"],
         types: [TL(TA), TF],
         calc: true,
-        example: "Examples:\n  1. f(x) = x^2; map(range(1, 3), f) -> [1, 4, 9]\n  2. map(range(1, 3), @(x) = x^2) -> [1, 4, 9]"
+        example: "Examples:\n  1. \`f(x) = x^2; map(range(1, 3), f) -> [1, 4, 9]\`\n  2. \`map(range(1, 3), @(x) = x^2) -> [1, 4, 9]\`"
     },
     "filter": {
         name: "Filter",
@@ -746,7 +746,7 @@ const OPERATIONS = {
         vars: ["x", "f"],
         types: [TL(TA), TF],
         calc: true,
-        example: "Examples:\n  1. f(a) = a mod 2; filter(range(5), f) -> [1, 3, 5]\n  2. filter(range(5), @(a) = a mod 2) -> [1, 3, 5]"
+        example: "Examples:\n  1. \`f(a) = a mod 2; filter(range(5), f) -> [1, 3, 5]\`\n  2. \`filter(range(5), @(a) = a mod 2) -> [1, 3, 5]\`"
     },
     "reduce": {
         name: "Reduce",
@@ -779,17 +779,17 @@ const OPERATIONS = {
         vars: ["x", "f"],
         types: [TL(TA), TF],
         calc: true,
-        example: "Examples:\n  1. reduce(range(5), *) -> 120\n  2. reduce([1, -2, 10, 5], \n       @(x, y) = if x > y then x else y) -> 10"
+        example: "Examples:\n  1. \`reduce(range(5), *) -> 120\`\n  2. \`reduce([1, -2, 10, 5], \n       @(x, y) = if x > y then x else y) -> 10\`"
     }, 
     "type": {
         name: "Type",
         func: (x) => {
-            return new String(get_param_types([x])[0])
+            return new String(`\`${get_param_types([x])[0]}\``)
         },
         schema: [1],
         vars: ["x"],
         types: [TA],
-        example: "Examples:\n  1. type(pi) -> number\n  2. type(0b101) -> string\n  3. type([1, 2, 3]) -> list[number]\n  4. type([[1, 2], [3, 4]]) -> list[list[number]]\n  5. type([1, 0b101, [2]]) -> list[any]\n  6. type(true) -> bool\n  7. type(km) -> unit\n  8. type(sin) -> function"
+        example: "Examples:\n  1. \`type(pi) -> number\n\`  2. \`type(0b101) -> string\`\n  3. \`type([1, 2, 3]) -> list[number]\`\n  4. \`type([[1, 2], [3, 4]]) -> list[list[number]]\`\n  5. \`type([1, 0b101, [2]]) -> list[any]\`\n  6. \`type(true) -> bool\`\n  7. \`type(km) -> unit\`\n  8. \`type(sin) -> function\`"
     },
     "index": {
         name: "Index",
@@ -806,12 +806,12 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TN, TN],
-        example: "Examples: A = [[1, 2, 3], [4, 5, 6, 7]]\n  1. A(2) -> [4, 5, 6, 7]\n  2. A(2, 2:3) -> [5, 6]\n  3. A(2, 2:) -> [5, 6, 7]\n  4. A(1, :2) -> [1, 2]\n  5. A(:, 1) -> [1, 4]"
+        example: "Examples: \`A = [[1, 2, 3], [4, 5, 6, 7]]\`\n  1. \`A(2) -> [4, 5, 6, 7]\`\n  2. \`A(2, 2:3) -> [5, 6]\`\n  3. \`A(2, 2:) -> [5, 6, 7]\`\n  4. \`A(1, :2) -> [1, 2]\`\n  5. \`A(:, 1) -> [1, 4]\`"
     },
     ":2": {
         name: "Range pair",
         func: (a) => {
-            return [-1, a]
+            return [false, a]
         },
         schema: [1],
         vars: ["a"],
@@ -820,7 +820,7 @@ const OPERATIONS = {
     ":3": {
         name: "Range pair",
         func: (a) => {
-            return [a, -1]
+            return [a, false]
         },
         schema: [-1],
         vars: ["a"],
@@ -851,7 +851,7 @@ const OPERATIONS = {
         schema: [1],
         vars: ["a"],
         types: [TL(TA)],
-        example: "Examples:\n  1. concat([1, 2], [3, 4]) -> [1, 2, 3, 4]\n  2. concat([1, 2], 3, 4) -> [1, 2, 3, 4]"
+        example: "Examples:\n  1. \`concat([1, 2], [3, 4]) -> [1, 2, 3, 4]\`\n  2. \`concat([1, 2], 3, 4) -> [1, 2, 3, 4]\`"
     },
     "rref": {
         name: "Reduced Row Echelon Form (RREF)",
@@ -1036,7 +1036,7 @@ const OPERATIONS = {
         schema: [-2, -1, 1],
         vars: ["n", "u1", "u2"],
         types: [TN, TU, TU],
-        example: "Tip: See all supported units by typing `units`\nExamples:\n  1. 5 km to mi -> 3.10686\n  2. C = cel; F = far; 30 C to F -> 86\n"
+        example: "Tip: See all supported units by typing `units`\nExamples:\n  1. `5 km to mi -> 3.10686`\n  2. `C = cel; F = far; 30 C to F -> 86`\n"
     },
     "to2":  {
         name: "Convert units",
@@ -1220,6 +1220,14 @@ const OPERATIONS = {
         vars: ["f"],
         types: [TF],
         calc: true
+    }, 
+    "flat": {
+        name: "Flatten list",
+        func: (a) => flatten(a),
+        schema: [1],
+        vars: ["a"],
+        types: [TL(TA)],
+        example: "Example: \`flat([[[1]], [2], 3]) -> [1, 2, 3]\`"
     }
 }
 for (let i = 0; i < UNITS.length; i++) {
@@ -1238,7 +1246,7 @@ const HELP = {
         schema: [1],
         vars: ["(...params) = value"],
         types: [TF],
-        example: "Examples:\n  1. @(x) = x^2\n  2. @(x, y) = x + y\n  3. @() = 1"
+        example: "Examples:\n  1. \`@(x) = x^2\`\n  2. \`@(x, y) = x + y\`\n  3. \`@() = 1\`"
     },
     "clear": {
         name: "Clear",
@@ -1269,21 +1277,21 @@ const HELP = {
         schema: [],
         vars: [],
         types: [],
-        example: "Examples:\n  1. if x > 10 then 10 else x \n  2. if x == 20 then 2 else if x == 10 then 1 else 0"
+        example: "Examples:\n  1. \`if x > 10 then 10 else x\` \n  2. \`if x == 20 then 2 else if x == 10 then 1 else 0\`"
     },
     "then": {
         name: "If statement",
         schema: [],
         vars: [],
         types: [],
-        example: "Examples:\n  1. if x > 10 then 10 else x \n  2. if x == 20 then 2 else if x == 10 then 1 else 0"
+        example: "Examples:\n  1. \`if x > 10 then 10 else x\` \n  2. \`if x == 20 then 2 else if x == 10 then 1 else 0\`"
     },
     "else": {
         name: "If statement",
         schema: [],
         vars: [],
         types: [],
-        example: "Examples:\n  1. if x > 10 then 10 else x \n  2. if x == 20 then 2 else if x == 10 then 1 else 0"
+        example: "Examples:\n  1. \`if x > 10 then 10 else x\` \n  2. \`if x == 20 then 2 else if x == 10 then 1 else 0\`"
     },
     "trace": {
         name: "Debug trace",

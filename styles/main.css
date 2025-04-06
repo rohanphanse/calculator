@@ -1,5 +1,39 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap");
 
+:root {
+    --bg-color: #ffffff;
+    --bg-light: rgb(240, 240, 240);
+    --bg-light-hover: rgb(225, 225, 225);
+    --text-dark: #4d4d4d;
+    --text-medium: rgb(121, 121, 121);
+    --text: black;
+    --border: rgb(221, 221, 221);
+    --red: red;
+    --blue: rgb(63, 63, 214);
+    --green: rgb(87, 142, 88);
+    --purple: rgb(191, 66, 191);
+    --grey: rgb(145, 145, 145);
+    --scroll-bar: rgb(163, 163, 163);
+    --scroll-bar-hover: rgb(131, 131, 131);
+}
+
+.dark {
+    --bg-color: #212131;
+    --bg-light: rgb(60, 55, 55);
+    --bg-light-hover: rgb(76, 71, 71);
+    --text-medium: rgb(183, 183, 183);
+    --text-dark: #d7d7d7;
+    --text: rgb(225, 225, 225);
+    --border: #5e5e67;
+    --red: rgb(237, 105, 105);
+    --blue: rgb(129, 208, 244);
+    --green: rgb(152, 206, 153);
+    --purple: rgb(228, 108, 228);
+    --grey: rgb(195, 195, 195);
+    --scroll-bar: rgb(89, 89, 89);
+    --scroll-bar-hover: rgb(104, 104, 104);
+}
+
 * {
     border: none;
     outline: none;
@@ -10,6 +44,8 @@
 
 body {
     font-family: "Open Sans", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text);
 }
 
 .center {
@@ -24,7 +60,7 @@ body {
     display: flex;
     flex-direction: column;
     width: max(350px, 50vh);
-    border: 1px solid rgb(221, 221, 221);
+    border: 1px solid var(--border);
     border-radius: 8px;
     margin: 30px;
     opacity: 0;
@@ -50,7 +86,7 @@ body {
 #title {
     font-size: max(1.7rem, calc(1.8vh + 0.6vw));
     font-weight: 300;
-    color: #4D4D4D;
+    color: var(--text-dark);
     margin: 7px 0 3px 0;
     text-align: center;
     text-decoration: none;
@@ -59,7 +95,7 @@ body {
 #subtitle {
     padding: 0 5px 5px 5px;
     font-style: italic;
-    color: rgb(121, 121, 121);
+    color: var(--text-medium);
     font-size: max(0.9rem, calc((2.5vh + 0.75vw) * 0.42));
     text-align: center;
 }
@@ -69,7 +105,7 @@ body {
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
-    border-bottom: 1px solid rgb(221, 221, 221);
+    border-bottom: 1px solid var(--border);
 }
 
 .config-button {
@@ -83,9 +119,9 @@ body {
     font-family: monospace;
     font-style: italic;
     padding: 2px 5px;
-    background-color: rgb(240, 240, 240);
+    background-color: var(--bg-light);
     border-radius: 4px 0 0 4px;
-    border-right: 1px solid rgb(221, 221, 221);
+    border-right: 1px solid var(--border);
     transition-duration: 0.1s;
     cursor: pointer;
 }
@@ -93,21 +129,21 @@ body {
 .config-value {
     font-family: monospace;
     padding: 2px 5px;
-    background-color: rgb(240, 240, 240);
+    background-color: var(--bg-light);
     border-radius: 0 4px 4px 0;
     transition-duration: 0.1s;
     cursor: pointer;
 }
 
 .config-value:hover {
-    background-color: rgb(225, 225, 225);
+    background-color: var(--bg-light-hover);
 }
 
 #command-bar, #user-bar, #var-bar {
     display: flex;
     flex-direction: row;
     padding: 0 5px;
-    border-bottom: 1px solid rgb(221, 221, 221);
+    border-bottom: 1px solid var(--border);
     overflow-y: auto;
     user-select: none;
     user-drag: none;
@@ -124,9 +160,9 @@ body {
 .user-button-text {
     font-family: monospace;
     padding: 2px 5px;
-    background-color: rgb(240, 240, 240);
+    background-color: var(--bg-light);
     border-radius: 4px 0 0 4px;
-    border-right: 1px solid rgb(221, 221, 221);
+    border-right: 1px solid var(--border);
     transition-duration: 0.1s;
     cursor: pointer;
     user-select: none;
@@ -135,11 +171,11 @@ body {
 .user-button-x {
     font-family: monospace;
     padding: 2px 5px;
-    background-color: rgb(240, 240, 240);
+    background-color: var(--bg-light);
     border-radius: 0 4px 4px 0;
     transition-duration: 0.1s;
     cursor: pointer;
-    color: red;
+    color: var(--red);
 }
 
 #user-bar, #var-bar {
@@ -160,7 +196,7 @@ body {
     right: 0px;
     height: 31.5px;
     width: 30px;
-    background-image: linear-gradient(to right, rgba(255, 255, 255, 0) 20%, rgb(255, 255, 255));
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0) 20%, var(--bg-color));
     pointer-events: none;
 }
 
@@ -170,23 +206,23 @@ body {
     left: 0px;
     height: 31.5px;
     width: 30px;
-    background-image: linear-gradient(to left, rgba(255, 255, 255, 0) 20%, rgb(255, 255, 255));
+    background-image: linear-gradient(to left, rgba(255, 255, 255, 0) 20%, var(--bg-color));
     pointer-events: none;
 }
 
 #command-bar::-webkit-scrollbar, 
 #user-bar::-webkit-scrollbar, #var-bar::-webkit-scrollbar {
     height: 4px;
-    background-color: rgb(240, 240, 240);
+    background-color: var(--bg-light);
 }
 
 #command-bar::-webkit-scrollbar-thumb, #user-bar::-webkit-scrollbar-thumb, #var-bar::-webkit-scrollbar-thumb {
     transition-duration: 0.1s;
-    background-color: rgb(163, 163, 163);
+    background-color: var(--scroll-bar);
 }
 
 #command-bar::-webkit-scrollbar-thumb:hover, #user-bar::-webkit-scrollbar-thumb:hover, #var-bar::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(131, 131, 131);
+    background-color: var(--scroll-bar-hover);
 }
 
 .command-text {
@@ -201,7 +237,7 @@ body {
 .command {
     font-family: monospace;
     padding: 2px 5px;
-    background-color: rgb(240, 240, 240);
+    background-color: var(--bg-light);
     border-radius: 4px;
     margin: 6px 5px;
     transition-duration: 0.1s;
@@ -211,11 +247,11 @@ body {
 }
 
 .command:hover, .user-button-text:hover, .user-button-x:hover {
-    background-color: rgb(225, 225, 225);
+    background-color: var(--bg-light-hover);
 }
 
 .divider {
-    border-left: 1px solid rgb(221, 221, 221);
+    border-left: 1px solid var(--border);
     margin: 0 5px;
 }
 
@@ -242,7 +278,7 @@ body {
 
 .input[placeholder]:empty::before {
     content: attr(placeholder);
-    color: #555; 
+    color: var(--text-medium); 
 }
 
 .input[placeholder]:empty:focus::before {
@@ -262,7 +298,7 @@ body {
     text-align: right;
     font-family: monospace;
     font-size: 1.1rem;
-    color: grey;
+    color: var(--text-medium);
     word-break: break-word;
     overflow-wrap: break-word;
     margin-bottom: 3px;
@@ -272,10 +308,11 @@ body {
 #digits-input {
     width: 3.7ch;
     height: 19.5px;
+    color: var(--text);
 }
 
 #digits-input:focus {
-    background-color: rgb(225, 225, 225);
+    background-color: var(--bg-light-hover);
 }
 
 #angle-button {
@@ -283,16 +320,40 @@ body {
 }
 
 .highlight-number {
-    color: rgb(87, 142, 88);
+    color: var(--green);
     font-weight: bold; 
 }
 
 .highlight-word {
-    color: rgb(191, 66, 191);
+    color: var(--purple);
     font-weight: bold; 
 }
 
 .highlight-keyword {
-    color: rgb(63, 63, 214);
+    color: var(--blue);
     font-weight: bold; 
+}
+
+.highlight-type-number {
+    color: var(--green);
+    font-weight: bold; 
+}
+
+.highlight-type-string, .highlight-type-unit {
+    color: var(--purple);
+    font-weight: bold; 
+}
+
+.highlight-type-variable, .highlight-type-function, .highlight-type-optional, .highlight-type-any, .highlight-type-list, .highlight-type-expression {
+    color: var(--grey);
+    font-weight: bold; 
+}
+
+#theme-button {
+    border-radius: 0;
+    border-right: 1px solid var(--border);
+}
+
+html.disable-transitions *, html.disable-transitions *::before, html.disable-transitions *::after {
+  transition: none !important;
 }
