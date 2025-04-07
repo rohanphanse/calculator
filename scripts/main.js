@@ -9,6 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let history_current = ""
     let display_mode = localStorage.getItem("display_mode") || "default"
     let last_output = null
+    let graph_id = 1
+    let graphs = []
  
     // States
     let UPDATE_DIGITS = false
@@ -89,6 +91,9 @@ document.addEventListener("DOMContentLoaded", () => {
             document.documentElement.classList.remove("disable-transitions")
         }, 0)
         localStorage.setItem("theme", theme === "light" ? "dark" : "light")
+        for (const graph of graphs) {
+            graph.drawGraphs()
+        }
     })
 
     // Click event listener on document for handling digits input value
@@ -420,6 +425,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else {
                         output = "Def error > can only view user-defined functions"
                     }
+                } else if (user_input.startsWith("plot")) {
+                    // Pass
                 } else {
                     // Calculate output
                     if (event.shiftKey) {
@@ -438,13 +445,31 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
                 // Result
-                const result = document.createElement("pre")
-                result.className = "result"
-                result.textContent = output
+                let result
+                if (user_input.startsWith("plot")) {
+                    result = document.createElement("div")
+                    result.className = "result-graph"
+                    const expr = user_input.slice(user_input.indexOf("plot") + "plot".length).trim()
+                    const graph_parent = document.createElement("div")
+                    graph_parent.id = `graph-${graph_id}`
+                    result.append(graph_parent)
+                    requestAnimationFrame(() => {
+                        graph_id++
+                        const graph = new Grapher({
+                            parent: graph_parent,
+                            height: 200,
+                            width: 200
+                        })
+                        graphs.push(graph)
+                        graph.setInput(expr)
+                    })
+                } else {
+                    result = document.createElement("pre")
+                    result.className = "result"
+                    result.textContent = output
+                }
                 last_output = output
-                console.log(output)
                 if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || typeof output === "boolean" || output instanceof Constant) {
-                    console.log("active")
                     highlightSyntax(result, false, true)
                 }
                 if ((typeof output === "string" || output instanceof String) && output.includes("`")) {

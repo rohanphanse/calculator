@@ -614,9 +614,6 @@ class Calculator {
         if (typeof final_result !== "string" && !options?.noAns) {
             this.ans = final_result
         } 
-        if (options.noRound) {
-            return final_result
-        }
         if (options.no_fraction && final_result instanceof Fraction) {
             final_result = final_result.value()
         }
@@ -625,6 +622,9 @@ class Calculator {
         }
         if (options.no_base_number && final_result instanceof BaseNumber) {
             final_result = convert_to_decimal(final_result)
+        }
+        if (options.noRound) {
+            return final_result
         }
         if (typeof final_result === "number") {
             return set_precision(final_result, this.digits)
@@ -924,6 +924,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
+            // console.log(err)
             return `${operation.name} error > execution error`
         }
     }

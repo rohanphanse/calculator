@@ -305,6 +305,12 @@ body {
     white-space: pre-wrap;
 }
 
+.result-graph {
+    display: flex;
+    justify-content: end;
+    margin-bottom: 40px;
+}
+
 #digits-input {
     width: 3.7ch;
     height: 19.5px;

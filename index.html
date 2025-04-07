@@ -6,9 +6,11 @@
 	<meta name="viewport" content="width=device-width">
 	<title>Calculator</title>
     <link href = "styles/main.css" rel = "stylesheet" type = "text/css" />
+    <link href = "styles/grapher.css" rel = "stylesheet" type = "text/css" />
     <script src = "scripts/util.js"></script>
     <script src = "scripts/operations.js"></script>
     <script src = "scripts/calculator.js"></script>
+    <script src = "scripts/grapher.js"></script>
     <script src = "scripts/main.js"></script>
 </head>
 
@@ -24,7 +26,7 @@
             <div id = "config">
                 <div class = "config-button">
                     <div class = "config-label">display</div>
-                    <div class = "config-value" id = "theme-button">○</div>
+                    <div class = "config-value" id = "theme-button">☯</div>
                     <div class = "config-value" id = "display-button">↔</div>
                 </div>
                 <div class = "config-button">
@@ -60,6 +62,7 @@
                     <div data-text = "type(|)" class = "command">type</div>
                     <div data-text = "def(|)" class = "command">def</div>
                     <div data-text = "trace" class = "command">trace</div>
+                    <div data-text = "plot" class = "command">plot</div>
                     <div class = "divider"></div>
                     <div data-text = "@(|)" class = "command">@</div>
                     <div data-text = "map(|)" class = "command">map</div>

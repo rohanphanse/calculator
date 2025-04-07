@@ -554,6 +554,30 @@ function differentiate(node, variable) {
                 left: { op: "*", left: { value: -1 }, right: { op: "sin", arg: node.arg } },
                 right: differentiate(node.arg, variable)
             }
+        case "tan":
+            return {
+                op: "*",
+                left: { op: "^", left: { op: "sec", arg: node.arg }, right: { value: 2 } },
+                right: differentiate(node.arg, variable)
+            }
+        case "cot":
+            return {
+                op: "*",
+                left: { op: "*", left: { value: -1 }, right: { op: "^", left: { op: "csc", arg: node.arg }, right: { value: 2 } } },
+                right: differentiate(node.arg, variable)
+            }
+        case "sec":
+            return {
+                op: "*",
+                left: { op: "*", left: { op: "sec", arg: node.arg }, right: { op: "tan", arg: node.arg } },
+                right: differentiate(node.arg, variable)
+            }
+        case "csc":
+            return {
+                op: "*",
+                left: { op: "*", left: { value: -1 }, right: { op: "*", left: { op: "csc", arg: node.arg }, right: { op: "cot", arg: node.arg } } },
+                right: differentiate(node.arg, variable)
+            }
         case "exp":
             return {
                 op: "*",
@@ -696,7 +720,7 @@ function diff_tree(tokens) {
             }
             return expr
         }
-        else if (["sin", "cos", "ln"].includes(token)) {
+        else if (["sin", "cos", "tan", "sec", "cot", "csc", "ln"].includes(token)) {
             index++
             if (tokens[index].startsWith("(")) {
                 index++
@@ -714,8 +738,9 @@ function diff_tree(tokens) {
 
 function diff_natural_simplify(node) {
     // console.log("diff_natural_simplify", node)
-    node = diff_simplify(node);
-    if (node.op === "*" && typeof node.left?.value === "number" && typeof node.right?.value === "string") {
+    node = diff_simplify(node)
+    if (!node) return null
+    if (node.op && node.op === "*" && typeof node.left?.value === "number" && typeof node.right?.value === "string") {
         return { type: "coefficient", coefficient: node.left.value, variable: node.right.value }
     }
     if (node.left) node.left = diff_natural_simplify(node.left)
@@ -844,6 +869,10 @@ function tree_to_string(node) {
         case "sin":
         case "cos":
         case "exp":
+        case "tan":
+        case "cot":
+        case "sec":
+        case "csc":
         case "ln":
             argStr = tree_to_string(node.arg)
             if (node.arg?.op === "negate") {
@@ -862,7 +891,7 @@ function tree_to_string(node) {
 function highlightSyntax(element, backticks_mode = false, highlight_types = false) {
     const cursor_position = getCursorPosition(element)
     let text = element.innerHTML.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
-    const keywords = ["if", "then", "else", "def", "save", "help", "clear", "trace", "to"]
+    const keywords = ["if", "then", "else", "def", "save", "help", "clear", "trace", "to", "plot"]
     const types = ["number", "list", "string", "any", "function", "optional", "variable", "unit", "expression"]
     const process_line = (text) => {
         const matches = []

@@ -79,7 +79,7 @@ const CONSTANTS = ["pi", "e", "phi", "inf", "units", "true", "false"]
 const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not", "mod"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
-const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else", "trace"]
+const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else", "trace", "plot"]
 const LIST_OPERATIONS = ["mean", "median", "sd", "sort", "sum", "len", "max", "min", "concat", "zeros"]
 
 // Types
@@ -143,6 +143,12 @@ const OPERATIONS = {
                     return subtract_fractions(a, new Fraction(b, 1))
                 } else if (b instanceof Fraction && Number.isInteger(a)) {
                     return subtract_fractions(new Fraction(a, 1), b)
+                }
+                if (a instanceof Fraction) {
+                    a = a.value()
+                }
+                if (b instanceof Fraction) {
+                    b = b.value()
                 }
                 return a - b
             } else if (param_types[0].startsWith("list") && param_types[1].startsWith("list") && param_types[0] == param_types[1]) {
@@ -1183,31 +1189,46 @@ const OPERATIONS = {
                 f = f.op
             }
             const tokens = calc.functions[f].value
+            const new_tokens = []
             for (let i = 0; i < tokens.length; i++) {
+                let added = false
                 if (typeof tokens[i] === "string") {
                     if (tokens[i].startsWith("(")) {
-                        tokens[i] = "("
+                        new_tokens.push("(")
+                        added = true
                     }
                     if (tokens[i].startsWith(")")) {
-                        tokens[i] = ")"
+                        new_tokens.push(")")
+                        added = true
                     }
                 }
-            }
-            const symbols = ["+", "-", "*", "/", "^", "(", ")", "sin", "cos", "ln"]
-            for (let i = 0; i < tokens.length - 1; i++) {
-                if (!symbols.includes(tokens[i]) && !symbols.includes(tokens[i + 1])) {
-                    tokens.splice(i + 1, 0, "*")
-                } 
-                if (!symbols.includes(tokens[i]) && tokens[i + 1] === "(") {
-                    tokens.splice(i + 1, 0, "*")
-                }
-                if (!symbols.includes(tokens[i]) && ["sin", "cos", "ln"].includes(tokens[i + 1])) {
-                    tokens.splice(i + 1, 0, "*")
+                if (!added) {
+                    new_tokens.push(tokens[i])
                 }
             }
-            // console.log("diff tokens", tokens)
             const x = calc.functions[f].parameters[0]
-            const expressionTree = diff_tree(tokens)
+            const symbols = ["+", "-", "*", "/", "^", "(", ")", "sin", "cos", "ln", "tan", "cot", "csc", "sec"]
+            for (let i = 0; i < new_tokens.length - 1; i++) {
+                if (!symbols.includes(new_tokens[i]) && !symbols.includes(new_tokens[i + 1])) {
+                    new_tokens.splice(i + 1, 0, "*")
+                } 
+                if (!symbols.includes(new_tokens[i]) && tokens[i + 1] === "(") {
+                    new_tokens.splice(i + 1, 0, "*")
+                }
+                if (!symbols.includes(new_tokens[i]) && ["sin", "cos", "ln", "tan", "cot", "csc", "sec"].includes(new_tokens[i + 1])) {
+                    new_tokens.splice(i + 1, 0, "*")
+                }
+            }
+            for (let i = 0; i < new_tokens.length; i++) {
+                if (new_tokens[i] instanceof Fraction || new_tokens[i] instanceof BaseNumber || new_tokens[i] instanceof Constant) {
+                    new_tokens[i] = new_tokens[i].value()
+                }
+                if (!symbols.includes(new_tokens[i]) && new_tokens[i] !== x && typeof new_tokens[i] !== "number") {
+                    return `'${new_tokens[i]}' is not supported`
+                }
+            }
+            // console.log("diff tokens", new_tokens)
+            const expressionTree = diff_tree(new_tokens)
             let derivative = differentiate(expressionTree, x)
             output = tree_to_string(diff_natural_simplify(derivative))
             if (f.startsWith("@")) {
@@ -1305,6 +1326,12 @@ const HELP = {
         vars: ["func"],
         types: [TF]
     },
+    "plot": {
+        name: "Plot",
+        schema: [1],
+        vars: ["x"],
+        types: [TO("expression")]
+    }
 }
 
 // Determine if string is name of math function 
@@ -1387,6 +1414,10 @@ class BaseNumber {
 
     toString() {
         return `${this.b}`
+    }
+
+    value() {
+        return convert_to_decimal(this.b)
     }
 }
 
