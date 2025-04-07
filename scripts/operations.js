@@ -1330,7 +1330,7 @@ const HELP = {
         name: "Plot",
         schema: [1],
         vars: ["x"],
-        types: [TO("expression")]
+        types: ["expression"]
     }
 }
 

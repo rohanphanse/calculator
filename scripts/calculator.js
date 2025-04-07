@@ -509,7 +509,7 @@ class Calculator {
 
     // Evaluate numerical result from tokens
     evaluate(tokens, options = {}) {
-        // console.log("evaluate", JSON.stringify(tokens))
+        // console.log("evaluate", JSON.stringify(tokens), options)
         this.overflow_count++
         if (this.overflow_count > this.overflow_max) {
             return "Overflow error: too many function calls"
@@ -610,7 +610,6 @@ class Calculator {
         // No parentheses left
         // Single expression to be evaluated
         let final_result = this.evaluateSingle(tokens)
-        // ("final_result", final_result)
         if (typeof final_result !== "string" && !options?.noAns) {
             this.ans = final_result
         } 

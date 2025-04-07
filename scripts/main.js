@@ -452,9 +452,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     const expr = user_input.slice(user_input.indexOf("plot") + "plot".length).trim()
                     const graph_parent = document.createElement("div")
                     graph_parent.id = `graph-${graph_id}`
+                    graph_id++
                     result.append(graph_parent)
                     requestAnimationFrame(() => {
-                        graph_id++
                         const graph = new Grapher({
                             parent: graph_parent,
                             height: 200,
@@ -462,6 +462,68 @@ document.addEventListener("DOMContentLoaded", () => {
                         })
                         graphs.push(graph)
                         graph.setInput(expr)
+                    })
+                } else if (user_input === "help plot") {
+                    result = document.createElement("div")
+                    result.className = "result-graph"
+                    const help_text = document.createElement("div")
+                    help_text.className = "result-text"
+                    help_text.innerText = output
+                    result.append(help_text)
+                    highlightSyntax(help_text, true, true)
+                    const text_1 = document.createElement("div")
+                    text_1.innerText = "Guide:\n  1. Graph functions of `x` as `f(x)`\n  2. Polar curves: `r = f(t)`\n  3. Parametric: `p: x = f(t), y = g(t)`\n  4. Slope fields: `s: f(x, y)`\n  5. Vector fields: `v: (f(x, y), g(x, y))`\n\nExample #1: `plot sin(x); r = 6sin(t) [0, pi]; p: x = t^2, y = 2t`"
+                    text_1.className = "result-text"
+                    highlightSyntax(text_1, true, true)
+                    result.append(text_1)
+                    let graph_parent = document.createElement("div")
+                    graph_parent.id = `graph-${graph_id}`
+                    graph_id++
+                    result.append(graph_parent)
+                    requestAnimationFrame(() => {
+                        const graph = new Grapher({
+                            parent: graph_parent,
+                            height: 200,
+                            width: 200
+                        })
+                        graph.setInput("sin(x); r = 6sin(t) [0, pi]; p: x = t^2, y = 2t")
+                        graphs.push(graph)
+                        const text_2 = document.createElement("div")
+                        text_2.innerText = "\nExample #2: `plot s: x/y; sqrt(x^2 - 1); -sqrt(x^2 - 1)`"
+                        text_2.className = "result-text"
+                        highlightSyntax(text_2, true, true)
+                        result.append(text_2)
+                        graph_parent = document.createElement("div")
+                        graph_parent.id = `graph-${graph_id}`
+                        graph_id++
+                        result.append(graph_parent)
+                        requestAnimationFrame(() => {
+                            const graph = new Grapher({
+                                parent: graph_parent,
+                                height: 200,
+                                width: 200
+                            })
+                            graph.setInput("s: x/y; sqrt(x^2 - 1); -sqrt(x^2 - 1)")
+                            graphs.push(graph)
+                            const text_3 = document.createElement("div")
+                            text_3.innerText = "\nExample #3: `plot v: (x, y)`"
+                            text_3.className = "result-text"
+                            highlightSyntax(text_3, true, true)
+                            result.append(text_3)
+                            graph_parent = document.createElement("div")
+                            graph_parent.id = `graph-${graph_id}`
+                            graph_id++
+                            result.append(graph_parent)
+                            requestAnimationFrame(() => {
+                                const graph = new Grapher({
+                                    parent: graph_parent,
+                                    height: 200,
+                                    width: 200
+                                })
+                                graph.setInput("v: (x, y)")
+                                graphs.push(graph)
+                            })
+                        })
                     })
                 } else {
                     result = document.createElement("pre")
@@ -472,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || typeof output === "boolean" || output instanceof Constant) {
                     highlightSyntax(result, false, true)
                 }
-                if ((typeof output === "string" || output instanceof String) && output.includes("`")) {
+                if ((typeof output === "string" || output instanceof String) && output.includes("`") && result.className !== "result-graph") {
                     highlightSyntax(result, true, true)
                 }
                 if (`${output}`.length > 30) {

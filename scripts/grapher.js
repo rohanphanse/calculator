@@ -263,13 +263,18 @@ class Grapher {
             } else {
                 const options = {}
                 options.color = this.colors[i % this.colors.length]
-                graphFunction(this.expressions[i], this.canvas, this.height, this.width, this.x_range, this.y_range, this.function_intervals, options)
+                this.graphFunction(this.expressions[i], options)
             }
         }
     }
 
     mapToCanvasPoint(cartesianPoint) {
-        return mapToCanvasPoint(this.height, this.width, this.x_range, this.y_range, cartesianPoint)
+        const x_unit = this.width / (this.x_range.max - this.x_range.min)
+        const y_unit = this.height / (this.y_range.max - this.y_range.min)
+        return {
+            x: (cartesianPoint.x - this.x_range.min) * x_unit,
+            y: this.height - (cartesianPoint.y - this.y_range.min) * y_unit
+        }
     }
 
     updateAxisMarkers() {
@@ -308,7 +313,7 @@ class Grapher {
                 calculator.calculate(`graph(x, y) = ${expression}`, this.calc_options)
             }
             let result = calculator.calculate("graph(1, 1)", this.calc_options)
-            if (typeof result !== "number") {
+            if (typeof result !== "number" && !(typeof result === "string" && result.includes("NaN"))) {
                 throw result
             }
         } catch (error) {
@@ -332,7 +337,7 @@ class Grapher {
                     })
                     this.drawSlopeFieldLine(canvasPoint, slope)
                 } catch (error) {
-                    console.error(error)
+                    // console.error(error)
                 }
  
         }
@@ -376,11 +381,11 @@ class Grapher {
                 calculator.calculate(`graphy(x, y) = ${expression.y}`, this.calc_options)
             }
             let result = calculator.calculate("graphx(1, 1)", this.calc_options)
-            if (typeof result !== "number") {
+            if (typeof result !== "number" && !(typeof result === "string" && result.includes("NaN"))) {
                 throw result
             }
             result = calculator.calculate("graphy(1, 1)", this.calc_options)
-            if (typeof result !== "number") {
+            if (typeof result !== "number" && !(typeof result === "string" && result.includes("NaN"))) {
                 throw result
             }
         } catch (error) {
@@ -406,7 +411,7 @@ class Grapher {
                     })
                     this.drawVector(canvasPoint, vector)
                 } catch (error) {
-                    console.error(error)
+                    // console.error(error)
                 }
  
         }
@@ -432,8 +437,9 @@ class Grapher {
     }
 
     drawVectorTriangle(point, vector) {
-        this.ctx.strokeStyle = "black"
-        this.ctx.fillStyle = "black"
+        const color = getComputedStyle(document.body).getPropertyValue("--text")
+        this.ctx.strokeStyle = color
+        this.ctx.fillStyle = color
         const angle = Math.atan(vector.y / vector.x)
         const side = 5
         this.ctx.beginPath()
@@ -471,7 +477,7 @@ class Grapher {
                 calculator.calculate(`graph(t) = ${expression}`, this.calc_options)
             }
             let result = calculator.calculate("graph(1)", this.calc_options)
-            if (typeof result !== "number") {
+            if (typeof result !== "number" && !(typeof result === "string" && result.includes("NaN"))) {
                 throw result
             }
         } catch (error) {
@@ -511,7 +517,7 @@ class Grapher {
                 }
             } catch (error) {
                 points.push({ canvasPoint: null, cartesianPoint: null })
-                console.error(error)
+                // console.error(error)
             }
         }
     }
@@ -554,11 +560,11 @@ class Grapher {
                 calculator.calculate(`graphy(t) = ${expressions.y}`, this.calc_options)
             }
             let result = calculator.calculate("graphx(1)", this.calc_options)
-            if (typeof result !== "number") {
+            if (typeof result !== "number" && !(typeof result === "string" && result.includes("NaN"))) {
                 throw result
             }
             result = calculator.calculate("graphy(1)", this.calc_options)
-            if (typeof result !== "number") {
+            if (typeof result !== "number" && !(typeof result === "string" && result.includes("NaN"))) {
                 throw result
             }
         } catch (error) {
@@ -593,7 +599,7 @@ class Grapher {
                 index++
             } catch (error) {
                 points.push({ canvasPoint: null, cartesianPoint: null })
-                console.error(error)
+                // console.error(error)
             }
         }
     }
@@ -629,97 +635,86 @@ class Grapher {
         }
         this.canvas.addEventListener("mousedown", handleMouseDown)
     }
-}
 
-function mapToCanvasPoint(canvas_height, canvas_width, x_range, y_range, cartesianPoint) {
-    const x_unit = canvas_width / (x_range.max - x_range.min)
-    const y_unit = canvas_height / (y_range.max - y_range.min)
-    return {
-        x: (cartesianPoint.x - x_range.min) * x_unit,
-        y: canvas_height - (cartesianPoint.y - y_range.min) * y_unit
-    }
-}
-
-function graphFunction(expression, canvas, canvas_height, canvas_width, x_range, y_range, intervals, options = {}) {
-    try {
-        delete calculator.functions["graph"]
-        if (expression in calculator.functions) {
-            calculator.calculate(`graph(x) = ${expression}(x)`, this.calc_options)
-        } else {
-            calculator.calculate(`graph(x) = ${expression}`, this.calc_options)
-        }
-        let result = calculator.calculate("graph(1)", this.calc_options)
-        if (typeof result !== "number") {
-            throw result
-        }
-    } catch (error) {
-        // console.log("Error", error)
-        return
-    }
-    // Point data
-    let points = []
-    const dx = (x_range.max - x_range.min) / intervals
-    let index = 0
-    // Graph color
-    const ctx = canvas.getContext("2d")
-    ctx.strokeStyle = options.color || "black"
-    const range_height = y_range.max - y_range.min
-    let x = x_range.min
-    let min_step = dx / 10
-    let skip = false
-    let discont = false
-    while (x <= x_range.max + dx) {
-        let step = dx
+    graphFunction(expression, options = {}) {
         try {
-            let cartesianPoint = {
-                x,
-                y: calculator.evaluate(["graph", new Paren([x])], this.calc_options)
+            delete calculator.functions["graph"]
+            if (expression in calculator.functions) {
+                calculator.calculate(`graph(x) = ${expression}(x)`, this.calc_options)
+            } else {
+                calculator.calculate(`graph(x) = ${expression}`, this.calc_options)
             }
-            if (isNaN(cartesianPoint.y)) {
-                x += step
-                discont = true
-                continue
+            let result = calculator.calculate("graph(1)", this.calc_options)
+            if (typeof result !== "number" && !(typeof result === "string" && result.includes("NaN"))) {
+                throw result
             }
-            points.push({
-                canvasPoint: mapToCanvasPoint(canvas_height, canvas_width, x_range, y_range, cartesianPoint),
-                cartesianPoint
-            })
-            if (discont) {
+        } catch (error) {
+            console.log(error) 
+            return
+        }
+        // Point data
+        let points = []
+        const dx = (this.x_range.max - this.x_range.min) / this.function_intervals
+        let index = 0
+        // Graph color
+        this.ctx.strokeStyle = options.color || "black"
+        let x = this.x_range.min
+        let min_step = dx / 10
+        let skip = false
+        let discont = false
+        while (x <= this.x_range.max + dx) {
+            let step = dx
+            try {
+                let cartesianPoint = {
+                    x,
+                    y: calculator.evaluate(["graph", new Paren([x])], this.calc_options)
+                }
+                if (isNaN(cartesianPoint.y)) {
+                    x += step
+                    discont = true
+                    continue
+                }
+                points.push({
+                    canvasPoint: this.mapToCanvasPoint(cartesianPoint),
+                    cartesianPoint
+                })
+                if (discont) {
+                    x += step
+                    index++
+                    discont = false
+                    continue
+                }
+                const currentPoint = points[index].canvasPoint
+                const currentCartesian = points[index].cartesianPoint
+                // Check for a previous point
+                if (index > 0 && (isFinite(points[index - 1].cartesianPoint.y.toString()))) {
+                    const previousPoint = points[index - 1].canvasPoint
+                    const previousCartesian = points[index - 1].cartesianPoint
+                    const slope = (currentCartesian.y - previousCartesian.y) / (currentCartesian.x - previousCartesian.x)
+                    step =  Math.min(Math.max(min_step, dx / (1 + Math.abs(slope))), dx)
+                    // Draw line from previous to current point
+                    if (Math.abs(slope) < 10000) {
+                        if (skip) {
+                            skip = false
+                        } else {
+                            this.ctx.beginPath()
+                            this.ctx.lineWidth = 2
+                            this.ctx.moveTo(previousPoint.x, previousPoint.y)
+                            this.ctx.lineTo(currentPoint.x, currentPoint.y)
+                            this.ctx.stroke()
+                        }
+                    } else {
+                        skip = true
+                    }
+                }
                 x += step
                 index++
-                discont = false
-                continue
+                // console.log(cartesianPoint.x, cartesianPoint.y)
+            } catch (error) {
+                points.push({ canvasPoint: null, cartesianPoint: null })
+                // console.error(error)
+                x += step
             }
-            const currentPoint = points[index].canvasPoint
-            const currentCartesian = points[index].cartesianPoint
-            // Check for a previous point
-            if (index > 0 && (isFinite(points[index - 1].cartesianPoint.y.toString()))) {
-                const previousPoint = points[index - 1].canvasPoint
-                const previousCartesian = points[index - 1].cartesianPoint
-                const slope = (currentCartesian.y - previousCartesian.y) / (currentCartesian.x - previousCartesian.x)
-                step =  Math.min(Math.max(min_step, dx / (1 + Math.abs(slope))), dx)
-                // Draw line from previous to current point
-                if (Math.abs(slope) < 10000) {
-                    if (skip) {
-                        skip = false
-                    } else {
-                        ctx.beginPath()
-                        ctx.lineWidth = 2
-                        ctx.moveTo(previousPoint.x, previousPoint.y)
-                        ctx.lineTo(currentPoint.x, currentPoint.y)
-                        ctx.stroke()
-                    }
-                } else {
-                    skip = true
-                }
-            }
-            x += step
-            index++
-            console.log(cartesianPoint.x, cartesianPoint.y)
-        } catch (error) {
-            points.push({ canvasPoint: null, cartesianPoint: null })
-            console.error(error)
-            x += step
         }
     }
 }
