@@ -531,7 +531,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     result.textContent = output
                 }
                 last_output = output
-                if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || typeof output === "boolean" || output instanceof Constant) {
+                if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || typeof output === "boolean" || output instanceof Constant) {
                     highlightSyntax(result, false, true)
                 }
                 if ((typeof output === "string" || output instanceof String) && output.includes("`") && result.className !== "result-graph") {

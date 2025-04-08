@@ -429,9 +429,19 @@ class Grapher {
         this.ctx.moveTo(point.x - dx, point.y + dy)
         this.ctx.lineTo(point.x + dx, point.y - dy)
         this.ctx.stroke()
-        if (vector.x > 0) {
+        if (is_close(vector.x, 0) && is_close(vector.y, 0)) {
+            return
+        } else if (is_close(vector.x, 0)) {
+            vector.x = 1e-9
+            hypotenuse = Math.min(10, Math.abs(vector.y))
+            if (vector.y > 0) {
+                this.drawVectorTriangle({ x: point.x, y: point.y - hypotenuse }, vector)
+            } else {
+                this.drawVectorTriangle({ x: point.x, y: point.y + hypotenuse }, vector)
+            }
+        } else if (vector.x > 0) {
             this.drawVectorTriangle({ x: point.x + dx, y: point.y - dy }, vector)
-        } else {
+        } else if (vector.x < 0) {
             this.drawVectorTriangle({ x: point.x - dx, y: point.y + dy }, vector)
         }
     }
@@ -649,7 +659,7 @@ class Grapher {
                 throw result
             }
         } catch (error) {
-            console.log(error) 
+            // console.log(error) 
             return
         }
         // Point data

@@ -22,22 +22,28 @@ function round(n, p = 0) {
 }
 
 function roundArray(a, p = 0) {
+    // console.log("roundArray", JSON.stringify(a), p)
     for (let i = 0; i < a.length; i++) {
         if (typeof a[i] === "number") {
             a[i] = set_precision(a[i], p)
+        } else if (Array.isArray(a[i])) {
+            a[i] = roundArray(a[i], p)
         } else if (typeof a[i] === "object" && !(a[i] instanceof String)) {
             if ("op" in a[i]) {
-                a[i] = a[i].op
-            } else if ("n" in a[i]) {
-                a[i] = `${a[i].n}/${a[i].d}`
+                a[i] = `${a[i].op}`
+            } else if ("d" in a[i]) {
+                if ("c" in a[i].n) {
+                    a[i].n = new Constant(a[i].n.c)
+                }
+                a[i] = new Fraction(a[i].n, a[i].d).toString()
             } else if ("c" in a[i]) {
                 a[i] = `${a[i].c}`
             } else if ("b" in a[i]) {
                 a[i] = `${a[i].b}`
+            } else if ("unit" in a[i]) {
+                a[i] = new UnitNumber(a[i].num, a[i].unit).toString()
             }
-        } else if (Array.isArray(a[i])) {
-            a[i] = roundArray(a[i], p)
-        } 
+        }
     }
     return a
 }
@@ -236,6 +242,12 @@ function tensors_equal(a1, a2) {
             if (a1[i] !== a2[i]) {
                 return false
             }
+        } else if (a1[i] instanceof UnitNumber && a2[i] instanceof UnitNumber) {
+            return a1[i].value() === convert_to_unit(a2[i], a1[i].unit)
+        } else if (a1[i] instanceof UnitNumber) {
+            return a1[i].value() === a2[i]
+        } else if (a2[i] instanceof UnitNumber) {
+            return a1[i] === a2[i].value()
         } else {
             return false
         }

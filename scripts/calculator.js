@@ -620,7 +620,10 @@ class Calculator {
             final_result = final_result.value()
         }
         if (options.no_base_number && final_result instanceof BaseNumber) {
-            final_result = convert_to_decimal(final_result)
+            final_result = final_result.value()
+        }
+        if (options.no_unit_number && final_result instanceof UnitNumber) {
+            final_result = final_result.value()
         }
         if (options.noRound) {
             return final_result
@@ -759,7 +762,7 @@ class Calculator {
         }
 
         // One token to evaluate
-        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || tokens[0] instanceof Constant || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean" || tokens[0] instanceof BaseNumber) {
+        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || tokens[0] instanceof Constant || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean" || tokens[0] instanceof BaseNumber || tokens[0] instanceof UnitNumber) {
             return tokens[0]
         } else if (CONSTANTS.includes(tokens[0])) {
             return OPERATIONS[tokens[0]].func()
@@ -839,6 +842,12 @@ class Calculator {
                         fail = false
                     }
                 }
+                if (UNITS.includes(tokens[index])) {
+                    if (!(tokens[index] instanceof Operation)) {
+                        tokens[index] = new Operation(tokens[index])
+                    }
+                    return tokens
+                }
                 if (tokens[index] === ":") {
                     operation = OPERATIONS[":2"]
                     params = operation.schema.map((i) => tokens[i + index])
@@ -877,6 +886,9 @@ class Calculator {
             const offset = operation.schema[0] < 0 ? operation.schema[0] : 0
             if (!operation.allow_fractions) {
                 params = params.map((n) => n instanceof Fraction ? n.value() : n)
+            }
+            if (!operation.allow_units) {
+                params = params.map((n) => n instanceof UnitNumber ? n.value() : n)
             }
             if (!operation.allow_constants) {
                 params = params.map((n) => n instanceof Constant ? n.value() : n)

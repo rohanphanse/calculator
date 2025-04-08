@@ -57,11 +57,11 @@ for (const u in FROM_UNITS) {
 }
 // Order of operations
 const ORDER_OF_OPERATIONS = [
+    UNITS,
+    ["to"],
     ["!"],              // Unary operations
     ["^", "mod"],         // Exponentiation and modulus
     ["choose", "perm", "cross"],
-    ["to"],
-    UNITS,
     ["/", "*"],         // Division then multiplication
     ["-"],        // Sutraction, negation, and then addition
     ["+"],
@@ -108,6 +108,20 @@ const OPERATIONS = {
                     return add_fractions(a, new Fraction(b, 1))
                 } else if (b instanceof Fraction && Number.isInteger(a)) {
                     return add_fractions(new Fraction(a, 1), b)
+                } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                    return new UnitNumber(a.value() + convert_to_unit(b, a.unit), a.unit)
+                } else if (a instanceof UnitNumber) {
+                    if (typeof b === "number") {
+                        return new UnitNumber(a.value() + b, a.unit)
+                    } else {
+                        return new UnitNumber(a.value() + b.value(), a.unit)
+                    }
+                } else if (b instanceof UnitNumber) {
+                    if (typeof a === "number") {
+                        return new UnitNumber(b.value() + a, b.unit) 
+                    } else {
+                        return new UnitNumber(b.value() + a.value(), b.unit)
+                    }
                 }
                 if (a instanceof Fraction) {
                     a = a.value()
@@ -130,7 +144,8 @@ const OPERATIONS = {
         vars: ["a", "b"],
         types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
         example: "Examples:\n  1. Add numbers: \`2 + 2 -> 4\`\n  2. Add tensors: \`[[[1, 2]]] + [[[2, 1]]] -> [[[3, 3]]]\`\n  3. Add numbers and tensors: \`2 + [1, 2] -> [3, 4]\`",
-        allow_fractions: true
+        allow_fractions: true,
+        allow_units: true
     },
     "-": {
         name: "Subtraction",
@@ -143,6 +158,20 @@ const OPERATIONS = {
                     return subtract_fractions(a, new Fraction(b, 1))
                 } else if (b instanceof Fraction && Number.isInteger(a)) {
                     return subtract_fractions(new Fraction(a, 1), b)
+                } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                    return new UnitNumber(a.value() - convert_to_unit(b, a.unit), a.unit)
+                } else if (a instanceof UnitNumber) {
+                    if (typeof b === "number") {
+                        return new UnitNumber(a.value() - b, a.unit)
+                    } else {
+                        return new UnitNumber(a.value() - b.value(), a.unit)
+                    }
+                } else if (b instanceof UnitNumber) {
+                    if (typeof a === "number") {
+                        return new UnitNumber(a - b.value(), b.unit) 
+                    } else {
+                        return new UnitNumber(a.value() - b.value(), b.unit)
+                    }
                 }
                 if (a instanceof Fraction) {
                     a = a.value()
@@ -164,7 +193,8 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
-        allow_fractions: true
+        allow_fractions: true,
+        allow_units: true,
         
     },
     "neg": {
@@ -200,6 +230,20 @@ const OPERATIONS = {
                     return new Fraction(a.n * b, a.d)
                 } else if (b instanceof Fraction && Number.isInteger(a)) {
                     return new Fraction(b.n * a, b.d)
+                } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                    return new UnitNumber(a.value() * convert_to_unit(b, a.unit), a.unit)
+                } else if (a instanceof UnitNumber) {
+                    if (typeof b === "number") {
+                        return new UnitNumber(a.value() * b, a.unit)
+                    } else {
+                        return new UnitNumber(a.value() * b.value(), a.unit)
+                    }
+                } else if (b instanceof UnitNumber) {
+                    if (typeof a === "number") {
+                        return new UnitNumber(a * b.value(), b.unit) 
+                    } else {
+                        return new UnitNumber(a.value() * b.value(), b.unit)
+                    }
                 }
                 return a * b
             } else if (param_types[0] == TL(TN) && param_types[1] == TL(TN)) {
@@ -221,15 +265,15 @@ const OPERATIONS = {
                 return matmul_scalar([b], a)[0]
             } else if (param_types[1] == TN && param_types[0] == TL(TN)) {
                 return matmul_scalar([a], b)[0]
-            } else {
-                return "Invalid types"
             }
+            return "Invalid types"
         },
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TOR(TN, TOR(TL(TN), TL(TL(TN)))), TOR(TN, TOR(TL(TN), TL(TL(TN))))],
         example: "Examples:\n  1. Multiply numbers: \`2 * 2 -> 4\`\n  2. Dot product: \`[1, 2] * [3, 4] -> 11\`\n  3. Matrix multiplication:\n     \`[[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]\`",
-        allow_fractions: true
+        allow_fractions: true,
+        allow_units: true,
     },
     "/": {
         name: "Division",
@@ -244,6 +288,20 @@ const OPERATIONS = {
                 return new Fraction(a * b.d, b.n)
             } else if (a instanceof Constant && Number.isInteger(b)) {
                 return new Fraction(a, b)
+            } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                return new UnitNumber(a.value() / convert_to_unit(b, a.unit), a.unit)
+            } else if (a instanceof UnitNumber) {
+                if (typeof b === "number") {
+                    return new UnitNumber(a.value() / b, a.unit)
+                } else {
+                    return new UnitNumber(a.value() / b.value(), a.unit)
+                }
+            } else if (b instanceof UnitNumber) {
+                if (typeof a === "number") {
+                    return new UnitNumber(a / b.value(), b.unit) 
+                } else {
+                    return new UnitNumber(a.value() / b.value(), b.unit)
+                }
             }
             if (a instanceof Constant) {
                 a = a.value()
@@ -257,14 +315,33 @@ const OPERATIONS = {
         vars: ["a", "b"],
         types: [TN, TN],
         allow_fractions: true,
-        allow_constants: true
+        allow_constants: true,
+        allow_units: true
     },
     "^": {
         name: "Exponentiation",
-        func: (a, b) => a ** b,
+        func: (a, b) => {
+            if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                return new UnitNumber(a.value() ** convert_to_unit(b, a.unit), a.unit)
+            } else if (a instanceof UnitNumber) {
+                if (typeof b === "number") {
+                    return new UnitNumber(a.value() ** b, a.unit)
+                } else {
+                    return new UnitNumber(a.value() ** b.value(), a.unit)
+                }
+            } else if (b instanceof UnitNumber) {
+                if (typeof a === "number") {
+                    return new UnitNumber(a ** b.value(), b.unit) 
+                } else {
+                    return new UnitNumber(a.value() ** b.value(), b.unit)
+                }
+            }
+            return a ** b
+        },
         schema: [-1, 1],
         vars: ["base", "exponent"],
-        types: [TN, TN]
+        types: [TN, TN],
+        allow_units: true
     },
     "!": {
         name: "Factorial",
@@ -1023,49 +1100,56 @@ const OPERATIONS = {
     },
     "to": {
         name: "Convert units",
-        func: (n, u1, u2) => {
-            if (u1 instanceof Operation) {
-                u1 = u1.op
+        func: (n, u2) => {
+            if (!(n instanceof UnitNumber)) {
+                return "Expected unit number"
             }
+            let u1 = n.unit
             if (u2 instanceof Operation) {
                 u2 = u2.op
             }
+            let new_value
             if (u1 in FROM_UNITS && u2 in FROM_UNITS) {
                 if (typeof FROM_UNITS[u1] === "number" && typeof FROM_UNITS[u2] === "number") {
-                    return n * FROM_UNITS[u1] * TO_UNITS[u2]
+                    new_value = n.value() * FROM_UNITS[u1] * TO_UNITS[u2]
                 } else if (typeof FROM_UNITS[u1] === "object" && typeof FROM_UNITS[u2] === "object") {
-                    return FROM_UNITS[u2].to(FROM_UNITS[u1].from(n))
+                    new_value = FROM_UNITS[u2].to(FROM_UNITS[u1].from(n.value()))
                 }
+                return new UnitNumber(new_value, u2)
             }
             return "Invalid units"
         },
-        schema: [-2, -1, 1],
-        vars: ["n", "u1", "u2"],
-        types: [TN, TU, TU],
-        example: "Tip: See all supported units by typing `units`\nExamples:\n  1. `5 km to mi -> 3.10686`\n  2. `C = cel; F = far; 30 C to F -> 86`\n"
+        schema: [-1, 1],
+        vars: ["n_u1", "u2"],
+        types: [TN, TU],
+        example: "Tip: See all supported units by typing `units`\nExamples:\n  1. `5 km to mi -> 3.10686`\n  2. `C = cel; F = far; 30 C to F -> 86`\n",
+        allow_units: true
     },
     "to2":  {
         name: "Convert units",
         func: (u1, u2) => {
-            n = 1
+            let n = 1
             if (u1 instanceof Operation) {
                 u1 = u1.op
             }
             if (u2 instanceof Operation) {
                 u2 = u2.op
             }
+            let new_value
             if (u1 in FROM_UNITS && u2 in FROM_UNITS) {
                 if (typeof FROM_UNITS[u1] === "number" && typeof FROM_UNITS[u2] === "number") {
-                    return n * FROM_UNITS[u1] * TO_UNITS[u2]
+                    new_value = n * FROM_UNITS[u1] * TO_UNITS[u2]
                 } else if (typeof FROM_UNITS[u1] === "object" && typeof FROM_UNITS[u2] === "object") {
-                    return FROM_UNITS[u2].to(FROM_UNITS[u1].from(n))
+                    new_value = FROM_UNITS[u2].to(FROM_UNITS[u1].from(n))
                 }
+                return new UnitNumber(new_value, u2)
             }
             return "Invalid units"
         },
         schema: [-1, 1],
         vars: ["u1", "u2"],
-        types: [TU, TU]
+        types: [TU, TU],
+        allow_units: true
     },
     "units": {
         name: "List of supported units",
@@ -1081,21 +1165,38 @@ const OPERATIONS = {
         func: (a, b) => {
             if (Array.isArray(a) && Array.isArray(b)) {
                 return tensors_equal(a, b)
+            } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                return a.value() === convert_to_unit(b, a.unit)
+            } else if (a instanceof UnitNumber) {
+                return a.value() === b
+            } else if (b instanceof UnitNumber) {
+                return a === b.value()
             }
             return a === b
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA]
+        types: [TA, TA],
+        allow_units: true
     },
     "!=": {
         name: "Not equal",
         func: (a, b) => {
+            if (Array.isArray(a) && Array.isArray(b)) {
+                return !tensors_equal(a, b)
+            } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                return a.value() !== convert_to_unit(b, a.unit)
+            } else if (a instanceof UnitNumber) {
+                return a.value() !== b
+            } else if (b instanceof UnitNumber) {
+                return a !== b.value()
+            }
             return a !== b
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA]
+        types: [TA, TA],    
+        allow_units: true
     },
     "true": {
         name: "True",
@@ -1122,38 +1223,70 @@ const OPERATIONS = {
     "<": {
         name: "Less than",
         func: (a, b) => {
+            if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                return a.value() < convert_to_unit(b, a.unit)
+            } else if (a instanceof UnitNumber) {
+                return a.value() < b
+            } else if (b instanceof UnitNumber) {
+                return a < b.value()
+            }
             return a < b
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA]
+        types: [TA, TA],    
+        allow_units: true
     },
     "<=": {
         name: "Less than or equal",
         func: (a, b) => {
+            if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                return a.value() <= convert_to_unit(b, a.unit)
+            } else if (a instanceof UnitNumber) {
+                return a.value() <= b
+            } else if (b instanceof UnitNumber) {
+                return a <= b.value()
+            }
             return a <= b
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA]
+        types: [TA, TA],    
+        allow_units: true
     },
     ">": {
         name: "Greater than",
         func: (a, b) => {
+            if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                return a.value() > convert_to_unit(b, a.unit)
+            } else if (a instanceof UnitNumber) {
+                return a.value() > b
+            } else if (b instanceof UnitNumber) {
+                return a > b.value()
+            }
             return a > b
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA]
+        types: [TA, TA],    
+        allow_units: true
     },
     ">=": {
         name: "Greater than or equal",
         func: (a, b) => {
+            if (a instanceof UnitNumber && b instanceof UnitNumber) {
+                return a.value() >= convert_to_unit(b, a.unit)
+            } else if (a instanceof UnitNumber) {
+                return a.value() >= b
+            } else if (b instanceof UnitNumber) {
+                return a >= b.value()
+            }
             return a >= b
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA]
+        types: [TA, TA],    
+        allow_units: true
     },
     "and": {
         name: "And",
@@ -1254,10 +1387,12 @@ const OPERATIONS = {
 for (let i = 0; i < UNITS.length; i++) {
     OPERATIONS[UNITS[i]] = {
         name: UNIT_NAMES[UNITS[i]],
-        func: () => "Must be used with `to`",
-        schema: [],
-        vars: [],
-        types: []
+        func: (n) => {
+            return new UnitNumber(n, UNITS[i])
+        },
+        schema: [-1],
+        vars: ["n"],
+        types: [TN]
     }
 }
 
@@ -1435,11 +1570,38 @@ class Constant {
     }
 }
 
+class UnitNumber {
+    constructor(num, unit) {
+        this.num = num
+        this.unit = unit
+    }
+
+    toString() {
+        return `${set_precision(this.value(), calculator.digits || 12)} ${this.unit}`
+    }
+
+    value() {
+        if (this.num instanceof Fraction || this.num instanceof Constant || this.num instanceof BaseNumber) {
+            return this.num.value()
+        } else {
+            return this.num
+        }
+    }
+}
+
+function convert_to_unit(n, u) {
+    if (typeof FROM_UNITS[n.unit] === "number" && typeof FROM_UNITS[u] === "number") {
+        return n.value() * FROM_UNITS[n.unit] * TO_UNITS[u]
+    } else if (typeof FROM_UNITS[n.unit] === "object" && typeof FROM_UNITS[u] === "object") {
+        return FROM_UNITS[n.unit].to(FROM_UNITS[u].from(n.value()))
+    }
+}
+
 function get_param_types(params) {
     const type_list = []
     // console.log("get_param_types", params)
     for (const p of params) {
-        if (typeof p === "number" || p instanceof Fraction || p instanceof Constant || p instanceof BaseNumber) {
+        if (typeof p === "number" || p instanceof Fraction || p instanceof Constant || p instanceof BaseNumber || p instanceof UnitNumber) {
             type_list.push(TN)
         } else if (typeof p === "boolean" || ["true", "false"].includes(p)) {
             type_list.push(TB)
