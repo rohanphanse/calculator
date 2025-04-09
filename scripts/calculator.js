@@ -134,9 +134,6 @@ class Calculator {
                 } else if (options?.functionParameters?.includes(string)) {
                     tokens.push(string)
                     i += string.length - 1
-                } else if (["pi", "e"].includes(string)) {
-                    tokens.push(new Constant(string)) 
-                    i += string.length - 1
                 // Operation
                 } else if (string in OPERATIONS) {
                     tokens.push(string)
@@ -616,9 +613,6 @@ class Calculator {
         if (options.no_fraction && final_result instanceof Fraction) {
             final_result = final_result.value()
         }
-        if (options.no_constant && final_result instanceof Constant) {
-            final_result = final_result.value()
-        }
         if (options.no_base_number && final_result instanceof BaseNumber) {
             final_result = final_result.value()
         }
@@ -762,7 +756,7 @@ class Calculator {
         }
 
         // One token to evaluate
-        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || tokens[0] instanceof Constant || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean" || tokens[0] instanceof BaseNumber || tokens[0] instanceof UnitNumber) {
+        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean" || tokens[0] instanceof BaseNumber || tokens[0] instanceof UnitNumber) {
             return tokens[0]
         } else if (CONSTANTS.includes(tokens[0])) {
             return OPERATIONS[tokens[0]].func()
@@ -890,9 +884,6 @@ class Calculator {
             if (!operation.allow_units) {
                 params = params.map((n) => n instanceof UnitNumber ? n.value() : n)
             }
-            if (!operation.allow_constants) {
-                params = params.map((n) => n instanceof Constant ? n.value() : n)
-            }
             if (!operation.allow_base_numbers) {
                 params = params.map((n) => n instanceof BaseNumber ? convert_to_decimal(n) : n)
             }
@@ -935,7 +926,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            // console.log(err)
+            console.log(err)
             return `${operation.name} error > execution error`
         }
     }

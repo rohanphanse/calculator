@@ -286,8 +286,6 @@ const OPERATIONS = {
                 return new Fraction(a.n, b * a.d)
             } else if (b instanceof Fraction && Number.isInteger(a)) {
                 return new Fraction(a * b.d, b.n)
-            } else if (a instanceof Constant && Number.isInteger(b)) {
-                return new Fraction(a, b)
             } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
                 return new UnitNumber(a.value() / convert_to_unit(b, a.unit), a.unit)
             } else if (a instanceof UnitNumber) {
@@ -303,19 +301,12 @@ const OPERATIONS = {
                     return new UnitNumber(a.value() / b.value(), b.unit)
                 }
             }
-            if (a instanceof Constant) {
-                a = a.value()
-            }
-            if (b instanceof Constant) {
-                b = b.value()
-            }
             return a / b
         },
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TN, TN],
         allow_fractions: true,
-        allow_constants: true,
         allow_units: true
     },
     "^": {
@@ -1315,66 +1306,6 @@ const OPERATIONS = {
         vars: ["x"],
         types: [TA]
     },
-    "diff": {
-        name: "Differentiation",
-        func: (f, calc) => {
-            if (f instanceof Operation) {
-                f = f.op
-            }
-            const tokens = calc.functions[f].value
-            const new_tokens = []
-            for (let i = 0; i < tokens.length; i++) {
-                let added = false
-                if (typeof tokens[i] === "string") {
-                    if (tokens[i].startsWith("(")) {
-                        new_tokens.push("(")
-                        added = true
-                    }
-                    if (tokens[i].startsWith(")")) {
-                        new_tokens.push(")")
-                        added = true
-                    }
-                }
-                if (!added) {
-                    new_tokens.push(tokens[i])
-                }
-            }
-            const x = calc.functions[f].parameters[0]
-            const symbols = ["+", "-", "*", "/", "^", "(", ")", "sin", "cos", "ln", "tan", "cot", "csc", "sec"]
-            for (let i = 0; i < new_tokens.length - 1; i++) {
-                if (!symbols.includes(new_tokens[i]) && !symbols.includes(new_tokens[i + 1])) {
-                    new_tokens.splice(i + 1, 0, "*")
-                } 
-                if (!symbols.includes(new_tokens[i]) && tokens[i + 1] === "(") {
-                    new_tokens.splice(i + 1, 0, "*")
-                }
-                if (!symbols.includes(new_tokens[i]) && ["sin", "cos", "ln", "tan", "cot", "csc", "sec"].includes(new_tokens[i + 1])) {
-                    new_tokens.splice(i + 1, 0, "*")
-                }
-            }
-            for (let i = 0; i < new_tokens.length; i++) {
-                if (new_tokens[i] instanceof Fraction || new_tokens[i] instanceof BaseNumber || new_tokens[i] instanceof Constant) {
-                    new_tokens[i] = new_tokens[i].value()
-                }
-                if (!symbols.includes(new_tokens[i]) && new_tokens[i] !== x && typeof new_tokens[i] !== "number") {
-                    return `'${new_tokens[i]}' is not supported`
-                }
-            }
-            // console.log("diff tokens", new_tokens)
-            const expressionTree = diff_tree(new_tokens)
-            let derivative = differentiate(expressionTree, x)
-            output = tree_to_string(diff_natural_simplify(derivative))
-            if (f.startsWith("@")) {
-                f = "f"
-            }
-            calc.calculate(`${f}'(${x}) = ${output}`)
-            return new String(`\`${f}'(${x}) = ${output}\`\nDerivative \`${f}'\` declared`)
-        },
-        schema: [1],
-        vars: ["f"],
-        types: [TF],
-        calc: true
-    }, 
     "flat": {
         name: "Flatten list",
         func: (a) => flatten(a),
@@ -1466,6 +1397,13 @@ const HELP = {
         schema: [1],
         vars: ["x"],
         types: ["expression"]
+    },
+    "diff": {
+        name: "Differentiation",
+        schema: [1],
+        vars: ["x"],
+        types: ["expression"],
+        example: "Examples: `g(y) = y^2 * sin(y)`\n  1. Derivative of function: `diff g`\n  2. Expression of `x`: `diff x^2 * sin(x)`"
     }
 }
 
@@ -1536,9 +1474,7 @@ class Fraction {
     }
 
     value() {
-        let n = this.n instanceof Constant ? this.n.value() : this.n
-        let d = this.d instanceof Constant ? this.d.value() : this.d
-        return n / d * (this.neg ? -1 : 1)
+        return this.n / this.d * (this.neg ? -1 : 1)
     }
 }
 
@@ -1556,20 +1492,6 @@ class BaseNumber {
     }
 }
 
-class Constant {
-    constructor(c) {
-        this.c = c
-    }
-
-    toString() {
-        return `${this.c}`
-    }
-
-    value() {
-        return OPERATIONS[this.c].func()
-    }
-}
-
 class UnitNumber {
     constructor(num, unit) {
         this.num = num
@@ -1581,7 +1503,7 @@ class UnitNumber {
     }
 
     value() {
-        if (this.num instanceof Fraction || this.num instanceof Constant || this.num instanceof BaseNumber) {
+        if (this.num instanceof Fraction || this.num instanceof BaseNumber) {
             return this.num.value()
         } else {
             return this.num
@@ -1601,7 +1523,7 @@ function get_param_types(params) {
     const type_list = []
     // console.log("get_param_types", params)
     for (const p of params) {
-        if (typeof p === "number" || p instanceof Fraction || p instanceof Constant || p instanceof BaseNumber || p instanceof UnitNumber) {
+        if (typeof p === "number" || p instanceof Fraction || p instanceof BaseNumber || p instanceof UnitNumber) {
             type_list.push(TN)
         } else if (typeof p === "boolean" || ["true", "false"].includes(p)) {
             type_list.push(TB)

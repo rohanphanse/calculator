@@ -36,7 +36,7 @@ class Grapher {
         this.parametric_range = { min: -10, max: 10 }
         this.parametric_intervals = 1000
         this.colors = ["red", "green", "blue", "purple", "black"]
-        this.calc_options = { no_fraction: true, no_base_number: true, no_constant: true, noAns: true, noRound: true }
+        this.calc_options = { no_fraction: true, no_base_number: true, noAns: true, noRound: true }
         // Expressions
         this.expressions = []
         // Listeners

@@ -32,12 +32,7 @@ function roundArray(a, p = 0) {
             if ("op" in a[i]) {
                 a[i] = `${a[i].op}`
             } else if ("d" in a[i]) {
-                if ("c" in a[i].n) {
-                    a[i].n = new Constant(a[i].n.c)
-                }
                 a[i] = new Fraction(a[i].n, a[i].d).toString()
-            } else if ("c" in a[i]) {
-                a[i] = `${a[i].c}`
             } else if ("b" in a[i]) {
                 a[i] = `${a[i].b}`
             } else if ("unit" in a[i]) {
@@ -474,19 +469,8 @@ function eval_if(if_st, calc) {
 }
 
 function add_fractions(f1, f2) {
-    let v = [f1.n, f1.d, f2.n, f2.d]
-    let no_frac = false
-    for (let i = 0; i < 4; i++) {
-        if (v[i] instanceof Constant) {
-            v[i] = v[i].value()
-            no_frac = true
-        }
-    }
-    if (no_frac) {
-        return v[0] / v[1] + v[2] / v[3]
-    }
-    let d = lcm(v[1], v[3])
-    let n = d / v[1] * v[0] + d / v[3] * v[2]
+    let d = lcm(f1.d, f2.d)
+    let n = d / f1.d * f1.n + d / f2.d * f2.n
     return new Fraction(n, d)
 }
 

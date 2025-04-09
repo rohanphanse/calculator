@@ -290,6 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (event.key === "Enter" || event.key === "Tab") {
             event.preventDefault()
+            let skip_result = false
             if (userInputAutocomplete.innerText.length > 0) {
                 const original_text = userInput.textContent
                 const autocomplete_text = userInputAutocomplete.textContent
@@ -317,10 +318,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (match) {
                             const n = parseInt(match[1])
                             const rows = Array.from(interface.children)
-                            interface.textContent = ""
-                            for (let i = 0; i < rows.length - Math.min(n * 2, rows.length) - 1; i++) {
-                                interface.appendChild(rows[i])
+
+                            const toRemove = Math.min(n * 2 + 1, rows.length)
+                            const keepCount = rows.length - toRemove
+                            for (let i = rows.length - 1; i >= keepCount; i--) {
+                                interface.removeChild(rows[i])
                             }
+                            skip_result = true
                         } else {
                             output = "Clear error"
                         }
@@ -425,6 +429,76 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else {
                         output = "Def error > can only view user-defined functions"
                     }
+                } else if (user_input.startsWith("diff")) {
+                    try {
+                        let f = user_input.slice(user_input.indexOf("diff") + "diff".length).trim()
+                        let no_func = false
+                        if (!(f in calculator.functions)) {
+                            no_func = true
+                            let res = calculator.calculate(`diff(x) = ${f}`)
+                            f = "diff"
+                            if (typeof res === "string") {
+                                output = `Differentation error > ${res}`
+                                throw "Error"
+                            }
+                        }
+                        if (!(f in calculator.functions)) {
+                            "Differentation error > invalid input"
+                        }
+                        const tokens = calculator.functions[f].value
+                        const new_tokens = []
+                        for (let i = 0; i < tokens.length; i++) {
+                            let added = false
+                            if (typeof tokens[i] === "string") {
+                                if (tokens[i].startsWith("(")) {
+                                    new_tokens.push("(")
+                                    added = true
+                                }
+                                if (tokens[i].startsWith(")")) {
+                                    new_tokens.push(")")
+                                    added = true
+                                }
+                            }
+                            if (!added) {
+                                new_tokens.push(tokens[i])
+                            }
+                        }
+                        const x = calculator.functions[f].parameters[0]
+                        const symbols = ["+", "-", "*", "/", "^", "(", ")", "sin", "cos", "ln", "tan", "cot", "csc", "sec"]
+                        for (let i = 0; i < new_tokens.length - 1; i++) {
+                            if (!symbols.includes(new_tokens[i]) && !symbols.includes(new_tokens[i + 1])) {
+                                new_tokens.splice(i + 1, 0, "*")
+                            } 
+                            if (!symbols.includes(new_tokens[i]) && tokens[i + 1] === "(") {
+                                new_tokens.splice(i + 1, 0, "*")
+                            }
+                            if (!symbols.includes(new_tokens[i]) && ["sin", "cos", "ln", "tan", "cot", "csc", "sec"].includes(new_tokens[i + 1])) {
+                                new_tokens.splice(i + 1, 0, "*")
+                            }
+                        }
+                        for (let i = 0; i < new_tokens.length; i++) {
+                            if (new_tokens[i] instanceof Fraction || new_tokens[i] instanceof BaseNumber) {
+                                new_tokens[i] = new_tokens[i].value()
+                            }
+                            if (!symbols.includes(new_tokens[i]) && new_tokens[i] !== x && typeof new_tokens[i] !== "number") {
+                                output = `Differentation error > '${new_tokens[i]}' is not supported`
+                                throw "Error"
+                            }
+                        }
+                        // console.log("diff tokens", new_tokens)
+                        const expressionTree = diff_tree(new_tokens)
+                        let derivative = differentiate(expressionTree, x)
+                        output = tree_to_string(diff_natural_simplify(derivative))
+                        if (f.startsWith("@") || no_func) {
+                            f = "f"
+                        }
+                        calculator.calculate(`${f}'(${x}) = ${output}`)
+                        output = new String(`\`${f}'(${x}) = ${output}\`\nDerivative \`${f}'\` declared`)
+                    } catch (error) {
+                        if (!output) {
+                            output = "Differentiation error"
+                        }
+                    }
                 } else if (user_input.startsWith("plot")) {
                     // Pass
                 } else {
@@ -439,61 +513,19 @@ document.addEventListener("DOMContentLoaded", () => {
                                 return
                             }
                         }
-                        output = calculator.calculate(user_input, { no_fraction: true, no_constant: true, no_base_number: true })
+                        output = calculator.calculate(user_input, { no_fraction: true, no_base_number: true })
                     } else {
                         output = calculator.calculate(user_input)
                     }
                 }
                 // Result
                 let result
-                if (user_input.startsWith("plot")) {
-                    result = document.createElement("div")
-                    result.className = "result-graph"
-                    const expr = user_input.slice(user_input.indexOf("plot") + "plot".length).trim()
-                    const graph_parent = document.createElement("div")
-                    graph_parent.id = `graph-${graph_id}`
-                    graph_id++
-                    result.append(graph_parent)
-                    requestAnimationFrame(() => {
-                        const graph = new Grapher({
-                            parent: graph_parent,
-                            height: 200,
-                            width: 200
-                        })
-                        graphs.push(graph)
-                        graph.setInput(expr)
-                    })
-                } else if (user_input === "help plot") {
-                    result = document.createElement("div")
-                    result.className = "result-graph"
-                    const help_text = document.createElement("div")
-                    help_text.className = "result-text"
-                    help_text.innerText = output
-                    result.append(help_text)
-                    highlightSyntax(help_text, true, true)
-                    const text_1 = document.createElement("div")
-                    text_1.innerText = "Guide:\n  1. Graph functions of `x` as `f(x)`\n  2. Polar curves: `r = f(t)`\n  3. Parametric: `p: x = f(t), y = g(t)`\n  4. Slope fields: `s: f(x, y)`\n  5. Vector fields: `v: (f(x, y), g(x, y))`\n\nExample #1: `plot sin(x); r = 6sin(t) [0, pi]; p: x = t^2, y = 2t`"
-                    text_1.className = "result-text"
-                    highlightSyntax(text_1, true, true)
-                    result.append(text_1)
-                    let graph_parent = document.createElement("div")
-                    graph_parent.id = `graph-${graph_id}`
-                    graph_id++
-                    result.append(graph_parent)
-                    requestAnimationFrame(() => {
-                        const graph = new Grapher({
-                            parent: graph_parent,
-                            height: 200,
-                            width: 200
-                        })
-                        graph.setInput("sin(x); r = 6sin(t) [0, pi]; p: x = t^2, y = 2t")
-                        graphs.push(graph)
-                        const text_2 = document.createElement("div")
-                        text_2.innerText = "\nExample #2: `plot s: x/y; sqrt(x^2 - 1); -sqrt(x^2 - 1)`"
-                        text_2.className = "result-text"
-                        highlightSyntax(text_2, true, true)
-                        result.append(text_2)
-                        graph_parent = document.createElement("div")
+                if (!skip_result) {
+                    if (user_input.startsWith("plot")) {
+                        result = document.createElement("div")
+                        result.className = "result-graph"
+                        const expr = user_input.slice(user_input.indexOf("plot") + "plot".length).trim()
+                        const graph_parent = document.createElement("div")
                         graph_parent.id = `graph-${graph_id}`
                         graph_id++
                         result.append(graph_parent)
@@ -503,13 +535,39 @@ document.addEventListener("DOMContentLoaded", () => {
                                 height: 200,
                                 width: 200
                             })
-                            graph.setInput("s: x/y; sqrt(x^2 - 1); -sqrt(x^2 - 1)")
                             graphs.push(graph)
-                            const text_3 = document.createElement("div")
-                            text_3.innerText = "\nExample #3: `plot v: (x, y)`"
-                            text_3.className = "result-text"
-                            highlightSyntax(text_3, true, true)
-                            result.append(text_3)
+                            graph.setInput(expr)
+                        })
+                    } else if (user_input === "help plot") {
+                        result = document.createElement("div")
+                        result.className = "result-graph"
+                        const help_text = document.createElement("div")
+                        help_text.className = "result-text"
+                        help_text.innerText = output
+                        result.append(help_text)
+                        highlightSyntax(help_text, true, true)
+                        const text_1 = document.createElement("div")
+                        text_1.innerText = "Guide:\n  1. Graph functions of `x` as `f(x)`\n  2. Polar curves: `r = f(t)`\n  3. Parametric: `p: x = f(t), y = g(t)`\n  4. Slope fields: `s: f(x, y)`\n  5. Vector fields: `v: (f(x, y), g(x, y))`\n\nExample #1: `plot sin(x); r = 6sin(t) [0, pi]; p: x = t^2, y = 2t`"
+                        text_1.className = "result-text"
+                        highlightSyntax(text_1, true, true)
+                        result.append(text_1)
+                        let graph_parent = document.createElement("div")
+                        graph_parent.id = `graph-${graph_id}`
+                        graph_id++
+                        result.append(graph_parent)
+                        requestAnimationFrame(() => {
+                            const graph = new Grapher({
+                                parent: graph_parent,
+                                height: 200,
+                                width: 200
+                            })
+                            graph.setInput("sin(x); r = 6sin(t) [0, pi]; p: x = t^2, y = 2t")
+                            graphs.push(graph)
+                            const text_2 = document.createElement("div")
+                            text_2.innerText = "\nExample #2: `plot s: x/y; sqrt(x^2 - 1); -sqrt(x^2 - 1)`"
+                            text_2.className = "result-text"
+                            highlightSyntax(text_2, true, true)
+                            result.append(text_2)
                             graph_parent = document.createElement("div")
                             graph_parent.id = `graph-${graph_id}`
                             graph_id++
@@ -520,37 +578,55 @@ document.addEventListener("DOMContentLoaded", () => {
                                     height: 200,
                                     width: 200
                                 })
-                                graph.setInput("v: (x, y)")
+                                graph.setInput("s: x/y; sqrt(x^2 - 1); -sqrt(x^2 - 1)")
                                 graphs.push(graph)
+                                const text_3 = document.createElement("div")
+                                text_3.innerText = "\nExample #3: `plot v: (x, y)`"
+                                text_3.className = "result-text"
+                                highlightSyntax(text_3, true, true)
+                                result.append(text_3)
+                                graph_parent = document.createElement("div")
+                                graph_parent.id = `graph-${graph_id}`
+                                graph_id++
+                                result.append(graph_parent)
+                                requestAnimationFrame(() => {
+                                    const graph = new Grapher({
+                                        parent: graph_parent,
+                                        height: 200,
+                                        width: 200
+                                    })
+                                    graph.setInput("v: (x, y)")
+                                    graphs.push(graph)
+                                })
                             })
                         })
-                    })
-                } else {
-                    result = document.createElement("pre")
-                    result.className = "result"
-                    result.textContent = output
+                    } else {
+                        result = document.createElement("pre")
+                        result.className = "result"
+                        result.textContent = output
+                    }
+                    last_output = output
+                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || typeof output === "boolean") {
+                        highlightSyntax(result, false, true)
+                    }
+                    if ((typeof output === "string" || output instanceof String) && output.includes("`") && result.className !== "result-graph") {
+                        highlightSyntax(result, true, true)
+                    }
+                    if (`${output}`.length > 30) {
+                        result.style.textAlign = "left"
+                        result.style.margin = "10px 0 10px 20%"
+                    }
+                    if (typeof output !== "string" && !(output instanceof String) && `${output}`.length < 100) {
+                        result.style.cursor = "pointer"
+                        result.addEventListener("click", (event) => {
+                            event.preventDefault()
+                            userInput.innerText += result.innerText + " "
+                            highlightSyntax(userInput)
+                            setCursorPosition(userInput, userInput.innerText.length - 1)
+                        })
+                    }
+                    interface.append(result)
                 }
-                last_output = output
-                if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || typeof output === "boolean" || output instanceof Constant) {
-                    highlightSyntax(result, false, true)
-                }
-                if ((typeof output === "string" || output instanceof String) && output.includes("`") && result.className !== "result-graph") {
-                    highlightSyntax(result, true, true)
-                }
-                if (`${output}`.length > 30) {
-                    result.style.textAlign = "left"
-                    result.style.margin = "10px 0 10px 20%"
-                }
-                if (typeof output !== "string" && !(output instanceof String) && `${output}`.length < 100) {
-                    result.style.cursor = "pointer"
-                    result.addEventListener("click", (event) => {
-                        event.preventDefault()
-                        userInput.innerText += result.innerText + " "
-                        highlightSyntax(userInput)
-                        setCursorPosition(userInput, userInput.innerText.length - 1)
-                    })
-                }
-                interface.append(result)
             }
             
             // Input
