@@ -1,4 +1,5 @@
 // Utility functions
+let calculator
 
 // Count occurences in array or string
 function count(array, value) {
@@ -289,7 +290,7 @@ function matmul(A, B) {
     const RB = B.length;
     const CB = B[0].length
     if (RB !== CA) {
-        return "Incompatible dimensions."
+        return "Incompatible dimensions"
     }
     const result = Array(RA).fill(null).map(() => Array(CB).fill(0))
     for (let i = 0; i < RA; i++) {
@@ -887,7 +888,7 @@ function tree_to_string(node) {
 function highlightSyntax(element, backticks_mode = false, highlight_types = false) {
     const cursor_position = getCursorPosition(element)
     let text = element.innerHTML.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
-    const keywords = ["if", "then", "else", "def", "save", "help", "clear", "trace", "to", "plot"]
+    const keywords = ["if", "then", "else", "save", "help", "clear", "trace", "to", "plot", "diff"]
     const types = ["number", "list", "string", "any", "function", "optional", "variable", "unit", "expression"]
     const process_line = (text) => {
         const matches = []

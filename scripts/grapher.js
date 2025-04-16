@@ -1,4 +1,3 @@
-let math
 class Grapher {
     constructor (params = {}) {
         // Parent element

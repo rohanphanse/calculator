@@ -147,6 +147,9 @@ class Calculator {
                         return "Answer error"
                     }
                 // Variable
+                } else if (options.ignore_vars) {
+                    tokens.push(string)
+                    i += string.length - 1
                 } else if (string in this.parameter_context) {
                     tokens.push(this.parameter_context[string])
                     i += string.length - 1
@@ -156,8 +159,23 @@ class Calculator {
                 } else if (string in this.functions) {
                     tokens.push(string)
                     i += string.length - 1
-                } else if (options.ignore_vars) {
-                    tokens.push(string)
+                } else if (string.length >= 3 && string[0] === "m" && string[1] === string[1].toUpperCase()) {
+                    const regex = /([A-Z][a-z]?)(\d*)/g
+                    let result = []
+                    let match
+                    while ((match = regex.exec(string.slice(1))) !== null) {
+                        const element = match[1]
+                        const count = match[2] === "" ? 1 : parseInt(match[2], 10)
+                        result.push([element, count])
+                    }
+                    let molar_mass = 0
+                    for (const [element, count] of result) {
+                        if (!CONSTANTS.includes(`m${element}`) || isNaN(count)) {
+                            return `Unknown string "${string}" at position ${i + 1}`
+                        }
+                        molar_mass += OPERATIONS[`m${element}`].func().value() * count
+                    }
+                    tokens.push(new UnitNumber(molar_mass, { "uu": 1 }))
                     i += string.length - 1
                 } else {
                     return `Unknown string "${string}" at position ${i + 1}`
@@ -215,6 +233,7 @@ class Calculator {
                 }
             }
         }
+        console.log(tokens)
         return tokens
     }
 
@@ -269,7 +288,7 @@ class Calculator {
                     redeclared = true
                 }
                 this.variables[name] = result
-                return new String(`Variable ${name} ${redeclared ? "reassigned" : "declared"}`)  
+                return new String(`Variable \`${name}\` ${redeclared ? "reassigned" : "declared"}`)  
             } else {
                 return "Variable assignment error"
             }
@@ -328,7 +347,7 @@ class Calculator {
                 if (name.startsWith("@")) {
                     this.functions[name].string = `@(${parameters.join(", ")}) = ${expression[1]}`
                 }
-                return new String(`Function ${name} ${redeclared ? "re" : ""}declared`)
+                return new String(`Function \`${name}\` ${redeclared ? "re" : ""}declared`)
             }
         } catch (err) {
             // console.log(err)
@@ -506,7 +525,7 @@ class Calculator {
 
     // Evaluate numerical result from tokens
     evaluate(tokens, options = {}) {
-        // console.log("evaluate", JSON.stringify(tokens), options)
+        // ("evaluate", JSON.stringify(tokens), options)
         this.overflow_count++
         if (this.overflow_count > this.overflow_max) {
             return "Overflow error: too many function calls"
@@ -519,10 +538,9 @@ class Calculator {
                     tokens[t] = this.ans
                 }
                 // Parameter context
-                if (tokens[t] in this.parameter_context && !(tokens[t] in this.variables || tokens[t] in this.functions)) {
+                if (tokens[t] in this.parameter_context) {
                     tokens[t] = this.parameter_context[tokens[t]]
-                }
-                if (tokens[t] in this.variables) {
+                } else if (tokens[t] in this.variables) {
                     tokens[t] = this.variables[tokens[t]]
                 }
             }
@@ -647,6 +665,22 @@ class Calculator {
                 }
                 return str
             }
+        } else if (final_result instanceof Operation && final_result in calculator.functions) {
+            let op = final_result.op
+            let fs = calculator.functions[op].string
+            if (fs.length > 0 && fs[0] === "@") {
+                fs = fs.replace("@", "#")
+            }
+            while (fs.includes("@")) {
+                const index = fs.lastIndexOf("@")
+                let name = fs.slice(fs.lastIndexOf("@"))
+                if (name.indexOf(")") !== -1) {
+                    name = name.slice(0, name.indexOf(")"))
+                }
+                fs = fs.slice(0, index) + calculator.functions[name].string.replace("@", "#") + fs.slice(index + name.length)
+            }
+            fs = fs.replaceAll("#", "@")
+            return new String(fs)
         } else {
             return final_result
         }
@@ -771,6 +805,11 @@ class Calculator {
 
     // Evaluate expression with operator/symbol
     evaluateOperator(tokens) {
+        for (let t = 0; t < tokens.length - 1; t++) {
+            if (is_multipliable(tokens[t]) && is_multipliable(tokens[t + 1])) {
+                tokens.splice(t + 1, 0, "*")
+            }
+        }
         // console.log("evaluateOperator", tokens)
         // Filter order of operations array so only used operations are present
         let used_operations = ORDER_OF_OPERATIONS.map(list => list.filter(e => tokens.includes(e))).filter(e => e.length)
@@ -789,7 +828,7 @@ class Calculator {
                 }
             }
         } else {
-            // console.log("evaluateOperator error")
+            console.log("evaluateOperator error")
             return "Execution error"
         }
     }

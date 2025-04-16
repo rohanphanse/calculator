@@ -1,4 +1,3 @@
-let calculator
 document.addEventListener("DOMContentLoaded", () => {
     // Calculator
     calculator = new Calculator()
@@ -11,10 +10,34 @@ document.addEventListener("DOMContentLoaded", () => {
     let last_output = null
     let graph_id = 1
     let graphs = []
+
+    // Elements
+    const interface = document.getElementById("interface")
+    let userInput = document.getElementsByClassName("input")[0]
+    let userInputAutocomplete = document.getElementsByClassName("input-autocomplete")[0]
+    const angleButton = document.getElementById("angle-button")
+    const digitsInput = document.getElementById("digits-input")
+    const displayButton = document.getElementById("display-button")
+    const themeButton = document.getElementById("theme-button")
+    const commandButtons = document.getElementsByClassName("command")
+    const userBar = document.getElementById("user-bar")
+    const varBar = document.getElementById("var-bar")
+    const calcContainer = document.getElementById("container")
+    const sideBar = document.getElementById("side-bar")
+    const sideBarButton = document.getElementById("side-bar-button")
  
     // States
     let UPDATE_DIGITS = false
     let DRAGGING = false
+    let SIDE_BAR = localStorage.getItem("side_bar") || "yes"
+    if (SIDE_BAR === "yes") {
+        document.documentElement.classList.add("disable-transitions")
+        sideBar.style.right = "0px"
+        void document.documentElement.offsetWidth
+        setTimeout(() => {
+            document.documentElement.classList.remove("disable-transitions")
+        }, 0)
+    }
     let theme = localStorage.getItem("theme") || "light"
     if (theme === "dark") {
         document.documentElement.classList.add("disable-transitions")
@@ -24,21 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
             document.documentElement.classList.remove("disable-transitions")
         }, 0)
     }
+    for (const codeBlock of sideBar.getElementsByTagName("pre")) {
+        highlightSyntax(codeBlock, true, true)
+    }
 
-    // Elements
-    const interface = document.getElementById("interface")
-    let userInput = document.getElementsByClassName("input")[0]
-    let userInputAutocomplete = document.getElementsByClassName("input-autocomplete")[0]
-    
-    const angleButton = document.getElementById("angle-button")
-    const digitsInput = document.getElementById("digits-input")
-    const displayButton = document.getElementById("display-button")
-    const themeButton = document.getElementById("theme-button")
-    const commandButtons = document.getElementsByClassName("command")
-    const commandBar = document.getElementById("command-bar")
-    const userBar = document.getElementById("user-bar")
-    const varBar = document.getElementById("var-bar")
-    const calcContainer = document.getElementById("container")
     // Initial
     // User input event listeners
     userInput.addEventListener("keydown", handleKeyDown)
@@ -64,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     })
 
-    enableDragToScroll(commandBar)
     enableDragToScroll(userBar)
     enableDragToScroll(varBar)
     
@@ -121,7 +132,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 t += " "
             }
             if (u.length === 0) {
-                userInput.textContent = `help ${t.replaceAll("()", "")}`
+                if (t.startsWith("units")) {
+                    userInput.textContent = `${t}`
+                } else {
+                    userInput.textContent = `help ${t.replaceAll("()", "")}`
+                }
                 highlightSyntax(userInput)
                 userInput.dispatchEvent(new KeyboardEvent("keydown", {
                     key: "Enter",
@@ -155,6 +170,17 @@ document.addEventListener("DOMContentLoaded", () => {
         calculator.calculate(`${v} = ${JSON.stringify(saved_variables[v]).replaceAll('"', "")}`)
     }
     calculator.ans = null
+
+    sideBarButton.addEventListener("click", () => {
+        if (SIDE_BAR === "yes") {
+            sideBar.style.right = "-270px"
+            SIDE_BAR = "no"
+        } else {
+            sideBar.style.right = "0px"
+            SIDE_BAR = "yes"
+        }
+        localStorage.setItem("side_bar", SIDE_BAR)
+    })
 
     function commandInsert(event) {
         const index = getCursorPosition(userInput)
@@ -193,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userBar.append(userButton)
             cmd.addEventListener("click", (event) => {
                 if (userInput.innerText.length === 0) {
-                    userInput.textContent = `def ${`${f}`.replaceAll("()", "")}`
+                    userInput.textContent = `${`${f}`.replaceAll("()", "")}`
                     highlightSyntax(userInput)
                     userInput.dispatchEvent(new KeyboardEvent("keydown", {
                         key: "Enter",
@@ -342,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             } else if (e.schema[0] === -1) {
                                 output += `${e.vars[0]}${["!"].includes(op) ? "" : " "}${op}`
                             } else {
-                                output += `${op}${HELP[op] && op !== "@" ? " " : ""}${["not"].includes(op) ? " " : ""}${e.vars[0]}`
+                                output += `${op}${HELP[op] && op !== "@" ? " " : ""}${["not", "si"].includes(op) ? " " : ""}${e.vars[0]}`
                             }
                             for (let i = 1; i < e.vars.length; i++) {
                                 if (e.schema[i] < 0) continue
@@ -364,7 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             output += `\n${e.example}`
                         }
                     } else {
-                        output += "Welcome to Calculator! Learn about a function by typing `help func` where `func` is the name of a function such as `sin`..."
+                        output += "Welcome to Functional Calculator! See the guide to help you get started!"
                     }
                 } else if (user_input.startsWith("trace")) {
                     const rest = user_input.slice(user_input.indexOf("trace") + "trace".length).trim()
@@ -408,26 +434,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     } else {
                         output = `Save error > can only save user-defined variables and functions`
-                    }
-                } else if (user_input.startsWith("def")) {
-                    const op = user_input.slice(user_input.indexOf("def") + "def".length).trim()
-                    if (op in calculator.functions || (op in calculator.variables && calculator.variables[op] instanceof Operation)) {
-                        let fs = calculator.functions[op].string
-                        if (fs.length > 0 && fs[0] === "@") {
-                            fs = fs.replace("@", "#")
-                        }
-                        while (fs.includes("@")) {
-                            const index = fs.lastIndexOf("@")
-                            let name = fs.slice(fs.lastIndexOf("@"))
-                            if (name.indexOf(")") !== -1) {
-                                name = name.slice(0, name.indexOf(")"))
-                            }
-                            fs = fs.slice(0, index) + calculator.functions[name].string.replaceAll("@", "#") + fs.slice(index + name.length)
-                        }
-                        fs = fs.replaceAll("#", "@")
-                        output = new String(fs)
-                    } else {
-                        output = "Def error > can only view user-defined functions"
                     }
                 } else if (user_input.startsWith("diff")) {
                     try {
@@ -606,7 +612,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         result.textContent = output
                     }
                     last_output = output
-                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || (user_input.startsWith("def") && !output.includes("Def error")) || typeof output === "boolean") {
+                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]) || output.includes("("))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || typeof output === "boolean") {
                         highlightSyntax(result, false, true)
                     }
                     if ((typeof output === "string" || output instanceof String) && output.includes("`") && result.className !== "result-graph") {
