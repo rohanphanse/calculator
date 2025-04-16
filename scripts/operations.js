@@ -1,5 +1,5 @@
 // Units
-const UNIT_NAMES = { "km": "Kilometer", "me": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Kilogram", "gm": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "se": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "jl": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kj": "Kilojoule", "ev": "Electron Volt", "li": "Liter", "gal": "Gallon", "ml": "Milliiter", "in": "Inch", "kel": "Kelvin", "cel": "Celcius", "far": "Fahrenheit", "cu": "Coulomb", "fa": "Farad", "ne": "Newton", "am": "Ampere", "wa": "Watt", "pa": "Pascal", "wb": "Weber", "te": "Tesla", "he": "Henry", "om": "Ohm", "vo": "Volt", "atm": "Standard atmosphere", "mol": "Mole", "uu": "Atomic mass unit"}
+const UNIT_NAMES = { "km": "Kilometer", "me": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Kilogram", "gm": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "se": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "jl": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kj": "Kilojoule", "ev": "Electron Volt", "li": "Liter", "gal": "Gallon", "ml": "Milliiter", "in": "Inch", "kel": "Kelvin", "cel": "Celcius", "far": "Fahrenheit", "cu": "Coulomb", "fa": "Farad", "ne": "Newton", "am": "Ampere", "wa": "Watt", "pa": "Pascal", "wb": "Weber", "te": "Tesla", "he": "Henry", "om": "Ohm", "vo": "Volt", "atm": "Standard atmosphere", "mol": "Mole" }
 const UNITS = Object.keys(UNIT_NAMES)
 const TEMP_UNITS = ["far", "cel", "kel"]
 const FROM_UNITS = {
@@ -49,8 +49,7 @@ const FROM_UNITS = {
     "he": 1,
     "te": 1,
     "atm": 101325,
-    "mol": 1,
-    "uu": 1.66053906660e-27
+    "mol": 1
 }
 const TO_UNITS = {}
 for (const u in FROM_UNITS) {
@@ -60,7 +59,7 @@ for (const u in FROM_UNITS) {
 }
 const UNIT_GROUPS = [
     ["km", "me", "cm", "mm", "um", "nm", "mi", "ft", "in", "au", "ly"], 
-    ["kg", "uu", "gm", "mg", "lb", "oz"], 
+    ["kg", "gm", "mg", "lb", "oz"], 
     ["se", "ms", "mn", "hr", "day", "wk", "yr"], ["jl", "kj", "cal", "kcal", "ev"], 
     ["li" , "ml", "gal"], ["kel", "cel", "far"], ["cu"], 
     ["fa"], 
@@ -291,7 +290,6 @@ const OPERATIONS = {
                 } else if (b instanceof Fraction && Number.isInteger(a)) {
                     return new Fraction(b.n * a, b.d)
                 } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
-                    // return new UnitNumber(a.value() * convert_to_unit(b, a.unit), a.unit)
                     return new UnitNumber(a.value() * b.value(), UnitNumber.multiply_units(a.unit, b.unit))
                 } else if (a instanceof UnitNumber) {
                     if (typeof b === "number") {
@@ -320,10 +318,6 @@ const OPERATIONS = {
                 const new_unit = UnitNumber.multiply_units({ [a.op]: 1 }, { [b.op]: 1 })
                 return new UnitNumber(1, new_unit)
             } else if (a instanceof UnitNumber && b instanceof Operation && UNITS.includes(b.op)) {
-                const test = OPERATIONS["to"].func(a, b)
-                if (typeof test !== "string") {
-                    return test
-                }
                 const new_unit = UnitNumber.multiply_units(a.unit, { [b.op]: 1 })
                 return new UnitNumber(a.value(), new_unit)
             } else if (typeof a === "number" && b instanceof Operation && UNITS.includes(b.op)) {
@@ -366,16 +360,13 @@ const OPERATIONS = {
                 const new_unit = UnitNumber.divide_units(a.unit, { [b.op]: 1 })
                 return new UnitNumber(a.value(), new_unit)
             } else if (a instanceof UnitNumber && b instanceof Operation && UNITS.includes(b.op)) {
-                const test = OPERATIONS["to"].func(a, b)
-                if (typeof test !== "string") {
-                    return test
-                }
                 const new_unit = UnitNumber.divide_units(a.unit, { [b.op]: 1 })
                 return new UnitNumber(a.value(), new_unit)
             } else if (b instanceof UnitNumber && a instanceof Operation && UNITS.includes(a.op)) {
                 const new_unit = UnitNumber.divide_units({ [a.op]: 1 }, b.unit)
                 return new UnitNumber(1 / b.value(), new_unit)
             } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
+
                 return new UnitNumber(a.value() / b.value(), UnitNumber.divide_units(a.unit, b.unit))
             } else if (a instanceof UnitNumber) {
                 if (typeof b === "number") {
@@ -1186,7 +1177,6 @@ const OPERATIONS = {
     "to": {
         name: "Convert units",
         func: (n, u2) => {
-            console.log("to", n, u2)
             if (!(n instanceof UnitNumber)) {
                 return "Expected unit number"
             }
@@ -1529,231 +1519,231 @@ const OPERATIONS = {
     },
     "mH": {
         name: "Molar mass of Hydrogen",
-        func: () => new UnitNumber(1.00784, { "uu": 1 }),
+        func: () => new UnitNumber(1.00784, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mHe": {
         name: "Molar mass of Helium",
-        func: () => new UnitNumber(4.002602, { "uu": 1 }),
+        func: () => new UnitNumber(4.002602, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mLi": {
         name: "Molar mass of Lithium",
-        func: () => new UnitNumber(6.938, { "uu": 1 }),
+        func: () => new UnitNumber(6.938, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mBe": {
         name: "Molar mass of Beryllium",
-        func: () => new UnitNumber(9.0121831, { "uu": 1 }),
+        func: () => new UnitNumber(9.0121831, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mB": {
         name: "Molar mass of Boron",
-        func: () => new UnitNumber(10.806, { "uu": 1 }),
+        func: () => new UnitNumber(10.806, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mC": {
         name: "Molar mass of Carbon",
-        func: () => new UnitNumber(12.0106, { "uu": 1 }),
+        func: () => new UnitNumber(12.0106, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mN": {
         name: "Molar mass of Nitrogen",
-        func: () => new UnitNumber(14.00643, { "uu": 1 }),
+        func: () => new UnitNumber(14.00643, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mO": {
         name: "Molar mass of Oxygen",
-        func: () => new UnitNumber(15.999, { "uu": 1 }),
+        func: () => new UnitNumber(15.999, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mF": {
         name: "Molar mass of Fluorine",
-        func: () => new UnitNumber(18.998403163, { "uu": 1 }),
+        func: () => new UnitNumber(18.998403163, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mNe": {
         name: "Molar mass of Neon",
-        func: () => new UnitNumber(20.1797, { "uu": 1 }),
+        func: () => new UnitNumber(20.1797, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mNa": {
         name: "Molar mass of Sodium",
-        func: () => new UnitNumber(22.98976928, { "uu": 1 }),
+        func: () => new UnitNumber(22.98976928, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mMg": {
         name: "Molar mass of Magnesium",
-        func: () => new UnitNumber(24.304, { "uu": 1 }),
+        func: () => new UnitNumber(24.304, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mAl": {
         name: "Molar mass of Aluminum",
-        func: () => new UnitNumber(26.9815385, { "uu": 1 }),
+        func: () => new UnitNumber(26.9815385, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mSi": {
         name: "Molar mass of Silicon",
-        func: () => new UnitNumber(28.084, { "uu": 1 }),
+        func: () => new UnitNumber(28.084, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mP": {
         name: "Molar mass of Phosphorus",
-        func: () => new UnitNumber(30.973761998, { "uu": 1 }),
+        func: () => new UnitNumber(30.973761998, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mS": {
         name: "Molar mass of Sulfur",
-        func: () => new UnitNumber(32.059, { "uu": 1 }),
+        func: () => new UnitNumber(32.059, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mCl": {
         name: "Molar mass of Chlorine",
-        func: () => new UnitNumber(35.446, { "uu": 1 }),
+        func: () => new UnitNumber(35.446, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mAr": {
         name: "Molar mass of Argon",
-        func: () => new UnitNumber(39.948, { "uu": 1 }),
+        func: () => new UnitNumber(39.948, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mK": {
         name: "Molar mass of Potassium",
-        func: () => new UnitNumber(39.0983, { "uu": 1 }),
+        func: () => new UnitNumber(39.0983, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mCa": {
         name: "Molar mass of Calcium",
-        func: () => new UnitNumber(40.078, { "uu": 1 }),
+        func: () => new UnitNumber(40.078, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mTi": {
         name: "Molar mass of Titanium",
-        func: () => new UnitNumber(47.867, { "uu": 1 }),
+        func: () => new UnitNumber(47.867, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mCr": {
         name: "Molar mass of Chromium",
-        func: () => new UnitNumber(51.9961, { "uu": 1 }),
+        func: () => new UnitNumber(51.9961, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mMn": {
         name: "Molar mass of Manganese",
-        func: () => new UnitNumber(54.938044, { "uu": 1 }),
+        func: () => new UnitNumber(54.938044, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mFe": {
         name: "Molar mass of Iron",
-        func: () => new UnitNumber(55.845, { "uu": 1 }),
+        func: () => new UnitNumber(55.845, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mCo": {
         name: "Molar mass of Cobalt",
-        func: () => new UnitNumber(58.933194, { "uu": 1 }),
+        func: () => new UnitNumber(58.933194, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mNi": {
         name: "Molar mass of Nickel",
-        func: () => new UnitNumber(58.6934, { "uu": 1 }),
+        func: () => new UnitNumber(58.6934, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mCu": {
         name: "Molar mass of Copper",
-        func: () => new UnitNumber(63.546, { "uu": 1 }),
+        func: () => new UnitNumber(63.546, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mZn": {
         name: "Molar mass of Zinc",
-        func: () => new UnitNumber(65.38, { "uu": 1 }),
+        func: () => new UnitNumber(65.38, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mAg": {
         name: "Molar mass of Silver",
-        func: () => new UnitNumber(107.8682, { "uu": 1 }),
+        func: () => new UnitNumber(107.8682, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mAu": {
         name: "Molar mass of Gold",
-        func: () => new UnitNumber(196.966569, { "uu": 1 }),
+        func: () => new UnitNumber(196.966569, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mHg": {
         name: "Molar mass of Mercury",
-        func: () => new UnitNumber(200.592, { "uu": 1 }),
+        func: () => new UnitNumber(200.592, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mPb": {
         name: "Molar mass of Lead",
-        func: () => new UnitNumber(207.2, { "uu": 1 }),
+        func: () => new UnitNumber(207.2, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mU": {
         name: "Molar mass of Uranium",
-        func: () => new UnitNumber(238.02891, { "uu": 1 }),
+        func: () => new UnitNumber(238.02891, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
@@ -1937,6 +1927,76 @@ class UnitNumber {
     constructor(num, unit = {}) {
         this.num = num
         this.unit = unit
+        this.simplify_units()
+    }
+
+    simplify_units() {
+        const originalUnit = {...this.unit};
+        const simplifiedUnit = {};
+        let value = this.num instanceof Fraction || this.num instanceof BaseNumber ? this.num.value() : this.num;
+        
+        // First, count how many different units we have from each group
+        const groupCounts = {};
+        for (const group of UNIT_GROUPS) {
+            groupCounts[group[0]] = 0;
+        }
+        
+        for (const unit of Object.keys(originalUnit)) {
+            for (const group of UNIT_GROUPS) {
+                if (group.includes(unit)) {
+                    groupCounts[group[0]]++;
+                    break;
+                }
+            }
+        }
+        
+        // Process each unit
+        for (const [unit, exponent] of Object.entries(originalUnit)) {
+            if (exponent === 0) continue;
+            
+            let converted = false;
+            
+            // Check if this unit belongs to a group with multiple units
+            for (const group of UNIT_GROUPS) {
+                if (group.includes(unit)) {
+                    const baseUnit = group[0];
+                    // Only convert if there are multiple units from this group
+                    if (groupCounts[baseUnit] > 1) {
+                        if (unit !== baseUnit) {
+                            if (typeof FROM_UNITS[unit] === 'number' && typeof TO_UNITS[baseUnit] === 'number') {
+                                const conversionFactor = FROM_UNITS[unit] * TO_UNITS[baseUnit];
+                                value *= Math.pow(conversionFactor, exponent);
+                                simplifiedUnit[baseUnit] = (simplifiedUnit[baseUnit] || 0) + exponent;
+                                converted = true;
+                            } else if (typeof FROM_UNITS[unit] === 'object') {
+                                // Leave temperature units as-is
+                                simplifiedUnit[unit] = (simplifiedUnit[unit] || 0) + exponent;
+                                converted = true;
+                            }
+                        } else {
+                            simplifiedUnit[unit] = (simplifiedUnit[unit] || 0) + exponent;
+                            converted = true;
+                        }
+                    }
+                    break;
+                }
+            }
+            
+            if (!converted) {
+                // Unit doesn't belong to any group or is alone in its group
+                simplifiedUnit[unit] = (simplifiedUnit[unit] || 0) + exponent;
+            }
+        }
+        
+        // Remove units with exponent 0
+        for (const unit in simplifiedUnit) {
+            if (simplifiedUnit[unit] === 0) {
+                delete simplifiedUnit[unit];
+            }
+        }
+        
+        this.num = value;
+        this.unit = simplifiedUnit;
     }
 
     value() {
@@ -1991,7 +2051,7 @@ class UnitNumber {
                 delete result[key]
             }
         }
-        return result;
+        return result
     }
 
     static divide_units(u1, u2) {

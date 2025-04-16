@@ -175,7 +175,7 @@ class Calculator {
                         }
                         molar_mass += OPERATIONS[`m${element}`].func().value() * count
                     }
-                    tokens.push(new UnitNumber(molar_mass, { "uu": 1 }))
+                    tokens.push(new UnitNumber(molar_mass, { "gm": 1, "mol": -1 }))
                     i += string.length - 1
                 } else {
                     return `Unknown string "${string}" at position ${i + 1}`
@@ -233,7 +233,6 @@ class Calculator {
                 }
             }
         }
-        console.log(tokens)
         return tokens
     }
 
