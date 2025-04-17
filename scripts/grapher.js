@@ -227,43 +227,47 @@ class Grapher {
     }
 
     drawGraphs() {
-        this.ctx.clearRect(0, 0, this.width, this.height)
-        this.drawGraphLines()
-        // console.log(this.expressions)
-        for (let i = 0; i < this.expressions.length; i++) {
-            const split_equals = this.expressions[i].split("=").map(e => e.trim())
-            if (this.expressions[i].substring(0, 2) === "s:") {
-                const options = {}
-                options.color = this.colors[i % this.colors.length]
-                this.graphSlopeField(this.expressions[i].substring(2), options)
-            } else if (this.expressions[i].substring(0, 2) === "v:") {
-                this.graphVectorField(this.expressions[i].substring(2))
-            } else if (this.expressions[i].substring(0, 2) === "p:") {
-                const expressions = {}
-                let options = {}
-                options.color = this.colors[i % this.colors.length]
-                const split_comma = this.expressions[i].split(",")
-                expressions.x = split_comma[0].split("=")[1]
-                expressions.y = split_comma[1].split("=")[1]
-                if (this.expressions[i].includes("[")) {
-                    options.range = this.parseRange(split_comma[1] + "," + split_comma[2])
-                    expressions.y = split_comma[1].split("=")[1].split("[")[0]
+        try {
+            this.ctx.clearRect(0, 0, this.width, this.height)
+            this.drawGraphLines()
+            // console.log(this.expressions)
+            for (let i = 0; i < this.expressions.length; i++) {
+                const split_equals = this.expressions[i].split("=").map(e => e.trim())
+                if (this.expressions[i].substring(0, 2) === "s:") {
+                    const options = {}
+                    options.color = this.colors[i % this.colors.length]
+                    this.graphSlopeField(this.expressions[i].substring(2), options)
+                } else if (this.expressions[i].substring(0, 2) === "v:") {
+                    this.graphVectorField(this.expressions[i].substring(2))
+                } else if (this.expressions[i].substring(0, 2) === "p:") {
+                    const expressions = {}
+                    let options = {}
+                    options.color = this.colors[i % this.colors.length]
+                    const split_comma = this.expressions[i].split(",")
+                    expressions.x = split_comma[0].split("=")[1]
+                    expressions.y = split_comma[1].split("=")[1]
+                    if (this.expressions[i].includes("[")) {
+                        options.range = this.parseRange(split_comma[1] + "," + split_comma[2])
+                        expressions.y = split_comma[1].split("=")[1].split("[")[0]
+                    }
+                    this.graphParametric(expressions, options)
+                } else if (split_equals.length === 2 && split_equals[0] === "r") {
+                    let options = {}
+                    options.color = this.colors[i % this.colors.length]
+                    let expression = split_equals[1]
+                    if (split_equals[1].includes("[")) {
+                        options.range = this.parseRange(split_equals[1])
+                        expression = split_equals[1].substring(0, split_equals[1].indexOf("["))
+                    }
+                    this.graphPolar(expression, options)
+                } else {
+                    const options = {}
+                    options.color = this.colors[i % this.colors.length]
+                    this.graphFunction(this.expressions[i], options)
                 }
-                this.graphParametric(expressions, options)
-            } else if (split_equals.length === 2 && split_equals[0] === "r") {
-                let options = {}
-                options.color = this.colors[i % this.colors.length]
-                let expression = split_equals[1]
-                if (split_equals[1].includes("[")) {
-                    options.range = this.parseRange(split_equals[1])
-                    expression = split_equals[1].substring(0, split_equals[1].indexOf("["))
-                }
-                this.graphPolar(expression, options)
-            } else {
-                const options = {}
-                options.color = this.colors[i % this.colors.length]
-                this.graphFunction(this.expressions[i], options)
             }
+        } catch (error) {
+            // console.log(error)
         }
     }
 

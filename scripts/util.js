@@ -342,6 +342,8 @@ function is_close_to_int(a, tol = 1e-9) {
 }
 
 function gcd(a, b) {
+    a = Math.abs(a)
+    b = Math.abs(b)
     while (b !== 0) {
         const temp = b
         b = a % b
@@ -351,7 +353,7 @@ function gcd(a, b) {
 }
 
 function lcm(a, b) {
-    return a * b / gcd(a, b)
+    return Math.abs(a * b) / gcd(a, b)
 }
 
 function process_index(A, I) {
@@ -479,6 +481,185 @@ function subtract_fractions(f1, f2) {
     let d = lcm(f1.d, f2.d)
     let n = d / f1.d * f1.n - d / f2.d * f2.n
     return new Fraction(n, d)
+}
+
+function parse_chemical_formula(formula) {
+    const elements = {}
+    let f = formula.trim()
+    while (f.includes("(")) {
+        f = f.replace(/\(([^()]+)\)(\d*)/g, (match, group, multiplier) => {
+            multiplier = multiplier ? parseInt(multiplier) : 1
+            return group.replace(/([A-Z][a-z]*)(\d*)/g, (m, element, count) => {
+                count = count ? parseInt(count) * multiplier : multiplier
+                return element + count
+            })
+        })
+    }
+    const regex = /([A-Z][a-z]*)(\d*)/g
+    let match
+    let last_index = 0
+    while ((match = regex.exec(f)) !== null) {
+        if (match.index === regex.lastIndex) {
+            regex.lastIndex++
+            continue
+        }
+        const element = match[1]
+        const count = match[2] ? parseInt(match[2]) : 1
+        elements[element] = (elements[element] || 0) + count
+        last_index = regex.lastIndex
+    }
+    if (last_index < f.length) {
+        throw new Error(`Invalid expression '${formula}' in chemistry formula`)
+    }
+    return elements
+}
+
+function parse_chemical_equation(equation) {
+    const parts = equation.split(/=|→/).map(s => s.trim())
+    if (parts.length !== 2) {
+        throw new Error("Chemistry equation must contain exactly one '=' or '→' separator")
+    }
+    const reactants = parts[0].split("+").map(s => s.trim())
+    const products = parts[1].split("+").map(s => s.trim())
+    if (reactants.length === 0 || products.length === 0) {
+        throw new Error("Chemistry equation must have at least one reactant and one product")
+    }
+    return {
+        reactants: reactants.map(f => ({ parsed: parse_chemical_formula(f), raw: f.replace(/^\d+/, "") })),
+        products: products.map(f => ({ parsed: parse_chemical_formula(f), raw: f.replace(/^\d+/, "") }))
+    }
+}
+
+function find_gcd(numbers) {
+    let result = numbers[0]
+    for (let i = 1; i < numbers.length; i++) {
+        result = gcd(result, numbers[i])
+        if (result === 1) return 1
+    }
+    return result
+}
+
+function check_balance(coeffs, matrix, num_elements) {
+    for (let i = 0; i < num_elements; i++) {
+        let sum = 0
+        for (let j = 0; j < coeffs.length; j++) {
+            sum += matrix[i][j] * coeffs[j]
+        }
+        if (sum !== 0) {
+            return false
+        }
+    }
+    return true
+}
+
+function balance_chemical_equation(equation, max_coefficient = 20) {
+    try {
+        const { reactants, products } = parse_chemical_equation(equation)
+        // console.log("reactants", reactants)
+        // console.log("products", products)
+        const elements = new Set()
+        reactants.forEach(compound => Object.keys(compound.parsed).forEach((e) => elements.add(e)))
+        products.forEach(compound => Object.keys(compound.parsed).forEach((e) => elements.add(e)))
+        const elements_array = Array.from(elements)
+        const matrix = []
+        elements_array.forEach(element => {
+            const row = []
+            reactants.forEach(compound => {
+                row.push(-(compound.parsed[element] || 0))
+            })
+            products.forEach(compound => {
+                row.push(compound.parsed[element] || 0)
+            })
+            matrix.push(row)
+        })
+        const num_compounds = reactants.length + products.length
+        const coeffs = new Array(num_compounds).fill(1)
+        let found = false
+        if (num_compounds <= 4 && elements_array.length <= 4) {
+            // console.log("#1 - Brute force approach")
+            const generateCombinations = function*(n, max) {
+                if (n === 1) {
+                    for (let i = 1; i <= max; i++) yield [i];
+                    return
+                }
+                for (let i = 1; i <= max; i++) {
+                    for (const rest of generateCombinations(n - 1, max)) {
+                        yield [i, ...rest]
+                    }
+                }
+            }
+            for (const combination of generateCombinations(num_compounds, max_coefficient)) {
+                if (check_balance(combination, matrix, elements_array.length)) {
+                    found = true
+                    for (let i = 0; i < num_compounds; i++) {
+                        coeffs[i] = combination[i]
+                    }
+                    break
+                }
+            }
+        }
+        if (!found) {
+            // console.log("#2 - Iterative approach")
+            let iterations = 0
+            const max_iterations = 1000
+            while (iterations < max_iterations && !found) {
+                iterations++
+                const imbalances = []
+                for (let i = 0; i < elements_array.length; i++) {
+                    let sum = 0
+                    for (let j = 0; j < num_compounds; j++) {
+                        sum += matrix[i][j] * coeffs[j]
+                    }
+                    imbalances.push(sum)
+                }
+                if (imbalances.every(val => val === 0)) {
+                    found = true
+                    break
+                }
+                let max_imbalance_index = 0
+                for (let i = 1; i < imbalances.length; i++) {
+                    if (Math.abs(imbalances[i]) > Math.abs(imbalances[max_imbalance_index])) {
+                        max_imbalance_index = i
+                    }
+                }
+                let best_coefficient_index = -1
+                let best_effect = 0
+                for (let j = 0; j < num_compounds; j++) {
+                    const effect = matrix[max_imbalance_index][j]
+                    if (imbalances[max_imbalance_index] * effect >= 0) continue
+                    if (Math.abs(effect) > Math.abs(best_effect)) {
+                        best_effect = effect
+                        best_coefficient_index = j
+                    }
+                }
+                if (best_coefficient_index === -1) {
+                    best_coefficient_index = Math.floor(Math.random() * num_compounds)
+                }
+                coeffs[best_coefficient_index]++
+                if (coeffs.some(c => c > max_coefficient)) {
+                    break
+                }
+                if (check_balance(coeffs, matrix, elements_array.length)) {
+                    found = true
+                }
+            }
+        }
+        if (!found) {
+            return `Error: no solution found with coefficients up to ${max_coefficient}.`
+        }
+        const gcd_value = find_gcd(coeffs)
+        if (gcd_value > 1) {
+            for (let i = 0; i < coeffs.length; i++) {
+                coeffs[i] /= gcd_value
+            }
+        }
+        const left_side = reactants.map((c, i) => (coeffs[i] !== 1 ? coeffs[i] : "") + c.raw).join(" + ")
+        const right_side = products.map((c, i) => (coeffs[reactants.length + i] !== 1 ? coeffs[reactants.length + i] : "") + c.raw).join(" + ")
+        return `${left_side} → ${right_side}`
+    } catch (error) {
+        // console.log(error)
+        return "Balance chemistry equation error"
+    }
 }
 
 // Credit to Claude for differentiation code
@@ -888,7 +1069,7 @@ function tree_to_string(node) {
 function highlightSyntax(element, backticks_mode = false, highlight_types = false) {
     const cursor_position = getCursorPosition(element)
     let text = element.innerHTML.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
-    const keywords = ["if", "then", "else", "save", "help", "clear", "trace", "to", "plot", "diff"]
+    const keywords = ["if", "then", "else", "save", "help", "clear", "trace", "to", "plot", "diff", "bal"]
     const types = ["number", "list", "string", "any", "function", "optional", "variable", "unit", "expression"]
     const process_line = (text) => {
         const matches = []

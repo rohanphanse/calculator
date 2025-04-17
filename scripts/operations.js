@@ -114,7 +114,7 @@ const CONSTANTS = ["pi", "e", "phi", "inf", "true", "false", "hh", "cc", "qe", "
 const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not", "mod", "si"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
-const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else", "trace", "plot"]
+const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else", "trace", "plot", "bal"]
 const LIST_OPERATIONS = ["mean", "median", "sd", "sort", "sum", "len", "max", "min", "concat", "zeros"]
 
 // Types
@@ -314,6 +314,8 @@ const OPERATIONS = {
                     dot_product += a[i] * b[i]
                 }
                 return dot_product
+            } else if (a instanceof Fraction && b instanceof Operation && UNITS.includes(b.op)) {
+                return new UnitNumber(a.value(), { [b.op]: 1 })
             } else if (a instanceof Operation && UNITS.includes(a.op) && b instanceof Operation && UNITS.includes(b.op)) {
                 const new_unit = UnitNumber.multiply_units({ [a.op]: 1 }, { [b.op]: 1 })
                 return new UnitNumber(1, new_unit)
@@ -379,6 +381,12 @@ const OPERATIONS = {
                     return new UnitNumber(a / b.value(), UnitNumber.divide_units({}, b.unit))
                 } else {
                     return new UnitNumber(a.value() / b.value(), UnitNumber.divide_units({}, b.unit))
+                }
+            } else if (b instanceof Operation && UNITS.includes(b.op)) {
+                if (typeof a === "number") {
+                    return new UnitNumber(a, UnitNumber.divide_units({}, { [b.op]: 1 }))
+                } else {
+                    return new UnitNumber(a.value(), UnitNumber.divide_units({}, { [b.op]: 1 }))
                 }
             }
             return a / b
@@ -1245,12 +1253,6 @@ const OPERATIONS = {
         func: (a, b) => {
             if (Array.isArray(a) && Array.isArray(b)) {
                 return tensors_equal(a, b)
-            } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
-                return a.value() === convert_to_unit(b, a.unit)
-            } else if (a instanceof UnitNumber) {
-                return a.value() === b
-            } else if (b instanceof UnitNumber) {
-                return a === b.value()
             }
             return a === b
         },
@@ -1264,12 +1266,6 @@ const OPERATIONS = {
         func: (a, b) => {
             if (Array.isArray(a) && Array.isArray(b)) {
                 return !tensors_equal(a, b)
-            } else if (a instanceof UnitNumber && b instanceof UnitNumber) {
-                return a.value() !== convert_to_unit(b, a.unit)
-            } else if (a instanceof UnitNumber) {
-                return a.value() !== b
-            } else if (b instanceof UnitNumber) {
-                return a !== b.value()
             }
             return a !== b
         },
@@ -1303,13 +1299,6 @@ const OPERATIONS = {
     "<": {
         name: "Less than",
         func: (a, b) => {
-            if (a instanceof UnitNumber && b instanceof UnitNumber) {
-                return a.value() < convert_to_unit(b, a.unit)
-            } else if (a instanceof UnitNumber) {
-                return a.value() < b
-            } else if (b instanceof UnitNumber) {
-                return a < b.value()
-            }
             return a < b
         },
         schema: [-1, 1],
@@ -1320,13 +1309,6 @@ const OPERATIONS = {
     "<=": {
         name: "Less than or equal",
         func: (a, b) => {
-            if (a instanceof UnitNumber && b instanceof UnitNumber) {
-                return a.value() <= convert_to_unit(b, a.unit)
-            } else if (a instanceof UnitNumber) {
-                return a.value() <= b
-            } else if (b instanceof UnitNumber) {
-                return a <= b.value()
-            }
             return a <= b
         },
         schema: [-1, 1],
@@ -1337,13 +1319,6 @@ const OPERATIONS = {
     ">": {
         name: "Greater than",
         func: (a, b) => {
-            if (a instanceof UnitNumber && b instanceof UnitNumber) {
-                return a.value() > convert_to_unit(b, a.unit)
-            } else if (a instanceof UnitNumber) {
-                return a.value() > b
-            } else if (b instanceof UnitNumber) {
-                return a > b.value()
-            }
             return a > b
         },
         schema: [-1, 1],
@@ -1354,13 +1329,6 @@ const OPERATIONS = {
     ">=": {
         name: "Greater than or equal",
         func: (a, b) => {
-            if (a instanceof UnitNumber && b instanceof UnitNumber) {
-                return a.value() >= convert_to_unit(b, a.unit)
-            } else if (a instanceof UnitNumber) {
-                return a.value() >= b
-            } else if (b instanceof UnitNumber) {
-                return a >= b.value()
-            }
             return a >= b
         },
         schema: [-1, 1],
@@ -1835,7 +1803,15 @@ const HELP = {
         vars: ["x"],
         types: ["expression"],
         example: "Examples: `g(y) = y^2 * sin(y)`\n  1. Derivative of a function: `diff g`\n  2. Expression of `x`: `diff x^2 * sin(x)`"
-    }
+    },
+    "bal": {
+        name: "Balance chemistry equation",
+        schema: [1],
+        vars: ["x"],
+        types: ["expression"],
+        example: "Example: \`bal Ca(OH)2 + HCl = CaCl2 + H2O\`\nOutput: `\
+Ca(OH)2 + 2HCl → CaCl2 + 2H2O\`"
+    },
 }
 
 // Determine if string is name of math function 
@@ -1931,72 +1907,57 @@ class UnitNumber {
     }
 
     simplify_units() {
-        const originalUnit = {...this.unit};
-        const simplifiedUnit = {};
-        let value = this.num instanceof Fraction || this.num instanceof BaseNumber ? this.num.value() : this.num;
-        
-        // First, count how many different units we have from each group
-        const groupCounts = {};
+        const original_unit = {...this.unit}
+        const simplified_unit = {}
+        let value = this.num instanceof Fraction || this.num instanceof BaseNumber ? this.num.value() : this.num
+        const group_counts = {}
         for (const group of UNIT_GROUPS) {
-            groupCounts[group[0]] = 0;
+            group_counts[group[0]] = 0
         }
-        
-        for (const unit of Object.keys(originalUnit)) {
+        for (const unit of Object.keys(original_unit)) {
             for (const group of UNIT_GROUPS) {
                 if (group.includes(unit)) {
-                    groupCounts[group[0]]++;
-                    break;
+                    group_counts[group[0]]++;
+                    break
                 }
             }
         }
-        
-        // Process each unit
-        for (const [unit, exponent] of Object.entries(originalUnit)) {
-            if (exponent === 0) continue;
-            
-            let converted = false;
-            
-            // Check if this unit belongs to a group with multiple units
+        for (const [unit, exponent] of Object.entries(original_unit)) {
+            if (exponent === 0) continue
+            let converted = false
             for (const group of UNIT_GROUPS) {
                 if (group.includes(unit)) {
-                    const baseUnit = group[0];
-                    // Only convert if there are multiple units from this group
-                    if (groupCounts[baseUnit] > 1) {
-                        if (unit !== baseUnit) {
-                            if (typeof FROM_UNITS[unit] === 'number' && typeof TO_UNITS[baseUnit] === 'number') {
-                                const conversionFactor = FROM_UNITS[unit] * TO_UNITS[baseUnit];
-                                value *= Math.pow(conversionFactor, exponent);
-                                simplifiedUnit[baseUnit] = (simplifiedUnit[baseUnit] || 0) + exponent;
-                                converted = true;
-                            } else if (typeof FROM_UNITS[unit] === 'object') {
-                                // Leave temperature units as-is
-                                simplifiedUnit[unit] = (simplifiedUnit[unit] || 0) + exponent;
-                                converted = true;
+                    const base_unit = group[0]
+                    if (group_counts[base_unit] > 1) {
+                        if (unit !== base_unit) {
+                            if (typeof FROM_UNITS[unit] === "number" && typeof TO_UNITS[base_unit] === "number") {
+                                const conversion_factor = FROM_UNITS[unit] * TO_UNITS[base_unit]
+                                value *= Math.pow(conversion_factor, exponent);
+                                simplified_unit[base_unit] = (simplified_unit[base_unit] || 0) + exponent;
+                                converted = true
+                            } else if (typeof FROM_UNITS[unit] === "object") {
+                                simplified_unit[unit] = (simplified_unit[unit] || 0) + exponent
+                                converted = true
                             }
                         } else {
-                            simplifiedUnit[unit] = (simplifiedUnit[unit] || 0) + exponent;
-                            converted = true;
+                            simplified_unit[unit] = (simplified_unit[unit] || 0) + exponent
+                            converted = true
                         }
                     }
-                    break;
+                    break
                 }
             }
-            
             if (!converted) {
-                // Unit doesn't belong to any group or is alone in its group
-                simplifiedUnit[unit] = (simplifiedUnit[unit] || 0) + exponent;
+                simplified_unit[unit] = (simplified_unit[unit] || 0) + exponent
             }
         }
-        
-        // Remove units with exponent 0
-        for (const unit in simplifiedUnit) {
-            if (simplifiedUnit[unit] === 0) {
-                delete simplifiedUnit[unit];
+        for (const unit in simplified_unit) {
+            if (simplified_unit[unit] === 0) {
+                delete simplified_unit[unit]
             }
         }
-        
-        this.num = value;
-        this.unit = simplifiedUnit;
+        this.num = value
+        this.unit = simplified_unit
     }
 
     value() {
@@ -2007,7 +1968,14 @@ class UnitNumber {
         const value = set_precision(this.value(), calculator ? calculator.digits : 12)
         const unit_str = this.format_unit()
         if (value === 1) {
-            return unit_str
+            if (unit_str.length) {
+                return unit_str
+            } else {
+                return "1"
+            }
+        }
+        if (unit_str.length === 0) {
+            return `${value}`
         }
         return `${value} ${unit_str}`
     }

@@ -505,6 +505,19 @@ document.addEventListener("DOMContentLoaded", () => {
                             output = "Differentiation error"
                         }
                     }
+                } else if (user_input.startsWith("bal")) {
+                    try {
+                        let eq = user_input.slice(user_input.indexOf("bal") + "bal".length).trim()
+                        output = balance_chemical_equation(eq)
+                        if (!output.startsWith("Error:")) {
+                            output = `\`${output}\``
+                        }
+                    } catch (error) {
+                        console.log(error)
+                        if (!output) {
+                            output = "Balance chemistry equation error"
+                        }
+                    }
                 } else if (user_input.startsWith("plot")) {
                     // Pass
                 } else {

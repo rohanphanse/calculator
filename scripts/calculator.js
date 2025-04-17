@@ -827,7 +827,7 @@ class Calculator {
                 }
             }
         } else {
-            console.log("evaluateOperator error")
+            // console.log("evaluateOperator error")
             return "Execution error"
         }
     }
@@ -964,7 +964,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            console.log(err)
+            // console.log(err)
             return `${operation.name} error > execution error`
         }
     }
