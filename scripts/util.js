@@ -575,73 +575,30 @@ function balance_chemical_equation(equation, max_coefficient = 20) {
         const num_compounds = reactants.length + products.length
         const coeffs = new Array(num_compounds).fill(1)
         let found = false
-        if (num_compounds <= 4 && elements_array.length <= 4) {
-            // console.log("#1 - Brute force approach")
-            const generateCombinations = function*(n, max) {
-                if (n === 1) {
-                    for (let i = 1; i <= max; i++) yield [i];
-                    return
-                }
-                for (let i = 1; i <= max; i++) {
-                    for (const rest of generateCombinations(n - 1, max)) {
-                        yield [i, ...rest]
-                    }
-                }
+        let iters = 0
+        const generateCombinations = function*(n, max) {
+            iters++
+            if (iters > 500000) yield [-1]
+            if (n === 1) {
+                for (let i = 1; i <= max; i++) yield [i]
+                return
             }
-            for (const combination of generateCombinations(num_compounds, max_coefficient)) {
-                if (check_balance(combination, matrix, elements_array.length)) {
-                    found = true
-                    for (let i = 0; i < num_compounds; i++) {
-                        coeffs[i] = combination[i]
-                    }
-                    break
+            for (let i = 1; i <= max; i++) {
+                for (const rest of generateCombinations(n - 1, max)) {
+                    yield [i, ...rest]
                 }
             }
         }
-        if (!found) {
-            // console.log("#2 - Iterative approach")
-            let iterations = 0
-            const max_iterations = 1000
-            while (iterations < max_iterations && !found) {
-                iterations++
-                const imbalances = []
-                for (let i = 0; i < elements_array.length; i++) {
-                    let sum = 0
-                    for (let j = 0; j < num_compounds; j++) {
-                        sum += matrix[i][j] * coeffs[j]
-                    }
-                    imbalances.push(sum)
+        for (const combination of generateCombinations(num_compounds, max_coefficient)) {
+            if (combination.includes(-1)) {
+                return `Error: maximum iterations reached > failed to find a solution`
+            }
+            if (check_balance(combination, matrix, elements_array.length)) {
+                found = true
+                for (let i = 0; i < num_compounds; i++) {
+                    coeffs[i] = combination[i]
                 }
-                if (imbalances.every(val => val === 0)) {
-                    found = true
-                    break
-                }
-                let max_imbalance_index = 0
-                for (let i = 1; i < imbalances.length; i++) {
-                    if (Math.abs(imbalances[i]) > Math.abs(imbalances[max_imbalance_index])) {
-                        max_imbalance_index = i
-                    }
-                }
-                let best_coefficient_index = -1
-                let best_effect = 0
-                for (let j = 0; j < num_compounds; j++) {
-                    const effect = matrix[max_imbalance_index][j]
-                    if (imbalances[max_imbalance_index] * effect >= 0) continue
-                    if (Math.abs(effect) > Math.abs(best_effect)) {
-                        best_effect = effect
-                        best_coefficient_index = j
-                    }
-                }
-                if (best_coefficient_index === -1) {
-                    best_coefficient_index = Math.floor(Math.random() * num_compounds)
-                }
-                coeffs[best_coefficient_index]++
-                if (coeffs.some(c => c > max_coefficient)) {
-                    break
-                }
-                if (check_balance(coeffs, matrix, elements_array.length)) {
-                    found = true
-                }
+                break
             }
         }
         if (!found) {
@@ -657,7 +614,7 @@ function balance_chemical_equation(equation, max_coefficient = 20) {
         const right_side = products.map((c, i) => (coeffs[reactants.length + i] !== 1 ? coeffs[reactants.length + i] : "") + c.raw).join(" + ")
         return `${left_side} → ${right_side}`
     } catch (error) {
-        // console.log(error)
+        console.log(error)
         return "Balance chemistry equation error"
     }
 }
