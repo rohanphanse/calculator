@@ -55,6 +55,7 @@ body {
 a {
     color: var(--blue);
 }
+
 .center {
     display: grid;
     justify-items: center;
@@ -254,7 +255,7 @@ a {
     -webkit-user-select: none;
 }
 
-.command:hover, .user-button-text:hover, .user-button-x:hover {
+.command:hover, .user-button-text:hover, .user-button-x:hover, #side-bar-nav a:hover {
     background-color: var(--bg-light-hover);
 }
 
@@ -427,9 +428,53 @@ html.disable-transitions *, html.disable-transitions *::before, html.disable-tra
     font-weight: 300;
     color: var(--text-medium);
     border-bottom: 1px solid var(--border);
+    position: fixed;
+    width: 261px;
+    background-color: var(--bg-color);
+    z-index: 10;
+}
+
+#side-bar-nav {
+    position: fixed;
+    top: 42px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    width: 261px;
+    padding: 5px 10px;
+    background-color: var(--bg-color);
+}
+
+#side-bar-nav input {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 5px;
+    padding-right: 25px;
+    width: 125px;
+    font-size: 0.7rem;
+    font-family: "Open Sans", sans-serif;
+    margin-right: 2px;
+    background-color: var(--bg-color);
+    color: var(--text);
+}
+
+#side-bar-nav a {
+    margin-left: 3px;
+    font-family: monospace;
+    padding: 2px 5px;
+    background-color: var(--bg-light);
+    border-radius: 4px;
+    transition-duration: 0.1s;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    font-size: 0.7rem;
+    text-decoration: none;
+    color: var(--text);
 }
 
 #side-bar-main {
+    margin-top: 73px;
     padding: 10px 15px 10px 15px;
     font-size: 0.8rem;
     color: inherit;
@@ -511,4 +556,54 @@ html.disable-transitions *, html.disable-transitions *::before, html.disable-tra
 
 .command-spans {
     line-height: 1.4rem;
+}
+
+#molar-mass-list {
+    transition-duration: 0.2s;
+    height: 67px;
+    overflow: hidden;
+}
+
+#molar-mass-toggle {
+    cursor: pointer;
+    background-color: var(--bg-color);
+    font-size: 0.75rem;
+    color: var(--text-medium);
+    font-family: "Open Sans", san-serif;
+}
+
+b[id] {
+    scroll-margin-top: 80px;
+}
+
+.marked {
+    background-color: yellow;
+    border-radius: 2px;
+    color: black;
+}
+
+.marked:hover {
+    background-color: yellow;
+}
+
+.active-match {
+    background-color: orange;
+}
+
+.active-match:hover {
+    background-color: orange;
+}
+
+#side-bar-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#side-bar-input-tag {
+    position: absolute;
+    right: 8px;
+    font-size: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
 }

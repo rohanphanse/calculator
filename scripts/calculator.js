@@ -524,7 +524,7 @@ class Calculator {
 
     // Evaluate numerical result from tokens
     evaluate(tokens, options = {}) {
-        // ("evaluate", JSON.stringify(tokens), options)
+        // console.log("evaluate", JSON.stringify(tokens), options)
         this.overflow_count++
         if (this.overflow_count > this.overflow_max) {
             return "Overflow error: too many function calls"
@@ -624,6 +624,7 @@ class Calculator {
         // No parentheses left
         // Single expression to be evaluated
         let final_result = this.evaluateSingle(tokens)
+        // console.log("final_result", final_result)
         if (typeof final_result !== "string" && !options?.noAns) {
             this.ans = final_result
         } 
@@ -643,9 +644,9 @@ class Calculator {
             return set_precision(final_result, this.digits)
         } else if (Array.isArray(final_result)) {
             if (final_result.length > 50) {
-                return JSON.stringify(roundArray(structuredClone(final_result.slice(0, 25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(0, -1) + ", ..., " + JSON.stringify(roundArray(structuredClone(final_result.slice(-25)), this.digits)).replaceAll('"', "").replaceAll(",", ", ").slice(1)
+                return JSON.stringify(roundArray(structuredClone(final_result.slice(0, 25)), this.digits, this)).replaceAll('"', "").replaceAll(",", ", ").slice(0, -1) + ", ..., " + JSON.stringify(roundArray(structuredClone(final_result.slice(-25)), this.digits, this)).replaceAll('"', "").replaceAll(",", ", ").slice(1)
             } else {
-                let str = JSON.stringify(roundArray(structuredClone(final_result), this.digits)).replaceAll(",", ", ").replaceAll('"', "")
+                let str = JSON.stringify(roundArray(structuredClone(final_result), this.digits, this)).replaceAll(",", ", ").replaceAll('"', "")
                 if (str[1] !== "[") {
                     return str
                 }
@@ -696,6 +697,15 @@ class Calculator {
                         const A = tokens[i - 1]
                         tokens.splice(i - 1, 2, "index", new Paren([A, tokens[i].tokens]))
                     }
+                }
+            }
+            for (let i = 0; i < tokens.length; i++) {
+                if (CONSTANTS.includes(tokens[i])) {
+                    tokens[i] = OPERATIONS[tokens[i]].func()
+                    continue
+                }
+                if (tokens[i] instanceof Operation && CONSTANTS.includes(tokens[i].op)) {
+                    tokens[i] = OPERATIONS[tokens[i].op].func()
                 }
             }
             // Count number of math functions
@@ -789,7 +799,7 @@ class Calculator {
         }
 
         // One token to evaluate
-        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean" || tokens[0] instanceof BaseNumber || tokens[0] instanceof UnitNumber) {
+        if (typeof tokens[0] === "number" || tokens[0] instanceof Fraction || Array.isArray(tokens[0]) || tokens[0] instanceof String || tokens[0] instanceof Operation || typeof tokens[0] === "boolean" || tokens[0] instanceof BaseNumber || tokens[0] instanceof UnitNumber || tokens[0] instanceof ComplexNumber) {
             return tokens[0]
         } else if (CONSTANTS.includes(tokens[0])) {
             return OPERATIONS[tokens[0]].func()
@@ -918,12 +928,20 @@ class Calculator {
             const offset = operation.schema[0] < 0 ? operation.schema[0] : 0
             if (!operation.allow_fractions) {
                 params = params.map((n) => n instanceof Fraction ? n.value() : n)
-            }
+            } 
             if (!operation.allow_units) {
                 params = params.map((n) => n instanceof UnitNumber ? n.value() : n)
             }
             if (!operation.allow_base_numbers) {
                 params = params.map((n) => n instanceof BaseNumber ? convert_to_decimal(n) : n)
+            }
+            if (!operation.allow_complex) {
+                for (const n of params) {
+                    if (n instanceof ComplexNumber && n.b !== 0) {
+                        return `${operation.name} error > expected real-valued inputs`
+                    }
+                }
+                params = params.map((n) => n instanceof ComplexNumber ? n.a : n)
             }
             let result
             if (operation.calc) {
@@ -931,6 +949,7 @@ class Calculator {
             } else {
                 result = operation.func(...params)
             }
+            // console.log("result", result)
             if (typeof result === "string") {
                 return `${operation.name} error > ${result}`
             }
@@ -964,7 +983,7 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            // console.log(err)
+            console.log(err)
             return `${operation.name} error > execution error`
         }
     }

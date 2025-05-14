@@ -62,11 +62,23 @@
     </div>
     <div id = "side-bar">
         <div id = "side-bar-title">Help Guide</div>
+        <div id = "side-bar-nav">
+            <div id = "side-bar-input-container">
+                <input id = "side-bar-input" placeholder = "Search..." />
+                <div id = "side-bar-input-tag"></div>
+            </div>
+            <a href = "#1">1</a>
+            <a href = "#2">2</a>
+            <a href = "#3">3</a>
+            <a href = "#4">4</a>
+            <a href = "#5">5</a>
+            <a href = "#6">6</a>
+        </div>
         <div id = "side-bar-main">
             <b style = "font-size: 0.87rem">Welcome to Functional Calculator!</b>
             Learn more about this project at <a href = "https://github.com/rohanphanse/calculator" target = "_blank">github.com/rohanphanse/calculator</a>.
             <div class = "side-bar-rule"></div>
-            <b>1. Variables and Functions</b>
+            <b id = "1">1. Variables and Functions</b>
             <pre>
 `a = 3`
          Variable `a` declared
@@ -74,7 +86,7 @@
          Function `f` declared</pre>
             Use <span data-text = "save" class = "command" style="margin: 0">save</span> to locally save variables and functions.
             <div class = "side-bar-rule"></div>
-            <b>2. Commands and Keyboard</b>
+            <b id = "2">2. Commands and Keyboard</b>
             Commands:
             <ul>
                 <li>Clear screen: <span data-text = "clear" class = "command">clear</span></li>
@@ -98,7 +110,7 @@
             <div class = "spacer"></div>
             Click <span data-text = "plot" class = "command" style = "margin: 0">plot</span> to learn how to graph functions, parametric + polar curves, and slope + vector fields!
             <div class = "side-bar-rule"></div>
-            <b>3. Math</b>
+            <b id = "3">3. Math</b>
             Math Operators: 
             <div class = "row">             
                 <div data-text = "+" class = "command">+</div>
@@ -137,6 +149,7 @@ These operators support tensors, fractions, base systems, and units.
                 <div data-text = "pi" class = "command">pi</div>
                 <div data-text = "e" class = "command">e</div>
                 <div data-text = "phi" class = "command">phi</div>
+                <div data-text = "i" class = "command">i</div>
             </div>
             <div class = "spacer"></div>
             Trigonometry:
@@ -159,6 +172,7 @@ These operators support tensors, fractions, base systems, and units.
                            `4`        
 `1 + sin(pi/2) + ln(e^-2)`
                            `0`</pre>
+            <div class = "spacer"></div>
             Linear Algebra:
             <div class = "row">
                 <div data-text = "rref(|)" class = "command">rref</div>
@@ -181,6 +195,19 @@ These operators support tensors, fractions, base systems, and units.
 `inv(M)`
                    `[[-3, 2],`
                     `[2, -1]]`</pre>
+            Complex Analysis:
+            <div class = "row">
+                <div data-text = "conj(|)" class = "command">conj</div>
+                <div data-text = "re(|)" class = "command">re</div>
+                <div data-text = "im(|)" class = "command">im</div>
+                <div data-text = "sinh(|)" class = "command">sinh</div>
+                <div data-text = "cosh(|)" class = "command">cosh</div>
+                <div data-text = "tanh(|)" class = "command">tanh</div>
+            </div>
+            <pre>`e^(i*pi)`
+                          `-1`
+`sinh(1 + i)`
+         `0.634964 + 1.29846i`</pre>
             Statistics:
             <div class = "row">
                 <div data-text = "min(|)" class = "command">min</div>
@@ -238,7 +265,7 @@ These operators support tensors, fractions, base systems, and units.
       `x^2 - 12x + 27 = 0`
       Roots: `x = 9` or `x = 3`</pre>
             <div class = "side-bar-rule"></div>
-            <b>4. Functional Programming</b>
+            <b id = "4">4. Functional Programming</b>
             Functional Paradigms:
             <div class = "row">
                 <div data-text = "map(|)" class = "command">map</div>
@@ -280,7 +307,7 @@ else n * fact(n - 1)`
       fact(3) -> 6`
             </pre>
             <div class = "side-bar-rule"></div>
-            <b>5. Physics and Chemistry</b>
+            <b id = "5">5. Physics and Chemistry</b>
             <div class = "spacer"></div>
             Physical Constants:
             <div class = "row">
@@ -299,16 +326,140 @@ else n * fact(n - 1)`
                 <div data-text = "na" class = "command">na</div>
             </div>
             <div class = "spacer"></div>
-            <div class = "command-spans">Molar masses: <span data-text="mH" class="command" style="margin: 0">mH</span> <span data-text="mHe" class="command" style="margin: 0">mHe</span> <span data-text="mLi" class="command" style="margin: 0">mLi</span> <span data-text="mBe" class="command" style="margin: 0">mBe</span> <span data-text="mB" class="command" style="margin: 0">mB</span> <span data-text="mC" class="command" style="margin: 0">mC</span> <span data-text="mN" class="command" style="margin: 0">mN</span> <span data-text="mO" class="command" style="margin: 0">mO</span> <span data-text="mF" class="command" style="margin: 0">mF</span> <span data-text="mNe" class="command" style="margin: 0">mNe</span> <span data-text="mNa" class="command" style="margin: 0">mNa</span> <span data-text="mMg" class="command" style="margin: 0">mMg</span> <span data-text="mAl" class="command" style="margin: 0">mAl</span> <span data-text="mSi" class="command" style="margin: 0">mSi</span> <span data-text="mP" class="command" style="margin: 0">mP</span> <span data-text="mS" class="command" style="margin: 0">mS</span> <span data-text="mCl" class="command" style="margin: 0">mCl</span> <span data-text="mAr" class="command" style="margin: 0">mAr</span> <span data-text="mK" class="command" style="margin: 0">mK</span> <span data-text="mCa" class="command" style="margin: 0">mCa</span> <span data-text="mTi" class="command" style="margin: 0">mTi</span> <span data-text="mCr" class="command" style="margin: 0">mCr</span> <span data-text="mMn" class="command" style="margin: 0">mMn</span> <span data-text="mFe" class="command" style="margin: 0">mFe</span> <span data-text="mCo" class="command" style="margin: 0">mCo</span> <span data-text="mNi" class="command" style="margin: 0">mNi</span> <span data-text="mCu" class="command" style="margin: 0">mCu</span> <span data-text="mZn" class="command" style="margin: 0">mZn</span> <span data-text="mAg" class="command" style="margin: 0">mAg</span> <span data-text="mAu" class="command" style="margin: 0">mAu</span> <span data-text="mHg" class="command" style="margin: 0">mHg</span> <span data-text="mPb" class="command" style="margin: 0">mPb</span> <span data-text="mU" class="command" style="margin: 0">mU</span></div>
+            <div class="command-spans">
+                Molar masses (source: <a href = "https://iupac.org/what-we-do/periodic-table-of-elements/" target = "_blank">IUPAC</a>):
+                <div id = "molar-mass-list">
+                    <span data-text="mH" class="command" style="margin: 0">mH</span>
+                    <span data-text="mHe" class="command" style="margin: 0">mHe</span>
+                    <span data-text="mLi" class="command" style="margin: 0">mLi</span>
+                    <span data-text="mBe" class="command" style="margin: 0">mBe</span>
+                    <span data-text="mB" class="command" style="margin: 0">mB</span>
+                    <span data-text="mC" class="command" style="margin: 0">mC</span>
+                    <span data-text="mN" class="command" style="margin: 0">mN</span>
+                    <span data-text="mO" class="command" style="margin: 0">mO</span>
+                    <span data-text="mF" class="command" style="margin: 0">mF</span>
+                    <span data-text="mNe" class="command" style="margin: 0">mNe</span>
+                    <span data-text="mNa" class="command" style="margin: 0">mNa</span>
+                    <span data-text="mMg" class="command" style="margin: 0">mMg</span>
+                    <span data-text="mAl" class="command" style="margin: 0">mAl</span>
+                    <span data-text="mSi" class="command" style="margin: 0">mSi</span>
+                    <span data-text="mP" class="command" style="margin: 0">mP</span>
+                    <span data-text="mS" class="command" style="margin: 0">mS</span>
+                    <span data-text="mCl" class="command" style="margin: 0">mCl</span>
+                    <span data-text="mAr" class="command" style="margin: 0">mAr</span>
+                    <span data-text="mK" class="command" style="margin: 0">mK</span>
+                    <span data-text="mCa" class="command" style="margin: 0">mCa</span>
+                    <span data-text="mSc" class="command" style="margin: 0">mSc</span>
+                    <span data-text="mTi" class="command" style="margin: 0">mTi</span>
+                    <span data-text="mV" class="command" style="margin: 0">mV</span>
+                    <span data-text="mCr" class="command" style="margin: 0">mCr</span>
+                    <span data-text="mMn" class="command" style="margin: 0">mMn</span>
+                    <span data-text="mFe" class="command" style="margin: 0">mFe</span>
+                    <span data-text="mCo" class="command" style="margin: 0">mCo</span>
+                    <span data-text="mNi" class="command" style="margin: 0">mNi</span>
+                    <span data-text="mCu" class="command" style="margin: 0">mCu</span>
+                    <span data-text="mZn" class="command" style="margin: 0">mZn</span>
+                    <span data-text="mGa" class="command" style="margin: 0">mGa</span>
+                    <span data-text="mGe" class="command" style="margin: 0">mGe</span>
+                    <span data-text="mAs" class="command" style="margin: 0">mAs</span>
+                    <span data-text="mSe" class="command" style="margin: 0">mSe</span>
+                    <span data-text="mBr" class="command" style="margin: 0">mBr</span>
+                    <span data-text="mKr" class="command" style="margin: 0">mKr</span>
+                    <span data-text="mRb" class="command" style="margin: 0">mRb</span>
+                    <span data-text="mSr" class="command" style="margin: 0">mSr</span>
+                    <span data-text="mY" class="command" style="margin: 0">mY</span>
+                    <span data-text="mZr" class="command" style="margin: 0">mZr</span>
+                    <span data-text="mNb" class="command" style="margin: 0">mNb</span>
+                    <span data-text="mMo" class="command" style="margin: 0">mMo</span>
+                    <span data-text="mTc" class="command" style="margin: 0">mTc</span>
+                    <span data-text="mRu" class="command" style="margin: 0">mRu</span>
+                    <span data-text="mRh" class="command" style="margin: 0">mRh</span>
+                    <span data-text="mPd" class="command" style="margin: 0">mPd</span>
+                    <span data-text="mAg" class="command" style="margin: 0">mAg</span>
+                    <span data-text="mCd" class="command" style="margin: 0">mCd</span>
+                    <span data-text="mIn" class="command" style="margin: 0">mIn</span>
+                    <span data-text="mSn" class="command" style="margin: 0">mSn</span>
+                    <span data-text="mSb" class="command" style="margin: 0">mSb</span>
+                    <span data-text="mTe" class="command" style="margin: 0">mTe</span>
+                    <span data-text="mI" class="command" style="margin: 0">mI</span>
+                    <span data-text="mXe" class="command" style="margin: 0">mXe</span>
+                    <span data-text="mCs" class="command" style="margin: 0">mCs</span>
+                    <span data-text="mBa" class="command" style="margin: 0">mBa</span>
+                    <span data-text="mLa" class="command" style="margin: 0">mLa</span>
+                    <span data-text="mCe" class="command" style="margin: 0">mCe</span>
+                    <span data-text="mPr" class="command" style="margin: 0">mPr</span>
+                    <span data-text="mNd" class="command" style="margin: 0">mNd</span>
+                    <span data-text="mPm" class="command" style="margin: 0">mPm</span>
+                    <span data-text="mSm" class="command" style="margin: 0">mSm</span>
+                    <span data-text="mEu" class="command" style="margin: 0">mEu</span>
+                    <span data-text="mGd" class="command" style="margin: 0">mGd</span>
+                    <span data-text="mTb" class="command" style="margin: 0">mTb</span>
+                    <span data-text="mDy" class="command" style="margin: 0">mDy</span>
+                    <span data-text="mHo" class="command" style="margin: 0">mHo</span>
+                    <span data-text="mEr" class="command" style="margin: 0">mEr</span>
+                    <span data-text="mTm" class="command" style="margin: 0">mTm</span>
+                    <span data-text="mYb" class="command" style="margin: 0">mYb</span>
+                    <span data-text="mLu" class="command" style="margin: 0">mLu</span>
+                    <span data-text="mHf" class="command" style="margin: 0">mHf</span>
+                    <span data-text="mTa" class="command" style="margin: 0">mTa</span>
+                    <span data-text="mW" class="command" style="margin: 0">mW</span>
+                    <span data-text="mRe" class="command" style="margin: 0">mRe</span>
+                    <span data-text="mOs" class="command" style="margin: 0">mOs</span>
+                    <span data-text="mIr" class="command" style="margin: 0">mIr</span>
+                    <span data-text="mPt" class="command" style="margin: 0">mPt</span>
+                    <span data-text="mAu" class="command" style="margin: 0">mAu</span>
+                    <span data-text="mHg" class="command" style="margin: 0">mHg</span>
+                    <span data-text="mTl" class="command" style="margin: 0">mTl</span>
+                    <span data-text="mPb" class="command" style="margin: 0">mPb</span>
+                    <span data-text="mBi" class="command" style="margin: 0">mBi</span>
+                    <span data-text="mPo" class="command" style="margin: 0">mPo</span>
+                    <span data-text="mAt" class="command" style="margin: 0">mAt</span>
+                    <span data-text="mRn" class="command" style="margin: 0">mRn</span>
+                    <span data-text="mFr" class="command" style="margin: 0">mFr</span>
+                    <span data-text="mRa" class="command" style="margin: 0">mRa</span>
+                    <span data-text="mAc" class="command" style="margin: 0">mAc</span>
+                    <span data-text="mTh" class="command" style="margin: 0">mTh</span>
+                    <span data-text="mPa" class="command" style="margin: 0">mPa</span>
+                    <span data-text="mU" class="command" style="margin: 0">mU</span>
+                    <span data-text="mNp" class="command" style="margin: 0">mNp</span>
+                    <span data-text="mPu" class="command" style="margin: 0">mPu</span>
+                    <span data-text="mAm" class="command" style="margin: 0">mAm</span>
+                    <span data-text="mCm" class="command" style="margin: 0">mCm</span>
+                    <span data-text="mBk" class="command" style="margin: 0">mBk</span>
+                    <span data-text="mCf" class="command" style="margin: 0">mCf</span>
+                    <span data-text="mEs" class="command" style="margin: 0">mEs</span>
+                    <span data-text="mFm" class="command" style="margin: 0">mFm</span>
+                    <span data-text="mMd" class="command" style="margin: 0">mMd</span>
+                    <span data-text="mNo" class="command" style="margin: 0">mNo</span>
+                    <span data-text="mLr" class="command" style="margin: 0">mLr</span>
+                    <span data-text="mRf" class="command" style="margin: 0">mRf</span>
+                    <span data-text="mDb" class="command" style="margin: 0">mDb</span>
+                    <span data-text="mSg" class="command" style="margin: 0">mSg</span>
+                    <span data-text="mBh" class="command" style="margin: 0">mBh</span>
+                    <span data-text="mHs" class="command" style="margin: 0">mHs</span>
+                    <span data-text="mMt" class="command" style="margin: 0">mMt</span>
+                    <span data-text="mDs" class="command" style="margin: 0">mDs</span>
+                    <span data-text="mRg" class="command" style="margin: 0">mRg</span>
+                    <span data-text="mCn" class="command" style="margin: 0">mCn</span>
+                    <span data-text="mNh" class="command" style="margin: 0">mNh</span>
+                    <span data-text="mFl" class="command" style="margin: 0">mFl</span>
+                    <span data-text="mMc" class="command" style="margin: 0">mMc</span>
+                    <span data-text="mLv" class="command" style="margin: 0">mLv</span>
+                    <span data-text="mTs" class="command" style="margin: 0">mTs</span>
+                    <span data-text="mOg" class="command" style="margin: 0">mOg</span>
+                </div>
+                <button id = "molar-mass-toggle">Show More</button>
+            </div>
+              
             <div class = "spacer"></div>
             Use <span data-text="bal" class="command" style="margin: 0">bal</span> to balance chemical equations.
             <pre>
 `mH`
-              `1.00784 gm/mol`
+                `1.008 gm/mol`
 `mH2O`
-             `18.01468 gm/mol`
+               `18.015 gm/mol`
 `1 kg / mH2O`
-           `55.5102838352 mol`
+           `55.5092978074 mol`
 `bal C2H6 + O2 = CO2 + H2O`
    `2C2H6 + 7O2 → 4CO2 + 6H2O`
 </pre>
@@ -337,7 +488,7 @@ else n * fact(n - 1)`
 `cc to km to ms`
             `299.792458 km/ms`</pre>
             <div class = "side-bar-rule"></div>
-            <b>6. Appendix</b>
+            <b id = "6">6. Appendix</b>
             Learn which types built-in functions expect using <span data-text = "help" class = "command" style="margin: 0">help</span> and obtain types with <span data-text = "type(|)" class = "command" style="margin: 0">type</span>.
             <pre>
 `type(M)`

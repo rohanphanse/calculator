@@ -22,7 +22,7 @@ function round(n, p = 0) {
     return Math.round(n * 10 ** p) / (10 ** p)
 }
 
-function roundArray(a, p = 0) {
+function roundArray(a, p = 0, calc = false) {
     // console.log("roundArray", JSON.stringify(a), p)
     for (let i = 0; i < a.length; i++) {
         if (typeof a[i] === "number") {
@@ -31,9 +31,29 @@ function roundArray(a, p = 0) {
             a[i] = roundArray(a[i], p)
         } else if (typeof a[i] === "object" && !(a[i] instanceof String)) {
             if ("op" in a[i]) {
-                a[i] = `${a[i].op}`
+                if (calc && a[i].op.startsWith("@") && a[i].op in calc.functions) {
+                    let op = a[i].op
+                    let fs = calc.functions[op].string
+                    if (fs.length > 0 && fs[0] === "@") {
+                        fs = fs.replace("@", "#")
+                    }
+                    while (fs.includes("@")) {
+                        const index = fs.lastIndexOf("@")
+                        let name = fs.slice(fs.lastIndexOf("@"))
+                        if (name.indexOf(")") !== -1) {
+                            name = name.slice(0, name.indexOf(")"))
+                        }
+                        fs = fs.slice(0, index) + calc.functions[name].string.replace("@", "#") + fs.slice(index + name.length)
+                    }
+                    fs = fs.replaceAll("#", "@")
+                    a[i] = fs
+                } else {
+                    a[i] = `${a[i].op}`
+                }
             } else if ("d" in a[i]) {
                 a[i] = new Fraction(a[i].n, a[i].d).toString()
+            } else if ("re" in a[i]) {
+                a[i] = new ComplexNumber(a[i].re, a[i].im).toString()
             } else if ("b" in a[i]) {
                 a[i] = `${a[i].b}`
             } else if ("unit" in a[i]) {
@@ -314,6 +334,29 @@ function matmul_scalar(A, s) {
     return result
 }
 
+function complex_add(a, b) {
+    return new ComplexNumber(a.re + b.re, a.im + b.im)
+}
+
+function complex_sub(a, b) {
+    return new ComplexNumber(a.re - b.re, a.im - b.im)
+}
+
+function complex_mul(a, b) {
+    return new ComplexNumber(
+        a.re * b.re - a.im * b.im, 
+        a.re * b.im + a.im * b.re
+    )
+}
+ 
+function complex_divide(a, b) {
+    const b_r = b.re * b.re + b.im * b.im
+    return new ComplexNumber(
+        (a.re * b.re + a.im * b.im) / b_r,
+        (a.im * b.re - a.re * b.im) / b_r
+    )
+}
+
 function factorial(n) {
     if (n > 200) {
         return Infinity
@@ -578,7 +621,10 @@ function balance_chemical_equation(equation, max_coefficient = 20) {
         let iters = 0
         const generateCombinations = function*(n, max) {
             iters++
-            if (iters > 500000) yield [-1]
+            if (iters > 500000) {
+                yield [-1]
+                return
+            }
             if (n === 1) {
                 for (let i = 1; i <= max; i++) yield [i]
                 return
@@ -615,7 +661,7 @@ function balance_chemical_equation(equation, max_coefficient = 20) {
         return `${left_side} → ${right_side}`
     } catch (error) {
         console.log(error)
-        return "Balance chemistry equation error"
+        return "Balance chemical equation error"
     }
 }
 
@@ -1089,7 +1135,7 @@ function highlightSyntax(element, backticks_mode = false, highlight_types = fals
             }
         }
         // Handle decimal numbers
-        const decimal_regex = /(^|\s|[><=+\-*/%^&|:(),\[\]])(-?\d+\.?\d*(?:[eE][+\-]?\d+)?|\.\d+(?:[eE][+\-]?\d+)?)(?![a-zA-Z0-9_])/g
+        const decimal_regex = /(^|\s|[><=+\-*/%^&|:(),\[\]~])(-?\d+\.?\d*(?:[eE][+\-]\d*)?|\.\d+(?:[eE][+\-]\d*)?)(?![a-zA-Z0-9_])/g
         while ((match = decimal_regex.exec(text)) !== null) {
             const prefix = match[1]
             const number = match[2]

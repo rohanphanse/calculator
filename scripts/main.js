@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let last_output = null
     let graph_id = 1
     let graphs = []
+    let search_index = -1
+    let search_matches = []
 
     // Elements
     const interface = document.getElementById("interface")
@@ -24,7 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const varBar = document.getElementById("var-bar")
     const calcContainer = document.getElementById("container")
     const sideBar = document.getElementById("side-bar")
+    const sideBarMain = document.getElementById("side-bar-main")
     const sideBarButton = document.getElementById("side-bar-button")
+    const sideBarInput = document.getElementById("side-bar-input")
+    const sideBarInputTag = document.getElementById("side-bar-input-tag")
+    const molarMassToggle = document.getElementById("molar-mass-toggle")
+    const molarMassList = document.getElementById("molar-mass-list")
  
     // States
     let UPDATE_DIGITS = false
@@ -38,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.documentElement.classList.remove("disable-transitions")
         }, 0)
     }
+    let molar_mass_expanded = false
     let theme = localStorage.getItem("theme") || "light"
     if (theme === "dark") {
         document.documentElement.classList.add("disable-transitions")
@@ -56,6 +64,18 @@ document.addEventListener("DOMContentLoaded", () => {
     userInput.addEventListener("keydown", handleKeyDown)
     userInput.addEventListener("input", ansAutoFill)
     userInputAutocomplete.addEventListener("click", handleAutocompleteClick)
+
+    // Add searchable metadata to command buttons
+    for (const cmd of commandButtons) {
+        if (cmd.getAttribute("data-text")) {
+            const op = cmd.getAttribute("data-text").replace("(|)", "")
+            if (op in OPERATIONS) {
+                cmd.dataset.name = OPERATIONS[op].name
+            } else if (op in HELP) {
+                cmd.dataset.name = HELP[op].name
+            }
+        }
+    }
 
     // Angle button
     angleButton.addEventListener("click", event => {
@@ -105,6 +125,12 @@ document.addEventListener("DOMContentLoaded", () => {
         for (const graph of graphs) {
             graph.drawGraphs()
         }
+    })
+
+    molarMassToggle.addEventListener("click", () => {
+        molar_mass_expanded = !molar_mass_expanded
+        molarMassList.style.height = molar_mass_expanded ? "448px" : "67px"
+        molarMassToggle.innerText = molar_mass_expanded ? "Show Less" : "Show More"
     })
 
     // Click event listener on document for handling digits input value
@@ -390,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             output += `\n${e.example}`
                         }
                     } else {
-                        output += "Welcome to Functional Calculator! See the guide to help you get started!"
+                        output += "Welcome to Functional Calculator! See the guide for help getting started..."
                     }
                 } else if (user_input.startsWith("trace")) {
                     const rest = user_input.slice(user_input.indexOf("trace") + "trace".length).trim()
@@ -420,8 +446,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     } else if (op in calculator.variables) {
                         try {
-                            let value = JSON.stringify(calculator.variables[op])
-                            value = value.replace(/\{"op":"([^"]+)"\}/g, "$1")
+                            let v = calculator.variables[op]
+                            if (v instanceof Operation || v instanceof ComplexNumber || v instanceof UnitNumber || v instanceof BaseNumber) {
+                                v = v.toString()
+                            }
+                            let value = JSON.stringify(v)
                             value = value.replaceAll('"', "")
                             output = `Saved \`${op} = ${value.replaceAll(",", ", ")}\``
                             let saved_variables = JSON.parse(localStorage.getItem("saved_variables") || "{}")
@@ -509,7 +538,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     try {
                         let eq = user_input.slice(user_input.indexOf("bal") + "bal".length).trim()
                         output = balance_chemical_equation(eq)
-                        if (!output.startsWith("Error:")) {
+                        if (!output.toLowerCase().includes("error")) {
                             output = `\`${output}\``
                         }
                     } catch (error) {
@@ -625,7 +654,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         result.textContent = output
                     }
                     last_output = output
-                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]) || output.includes("("))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || typeof output === "boolean") {
+                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]) || output.includes("("))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof ComplexNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || typeof output === "boolean") {
                         highlightSyntax(result, false, true)
                     }
                     if ((typeof output === "string" || output instanceof String) && output.includes("`") && result.className !== "result-graph") {
@@ -761,6 +790,83 @@ document.addEventListener("DOMContentLoaded", () => {
         setCursorPosition(userInput, userInput.textContent.length)
         userInput.focus()
     }
+
+    function highlightInSidebar(term) {
+        clearSidebarHighlights()
+        sideBarInputTag.innerText = ""
+        search_index = -1
+        search_matches = []
+        if (!term.trim()) return
+        const walker = document.createTreeWalker(sideBarMain, NodeFilter.SHOW_TEXT)
+        const regex = new RegExp(term, "i")
+        const textNodes = []
+        while (walker.nextNode()) {
+            const node = walker.currentNode
+            if (!node.parentElement.closest(".marked")) {
+                textNodes.push(node)
+            }
+        }
+        textNodes.forEach((node) => {
+            const text = node.textContent
+            if (regex.test(text)) {
+                const span = document.createElement("span")
+                span.innerHTML = text.replace(regex, match => `<mark class="marked">${match}</mark>`)
+                node.replaceWith(span)
+            }
+        })
+        for (const cmd of sideBarMain.querySelectorAll(".command:not(:has(.marked))")) {
+            const data_name = cmd.getAttribute("data-name") || ""
+            if (regex.test(data_name)) {
+                const mark = document.createElement("mark")
+                mark.className = "marked"
+                mark.innerText = cmd.innerText
+                cmd.textContent = ""
+                cmd.appendChild(mark)
+            }
+        }
+
+        search_matches = Array.from(document.querySelectorAll("#side-bar .marked"))
+        if (search_matches.length > 0) {
+            search_index = 0
+            focusSearchMatch()
+        }
+        sideBarInputTag.innerText = `${search_index + 1}/${search_matches.length}`
+    }
+
+    function focusSearchMatch() {
+        search_matches.forEach((element, i) => {
+            element.classList.toggle("active-match", i === search_index)
+        })
+        search_matches[search_index].scrollIntoView({ behavior: "auto", block: "center" })
+    }
+      
+    function clearSidebarHighlights() {
+        const marks = sideBarMain.querySelectorAll(".marked")
+        marks.forEach(mark => {
+            const textNode = document.createTextNode(mark.textContent)
+            mark.replaceWith(textNode)
+        })
+        sideBarMain.normalize()
+    }
+      
+    sideBarInput.addEventListener("input", (event) => {
+        highlightInSidebar(event.target.value)
+    })
+    
+    sideBarInput.addEventListener("keydown", (event) => {
+        if (((event.key === "Enter" && !event.shiftKey) || event.key === "ArrowUp") && search_matches.length > 0) {
+            event.preventDefault()
+            search_index = (search_index + 1) % search_matches.length
+            sideBarInputTag.innerText = `${search_index + 1}/${search_matches.length}`
+            focusSearchMatch()
+        }
+        if (((event.key === "Enter" && event.shiftKey) || event.key === "ArrowDown") && search_matches.length > 0) {
+            event.preventDefault()
+            search_index = (search_index - 1 + search_matches.length) % search_matches.length
+            sideBarInputTag.innerText = `${search_index + 1}/${search_matches.length}`
+            focusSearchMatch()
+        }
+    })
 })
 
 

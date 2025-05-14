@@ -106,11 +106,11 @@ const ORDER_OF_OPERATIONS = [
     ["and"],
     ["or"],
     ["~", "&", "|", "xor"],
-    ["<<", ">>"],
+    ["<<", ">>"]
 ]
 
 // Subsets
-const CONSTANTS = ["pi", "e", "phi", "inf", "true", "false", "hh", "cc", "qe", "u0", "e0", "mel", "mp", "gg", "ge", "rr", "na", "mH", "mHe", "mLi", "mBe", "mB", "mC", "mN", "mO", "mF", "mNe", "mNa", "mMg", "mAl", "mSi", "mP", "mS", "mCl", "mAr", "mK", "mCa", "mTi", "mCr", "mMn", "mFe", "mCo", "mNi", "mCu", "mZn", "mAg", "mAu", "mHg", "mPb", "mU"]
+const CONSTANTS = ["pi", "e", "phi", "inf", "true", "false", "hh", "cc", "qe", "u0", "e0", "mel", "mp", "gg", "ge", "rr", "na", "i"]
 const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not", "mod", "si"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
@@ -134,10 +134,24 @@ const bases = { "0b": 2, "0x": 16, "0o": 8 }
 const OPERATIONS = {
     "+": {
         name: "Addition",
-        func: (a, b) => {  
+        func: (a, b) => {
             param_types = get_param_types([a, b]) 
             if (param_types[0] == TN && param_types[1] == TN) {
-                if (a instanceof Fraction && b instanceof Fraction) {
+                if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
+                    if (!(a instanceof ComplexNumber) && typeof a !== "number") {
+                        a = a.value()
+                    }
+                    if (!(b instanceof ComplexNumber) && typeof b !== "number") {
+                        b = b.value()
+                    }
+                    if (a instanceof ComplexNumber && b instanceof ComplexNumber) {
+                        return new ComplexNumber(a.re + b.re, a.im + b.im)
+                    } else if (typeof a === "number") {
+                        return new ComplexNumber(a + b.re, b.im)
+                    } else if (typeof b === "number") {
+                        return new ComplexNumber(a.re + b, a.im)
+                    }
+                } else if (a instanceof Fraction && b instanceof Fraction) {
                     return add_fractions(a, b)
                 } else if (a instanceof Fraction && Number.isInteger(b)) {
                     return add_fractions(a, new Fraction(b, 1))
@@ -192,14 +206,29 @@ const OPERATIONS = {
         types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
         example: "Examples:\n  1. Add numbers: \`2 + 2 -> 4\`\n  2. Add tensors: \`[[[1, 2]]] + [[[2, 1]]] -> [[[3, 3]]]\`\n  3. Add numbers and tensors: \`2 + [1, 2] -> [3, 4]\`",
         allow_fractions: true,
-        allow_units: true
+        allow_units: true,
+        allow_complex: true
     },
     "-": {
         name: "Subtraction",
         func: (a, b) => {
             param_types = get_param_types([a, b])
             if (param_types[0] == TN && param_types[1] == TN) {
-                if (a instanceof Fraction && b instanceof Fraction) {
+                if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
+                    if (!(a instanceof ComplexNumber) && typeof a !== "number") {
+                        a = a.value()
+                    }
+                    if (!(b instanceof ComplexNumber) && typeof b !== "number") {
+                        b = b.value()
+                    }
+                    if (a instanceof ComplexNumber && b instanceof ComplexNumber) {
+                        return new ComplexNumber(a.re - b.re, a.im - b.im)
+                    } else if (typeof a === "number") {
+                        return new ComplexNumber(a - b.re, -b.im)
+                    } else if (typeof b === "number") {
+                        return new ComplexNumber(a.re - b, a.im)
+                    }
+                } else if (a instanceof Fraction && b instanceof Fraction) {
                     return subtract_fractions(a, b)
                 } else if (a instanceof Fraction && Number.isInteger(b)) {
                     return subtract_fractions(a, new Fraction(b, 1))
@@ -254,14 +283,16 @@ const OPERATIONS = {
         types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
         allow_fractions: true,
         allow_units: true,
-        
+        allow_complex: true
     },
     "neg": {
         name: "Negation",
         func: (n) => {
             param_type = get_param_types([n])[0]
             if (param_type == TN) {
-                if (n instanceof Fraction) {
+                if (n instanceof ComplexNumber) {
+                    return new ComplexNumber(-n.re, -n.im)
+                } else if (n instanceof Fraction) {
                     let copy = new Fraction(n.n, n.d)
                     copy.neg = !n.neg
                     return copy
@@ -277,13 +308,28 @@ const OPERATIONS = {
         vars: ["x"],
         types: [TOR(TN, TL(TA))],
         allow_fractions: true,
+        allow_complex: true,
     },
     "*": {
         name: "Multiplication",
         func: (a, b) => {
             param_types = get_param_types([a, b])
             if (param_types[0] == TN && param_types[1] == TN) {
-                if (a instanceof Fraction && b instanceof Fraction) {
+                if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
+                    if (!(a instanceof ComplexNumber) && typeof a !== "number") {
+                        a = a.value()
+                    }
+                    if (!(b instanceof ComplexNumber) && typeof b !== "number") {
+                        b = b.value()
+                    }
+                    if (a instanceof ComplexNumber && b instanceof ComplexNumber) {
+                        return new ComplexNumber(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re)
+                    } else if (typeof a === "number") {
+                        return new ComplexNumber(a * b.re, a * b.im)
+                    } else if (typeof b === "number") {
+                        return new ComplexNumber(a.re * b, a.im * b)
+                    }
+                } else if (a instanceof Fraction && b instanceof Fraction) {
                     return new Fraction(a.n * b.n, a.d * b.d)
                 } else if (a instanceof Fraction && Number.isInteger(b)) {
                     return new Fraction(a.n * b, a.d)
@@ -345,11 +391,33 @@ const OPERATIONS = {
         example: "Examples:\n  1. Multiply numbers: \`2 * 2 -> 4\`\n  2. Dot product: \`[1, 2] * [3, 4] -> 11\`\n  3. Matrix multiplication:\n     \`[[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]\`",
         allow_fractions: true,
         allow_units: true,
+        allow_complex: true
     },
     "/": {
         name: "Division",
         func: (a, b) => {
-            if (Number.isInteger(a) && Number.isInteger(b)) {
+            // z₁ / z₂ = ((ac + bd) / (c² + d²)) + ((bc - ad) / (c² + d²)) i
+            if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
+                if (!(a instanceof ComplexNumber) && typeof a !== "number") {
+                    a = a.value()
+                }
+                if (!(b instanceof ComplexNumber) && typeof b !== "number") {
+                    b = b.value()
+                }
+                if (a instanceof ComplexNumber && b instanceof ComplexNumber) {
+                    return new ComplexNumber((a.re * b.re + a.im * b.im) / (b.re * b.re + b.im * b.im), (a.im * b.re - a.re * b.im) / (b.re * b.re + b.im * b.im))
+                } else if (typeof a === "number") {
+                    return new ComplexNumber((a * b.re) / (b.re * b.re + b.im * b.im), (-a * b.im) / (b.re * b.re + b.im * b.im))
+                } else if (typeof b === "number") {
+                    if (b === 0) {
+                        if (a.im === 0) {
+                            return a.re / b
+                        }
+                        return "Divide by zero error"
+                    }
+                    return new ComplexNumber(a.re / b, a.im / b)
+                }
+            } else if (Number.isInteger(a) && Number.isInteger(b)) {
                 return new Fraction(a, b)
             } else if (a instanceof Fraction && b instanceof Fraction) {
                 return new Fraction(a.n * b.d, a.d * b.n)
@@ -395,12 +463,33 @@ const OPERATIONS = {
         vars: ["a", "b"],
         types: [TOR(TN, TU), TOR(TN, TU)],
         allow_fractions: true,
-        allow_units: true
+        allow_units: true,
+        allow_complex: true
     },
     "^": {
         name: "Exponentiation",
         func: (a, b) => {
-            if (UNITS.includes(a) && typeof b === "number") {
+            if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
+                if (!(a instanceof ComplexNumber)) {
+                    if (typeof a !== "number") {
+                        a = a.value()
+                    }
+                    a = new ComplexNumber(a, 0)
+                }
+                if (!(b instanceof ComplexNumber)) {
+                    if (typeof b !== "number") {
+                        b = b.value()
+                    }
+                    b = new ComplexNumber(b, 0)
+                }
+                const r = Math.hypot(a.re, a.im)
+                const theta = Math.atan2(a.im, a.re)
+                const ln_r = Math.log(r)
+                const u = b.re * ln_r - b.im * theta
+                const v = b.re * theta + b.im * ln_r
+                const mag = Math.exp(u)
+                return new ComplexNumber(round(mag * Math.cos(v), 10), round(mag * Math.sin(v), 10))
+            } else if (UNITS.includes(a) && typeof b === "number") {
                 return new UnitNumber(1, UnitNumber.pow_unit({ [a]: 1 }, b))
             } else if (a instanceof UnitNumber) {
                 if (typeof b === "number") {
@@ -420,7 +509,8 @@ const OPERATIONS = {
         schema: [-1, 1],
         vars: ["base", "exponent"],
         types: [TOR(TN, TU), TN],
-        allow_units: true
+        allow_units: true,
+        allow_complex: true
     },
     "!": {
         name: "Factorial",
@@ -496,7 +586,7 @@ const OPERATIONS = {
         name: "Ceiling",
         func: (n) => Math.ceil(n),
         schema: [1],
-        vars: ["number"],
+        vars: ["x"],
         types: [TN]
     },
     "pi": {
@@ -520,6 +610,13 @@ const OPERATIONS = {
         vars: [],
         types: []
     },
+    "i": {
+        name: "Imaginary number",
+        func: () => new ComplexNumber(0, 1),
+        schema: [],
+        vars: [],
+        types: []
+    },
     "inf": {
         name: "Infinity",
         func: () => Infinity,
@@ -530,7 +627,22 @@ const OPERATIONS = {
     "log": {
         name: "Logarithm",
         func: (b, x) => {
-            if (x) {
+            if (x !== undefined && (b instanceof ComplexNumber || x instanceof ComplexNumber)) {
+                if (!(b instanceof ComplexNumber)) {
+                    b = new ComplexNumber(b, 0)
+                }
+                if (!(x instanceof ComplexNumber)) {
+                    x = new ComplexNumber(x, 0)
+                }
+                const ln_x = OPERATIONS["ln"].func(x)
+                const ln_b = OPERATIONS["ln"].func(b)
+                return complex_divide(ln_x, ln_b)
+            } else if (b instanceof ComplexNumber) {
+                const ln_b = OPERATIONS["ln"].func(b)
+                const ln_10 = new ComplexNumber(Math.log(10), 0)
+                return complex_divide(ln_b, ln_10)
+            }
+            if (x !== undefined) {
                 return Math.log(x) / Math.log(b)
             } else {
                 return Math.log(b) / Math.log(10)
@@ -538,18 +650,33 @@ const OPERATIONS = {
         },
         schema: [1],
         vars: ["base", "x"],
-        types: [TN, TO(TN)]
+        types: [TN, TO(TN)],
+        allow_complex: true
     },
     "ln": {
         name: "Natural Logarithm",
-        func: (x) => Math.log(x),
+        func: (x) => {
+            if (x instanceof ComplexNumber) {
+                const r = Math.hypot(x.re, x.im)
+                const theta = Math.atan2(x.im, x.re)
+                return new ComplexNumber(Math.log(r), theta)
+            }
+            return Math.log(x)
+        },
         schema: [1],
         vars: ["x"],
-        types: [TN]
+        types: [TN],
+        allow_complex: true
     },
     "sin": {
         name: "Sine",
         func: (theta) => {
+            if (theta instanceof ComplexNumber) {
+                const i = new ComplexNumber(0, 1)
+                const ni = new ComplexNumber(0, -1) 
+                const ti = new ComplexNumber(0, 2) 
+                return complex_divide(complex_sub(OPERATIONS["^"].func(Math.E, complex_mul(i, theta)), OPERATIONS["^"].func(Math.E, complex_mul(ni, theta))), ti)
+            }
             if (is_close(theta, Math.PI / 6)) {
                 return new Fraction(1, 2)
             }
@@ -560,11 +687,18 @@ const OPERATIONS = {
         },
         schema: [1],
         vars: ["x"],
-        types: [TN]
+        types: [TN],
+        allow_complex: true
     },
     "cos": {
         name: "Cosine",
         func: (theta) => {
+            if (theta instanceof ComplexNumber) {
+                const i = new ComplexNumber(0, 1)
+                const ni = new ComplexNumber(0, -1) 
+                const two = new ComplexNumber(2, 0) 
+                return complex_divide(complex_add(OPERATIONS["^"].func(Math.E, complex_mul(i, theta)), OPERATIONS["^"].func(Math.E, complex_mul(ni, theta))), two)
+            }
             if (is_close(theta, Math.PI / 3)) {
                 return new Fraction(1, 2)
             }
@@ -575,11 +709,15 @@ const OPERATIONS = {
         },
         schema: [1],
         vars: ["x"],
-        types: [TN]
+        types: [TN],
+        allow_complex: true
     },
     "tan": {
         name: "Tangent",
         func: (theta) => {
+            if (theta instanceof ComplexNumber) {
+                return complex_divide(OPERATIONS["sin"].func(theta), OPERATIONS["cos"].func(theta))
+            }
             if (is_close_to_int(theta / Math.PI)) {
                 return 0
             }
@@ -587,7 +725,8 @@ const OPERATIONS = {
         },
         schema: [1],
         vars: ["x"],
-        types: [TN]
+        types: [TN],
+        allow_complex: true
     },
     "csc": {
         name: "Cosecant",
@@ -633,12 +772,60 @@ const OPERATIONS = {
         vars: ["x"],
         types: [TN]
     },
-    "abs": {
-        name: "Absolute value",
-        func: (n) => Math.abs(n),
+    "sinh": {
+        name: "Hyperbolic sine",
+        func: (z) => {
+            if (z instanceof ComplexNumber) {
+                return complex_divide(complex_sub(OPERATIONS["^"].func(Math.E, z), OPERATIONS["^"].func(Math.E, complex_mul(new ComplexNumber(-1, 0), z))), new ComplexNumber(2, 0))
+            } else if (typeof z === "number") {
+                return (Math.exp(z) - Math.exp(-z)) / 2
+            }
+        },
         schema: [1],
         vars: ["x"],
-        types: [TN]
+        types: [TN],
+        allow_complex: true
+    },
+    "cosh": {
+        name: "Hyperbolic cosine",
+        func: (z) => {
+            if (z instanceof ComplexNumber) {
+                return complex_divide(complex_add(OPERATIONS["^"].func(Math.E, z), OPERATIONS["^"].func(Math.E, complex_mul(new ComplexNumber(-1, 0), z))), new ComplexNumber(2, 0))
+            } else if (typeof z === "number") {
+                return (Math.exp(z) + Math.exp(-z)) / 2
+            }
+        },
+        schema: [1],
+        vars: ["x"],
+        types: [TN],
+        allow_complex: true
+    },
+    "tanh": {
+        name: "Hyperbolic tangent",
+        func: (z) => {
+            if (z instanceof ComplexNumber) {
+                return complex_divide(OPERATIONS["sinh"].func(z), OPERATIONS["cosh"].func(z))
+            } else if (typeof z === "number") {
+                return Math.tanh(z)
+            }
+        },
+        schema: [1],
+        vars: ["x"],
+        types: [TN],
+        allow_complex: true
+    },
+    "abs": {
+        name: "Absolute value",
+        func: (n) => {
+            if (n instanceof ComplexNumber) {
+                return Math.sqrt(n.re * n.re + n.im * n.im)
+            }
+            return Math.abs(n)
+        },
+        schema: [1],
+        vars: ["x"],
+        types: [TN],
+        allow_complex: true
     },
     "min": {
         name: "Minimum",
@@ -657,20 +844,29 @@ const OPERATIONS = {
     "sqrt": {
         name: "Square root",
         func: (n) => {
-            const value = Math.sqrt(n.value())
-            if (n instanceof UnitNumber) {
+            if (typeof n == "number") {
+                return Math.sqrt(n)
+            } else if (n instanceof UnitNumber) {
                 const new_units = {}
                 for (const u in n.unit) {
                     new_units[u] = n.unit[u] / 2;
                 }
-                return new UnitNumber(value, new_units)
+                return new UnitNumber(Math.sqrt(n.value()), new_units)
+            } else if (n instanceof ComplexNumber) {
+                const r = Math.hypot(n.re, n.im)
+                const theta = Math.atan2(n.im, n.re)
+                const sqrt_r = Math.sqrt(r)
+                return new ComplexNumber(
+                    round(sqrt_r * Math.cos(theta / 2), 10),
+                    round(sqrt_r * Math.sin(theta / 2), 10)
+                )
             }
-            return value
         },
         schema: [1],
         vars: ["x"],
         types: [TN],
-        allow_units: true
+        allow_units: true,
+        allow_complex: true
     },
     "sum": {
         name: "Sum",
@@ -859,12 +1055,25 @@ const OPERATIONS = {
         name: "Range",
         func: (a, b, step = 1) => {
             let range = []
-            if (!b) {
+            if (b === undefined) {
                 b = a
                 a = 1
             }
-            for (let n = a; n <= b; n += step) {
-                range.push(n)
+            if (step == 0) {
+                if (a <= b) {
+                    return [a]
+                }
+                return []
+            }
+            if (step > 0) {
+                for (let n = a; n <= b; n += step) {
+                    range.push(n)
+                }
+            }
+            if (step < 0) {
+                for (let n = a; n >= b; n += step) {
+                    range.push(n)
+                }
             }
             return range
         },
@@ -1253,26 +1462,37 @@ const OPERATIONS = {
         func: (a, b) => {
             if (Array.isArray(a) && Array.isArray(b)) {
                 return tensors_equal(a, b)
+            } else if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
+                if (a instanceof ComplexNumber && b instanceof ComplexNumber) {
+                    return a.re === b.re && a.im === b.im
+                } else if (typeof a === "number") {
+                    if (b.im !== 0) {
+                        return false
+                    }
+                    return a === b.re
+                } else if (typeof b === "number") {
+                    if (a.im !== 0) {
+                        return false
+                    }
+                    return a.re === b
+                }
             }
             return a === b
         },
         schema: [-1, 1],
         vars: ["a", "b"],
         types: [TA, TA],
-        allow_units: true
+        allow_complex: true
     },
     "!=": {
         name: "Not equal",
         func: (a, b) => {
-            if (Array.isArray(a) && Array.isArray(b)) {
-                return !tensors_equal(a, b)
-            }
-            return a !== b
+            return !OPERATIONS["=="].func(a, b)
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA],    
-        allow_units: true
+        types: [TA, TA],
+        allow_complex: true
     },
     "true": {
         name: "True",
@@ -1303,8 +1523,7 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA],    
-        allow_units: true
+        types: [TA, TA]
     },
     "<=": {
         name: "Less than or equal",
@@ -1313,8 +1532,7 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA],    
-        allow_units: true
+        types: [TA, TA]
     },
     ">": {
         name: "Greater than",
@@ -1323,8 +1541,7 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA],    
-        allow_units: true
+        types: [TA, TA]
     },
     ">=": {
         name: "Greater than or equal",
@@ -1333,8 +1550,7 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TA, TA],    
-        allow_units: true
+        types: [TA, TA]
     },
     "and": {
         name: "And",
@@ -1487,49 +1703,49 @@ const OPERATIONS = {
     },
     "mH": {
         name: "Molar mass of Hydrogen",
-        func: () => new UnitNumber(1.00784, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(1.0080, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mHe": {
         name: "Molar mass of Helium",
-        func: () => new UnitNumber(4.002602, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(4.0026, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mLi": {
         name: "Molar mass of Lithium",
-        func: () => new UnitNumber(6.938, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(6.94, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mBe": {
         name: "Molar mass of Beryllium",
-        func: () => new UnitNumber(9.0121831, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(9.0122, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mB": {
         name: "Molar mass of Boron",
-        func: () => new UnitNumber(10.806, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(10.81, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mC": {
         name: "Molar mass of Carbon",
-        func: () => new UnitNumber(12.0106, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(12.011, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mN": {
         name: "Molar mass of Nitrogen",
-        func: () => new UnitNumber(14.00643, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(14.007, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
@@ -1543,77 +1759,77 @@ const OPERATIONS = {
     },
     "mF": {
         name: "Molar mass of Fluorine",
-        func: () => new UnitNumber(18.998403163, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(18.998, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mNe": {
         name: "Molar mass of Neon",
-        func: () => new UnitNumber(20.1797, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(20.180, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mNa": {
         name: "Molar mass of Sodium",
-        func: () => new UnitNumber(22.98976928, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(22.990, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mMg": {
         name: "Molar mass of Magnesium",
-        func: () => new UnitNumber(24.304, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(24.305, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mAl": {
         name: "Molar mass of Aluminum",
-        func: () => new UnitNumber(26.9815385, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(26.982, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mSi": {
         name: "Molar mass of Silicon",
-        func: () => new UnitNumber(28.084, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(28.085, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mP": {
         name: "Molar mass of Phosphorus",
-        func: () => new UnitNumber(30.973761998, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(30.974, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mS": {
         name: "Molar mass of Sulfur",
-        func: () => new UnitNumber(32.059, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(32.06, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mCl": {
         name: "Molar mass of Chlorine",
-        func: () => new UnitNumber(35.446, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(35.45, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mAr": {
         name: "Molar mass of Argon",
-        func: () => new UnitNumber(39.948, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(39.95, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mK": {
         name: "Molar mass of Potassium",
-        func: () => new UnitNumber(39.0983, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(39.098, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
@@ -1625,6 +1841,13 @@ const OPERATIONS = {
         vars: [],
         types: []
     },
+    "mSc": {
+        name: "Molar mass of Scandium",
+        func: () => new UnitNumber(44.956, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
     "mTi": {
         name: "Molar mass of Titanium",
         func: () => new UnitNumber(47.867, { "gm": 1, "mol": -1 }),
@@ -1632,16 +1855,23 @@ const OPERATIONS = {
         vars: [],
         types: []
     },
+    "mV": {
+        name: "Molar mass of Vanadium",
+        func: () => new UnitNumber(50.942, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
     "mCr": {
         name: "Molar mass of Chromium",
-        func: () => new UnitNumber(51.9961, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(51.996, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mMn": {
         name: "Molar mass of Manganese",
-        func: () => new UnitNumber(54.938044, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(54.938, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
@@ -1655,14 +1885,14 @@ const OPERATIONS = {
     },
     "mCo": {
         name: "Molar mass of Cobalt",
-        func: () => new UnitNumber(58.933194, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(58.933, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mNi": {
         name: "Molar mass of Nickel",
-        func: () => new UnitNumber(58.6934, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(58.693, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
@@ -1681,23 +1911,359 @@ const OPERATIONS = {
         vars: [],
         types: []
     },
+    "mGa": {
+        name: "Molar mass of Gallium",
+        func: () => new UnitNumber(69.723, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mGe": {
+        name: "Molar mass of Germanium",
+        func: () => new UnitNumber(72.630, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mAs": {
+        name: "Molar mass of Arsenic",
+        func: () => new UnitNumber(74.922, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mSe": {
+        name: "Molar mass of Selenium",
+        func: () => new UnitNumber(78.971, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mBr": {
+        name: "Molar mass of Bromine",
+        func: () => new UnitNumber(79.904, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mKr": {
+        name: "Molar mass of Krypton",
+        func: () => new UnitNumber(83.798, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mRb": {
+        name: "Molar mass of Rubidium",
+        func: () => new UnitNumber(85.468, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mSr": {
+        name: "Molar mass of Strontium",
+        func: () => new UnitNumber(87.62, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mY": {
+        name: "Molar mass of Yttrium",
+        func: () => new UnitNumber(88.906, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mZr": {
+        name: "Molar mass of Zirconium",
+        func: () => new UnitNumber(91.224, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mNb": {
+        name: "Molar mass of Niobium",
+        func: () => new UnitNumber(92.906, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mMo": {
+        name: "Molar mass of Molybdenum",
+        func: () => new UnitNumber(95.95, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mTc": {
+        name: "Molar mass of Technetium",
+        func: () => new UnitNumber(97, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mRu": {
+        name: "Molar mass of Ruthenium",
+        func: () => new UnitNumber(101.07, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mRh": {
+        name: "Molar mass of Rhodium",
+        func: () => new UnitNumber(102.91, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mPd": {
+        name: "Molar mass of Palladium",
+        func: () => new UnitNumber(106.42, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
     "mAg": {
         name: "Molar mass of Silver",
-        func: () => new UnitNumber(107.8682, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(107.87, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mCd": {
+        name: "Molar mass of Cadmium",
+        func: () => new UnitNumber(112.41, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "In": {
+        name: "Molar mass of Indium",
+        func: () => new UnitNumber(114.82, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mSn": {
+        name: "Molar mass of Tin",
+        func: () => new UnitNumber(118.71, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mSb": {
+        name: "Molar mass of Antimony",
+        func: () => new UnitNumber(121.76, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mTe": {
+        name: "Molar mass of Tellurium",
+        func: () => new UnitNumber(127.60, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mI": {
+        name: "Molar mass of Iodine",
+        func: () => new UnitNumber(126.90, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mXe": {
+        name: "Molar mass of Xenon",
+        func: () => new UnitNumber(131.29, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mCs": {
+        name: "Molar mass of Cesium",
+        func: () => new UnitNumber(132.91, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mBa": {
+        name: "Molar mass of Barium",
+        func: () => new UnitNumber(137.33, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mLa": {
+        name: "Molar mass of Lanthanum",
+        func: () => new UnitNumber(138.91, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mCe": {
+        name: "Molar mass of Cerium",
+        func: () => new UnitNumber(140.12, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mPr": {
+        name: "Molar mass of Praseodymium",
+        func: () => new UnitNumber(140.91, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mNd": {
+        name: "Molar mass of Neodymium",
+        func: () => new UnitNumber(144.24, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mPm": {
+        name: "Molar mass of Promethium",
+        func: () => new UnitNumber(145, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mSm": {
+        name: "Molar mass of Samarium",
+        func: () => new UnitNumber(150.36, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mEu": {
+        name: "Molar mass of Europium",
+        func: () => new UnitNumber(151.96, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mGd": {
+        name: "Molar mass of Gadolinium",
+        func: () => new UnitNumber(157.25, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mTb": {
+        name: "Molar mass of Terbium",
+        func: () => new UnitNumber(158.93, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mDy": {
+        name: "Molar mass of Dysprosium",
+        func: () => new UnitNumber(162.50, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mHo": {
+        name: "Molar mass of Holmium",
+        func: () => new UnitNumber(164.93, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mEr": {
+        name: "Molar mass of Erbium",
+        func: () => new UnitNumber(167.26, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mTm": {
+        name: "Molar mass of Thulium",
+        func: () => new UnitNumber(168.93, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mYb": {
+        name: "Molar mass of Ytterbium",
+        func: () => new UnitNumber(173.05, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mLu": {
+        name: "Molar mass of Lutetium",
+        func: () => new UnitNumber(174.97, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mHf": {
+        name: "Molar mass of Hafnium",
+        func: () => new UnitNumber(178.49, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mTa": {
+        name: "Molar mass of Tantalum",
+        func: () => new UnitNumber(180.95, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mW": {
+        name: "Molar mass of Tungsten",
+        func: () => new UnitNumber(183.84, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mRe": {
+        name: "Molar mass of Rhenium",
+        func: () => new UnitNumber(186.21, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mOs": {
+        name: "Molar mass of Osmium",
+        func: () => new UnitNumber(190.23, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mIr": {
+        name: "Molar mass of Iridium",
+        func: () => new UnitNumber(192.22, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mPt": {
+        name: "Molar mass of Platinum",
+        func: () => new UnitNumber(195.08, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mAu": {
         name: "Molar mass of Gold",
-        func: () => new UnitNumber(196.966569, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(196.97, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
     },
     "mHg": {
         name: "Molar mass of Mercury",
-        func: () => new UnitNumber(200.592, { "gm": 1, "mol": -1 }),
+        func: () => new UnitNumber(200.59, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mTl": {
+        name: "Molar mass of Thallium",
+        func: () => new UnitNumber(204.38, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
@@ -1709,13 +2275,300 @@ const OPERATIONS = {
         vars: [],
         types: []
     },
-    "mU": {
-        name: "Molar mass of Uranium",
-        func: () => new UnitNumber(238.02891, { "gm": 1, "mol": -1 }),
+    "mBi": {
+        name: "Molar mass of Bismuth",
+        func: () => new UnitNumber(208.98, { "gm": 1, "mol": -1 }),
         schema: [],
         vars: [],
         types: []
-    }
+    },
+    "mPo": {
+        name: "Molar mass of Polonium",
+        func: () => new UnitNumber(209, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mAt": {
+        name: "Molar mass of Astatine",
+        func: () => new UnitNumber(210, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mRn": {
+        name: "Molar mass of Radon",
+        func: () => new UnitNumber(222, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mFr": {
+        name: "Molar mass of Francium",
+        func: () => new UnitNumber(223, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mRa": {
+        name: "Molar mass of Radium",
+        func: () => new UnitNumber(226, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mAc": {
+        name: "Molar mass of Actinium",
+        func: () => new UnitNumber(227, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mTh": {
+        name: "Molar mass of Thorium",
+        func: () => new UnitNumber(232.04, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mPa": {
+        name: "Molar mass of Protactinium",
+        func: () => new UnitNumber(231.04, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mU": {
+        name: "Molar mass of Uranium",
+        func: () => new UnitNumber(238.03, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mNp": {
+        name: "Molar mass of Neptunium",
+        func: () => new UnitNumber(237, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mPu": {
+        name: "Molar mass of Plutonium",
+        func: () => new UnitNumber(244, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mAm": {
+        name: "Molar mass of Americium",
+        func: () => new UnitNumber(243, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mCm": {
+        name: "Molar mass of Curium",
+        func: () => new UnitNumber(247, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mBk": {
+        name: "Molar mass of Berkelium",
+        func: () => new UnitNumber(247, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mCf": {
+        name: "Molar mass of Californium",
+        func: () => new UnitNumber(251, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mEs": {
+        name: "Molar mass of Einsteinium",
+        func: () => new UnitNumber(252, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mFm": {
+        name: "Molar mass of Fermium",
+        func: () => new UnitNumber(257, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mMd": {
+        name: "Molar mass of Mendelevium",
+        func: () => new UnitNumber(258, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mNo": {
+        name: "Molar mass of Nobelium",
+        func: () => new UnitNumber(259, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mLr": {
+        name: "Molar mass of Lawrencium",
+        func: () => new UnitNumber(262, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mRf": {
+        name: "Molar mass of Rutherfordium",
+        func: () => new UnitNumber(267, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mDb": {
+        name: "Molar mass of Dubnium",
+        func: () => new UnitNumber(268, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mSg": {
+        name: "Molar mass of Seaborgium",
+        func: () => new UnitNumber(269, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mBh": {
+        name: "Molar mass of Bohrium",
+        func: () => new UnitNumber(270, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mHs": {
+        name: "Molar mass of Hassium",
+        func: () => new UnitNumber(269, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mMt": {
+        name: "Molar mass of Meitnerium",
+        func: () => new UnitNumber(277, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mDs": {
+        name: "Molar mass of Darmstadtium",
+        func: () => new UnitNumber(281, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mRg": {
+        name: "Molar mass of Roentgenium",
+        func: () => new UnitNumber(282, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mCn": {
+        name: "Molar mass of Copernicium",
+        func: () => new UnitNumber(285, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mNh": {
+        name: "Molar mass of Nihonium",
+        func: () => new UnitNumber(286, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mFl": {
+        name: "Molar mass of Flerovium",
+        func: () => new UnitNumber(290, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mMc": {
+        name: "Molar mass of Moscovium",
+        func: () => new UnitNumber(290, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mLv": {
+        name: "Molar mass of Livermorium",
+        func: () => new UnitNumber(293, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mTs": {
+        name: "Molar mass of Tennessine",
+        func: () => new UnitNumber(294, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "mOg": {
+        name: "Molar mass of Oganesson",
+        func: () => new UnitNumber(294, { "gm": 1, "mol": -1 }),
+        schema: [],
+        vars: [],
+        types: []
+    },
+    "conj": {
+        name: "Complex Conjugate",
+        func: (z) => {
+            if (z instanceof ComplexNumber) {
+                return new ComplexNumber(z.re, -z.im)
+            } else if (typeof z === "number") {
+                return z
+            }
+        },
+        schema: [1],
+        vars: ["z"],
+        types: [TN],
+        allow_complex: true
+    },
+    "re": {
+        name: "Real part of complex number",
+        func: (z) => {
+            if (z instanceof ComplexNumber) {
+                return z.re
+            } else if (typeof z === "number") {
+                return z
+            }
+        },
+        schema: [1],
+        vars: ["z"],
+        types: [TN],
+        allow_complex: true
+    },
+    "im": {
+        name: "Imaginary part of complex number",
+        func: (z) => {
+            if (z instanceof ComplexNumber) {
+                return z.im
+            } else if (typeof z === "number") {
+                return 0
+            }
+        },
+        schema: [1],
+        vars: ["z"],
+        types: [TN],
+        allow_complex: true
+    },
 }
 for (let i = 0; i < UNITS.length; i++) {
     OPERATIONS[UNITS[i]] = {
@@ -1728,6 +2581,11 @@ for (let i = 0; i < UNITS.length; i++) {
         schema: [-1],
         vars: ["n"],
         types: [TN]
+    }
+}
+for (const op in OPERATIONS) {
+    if (op.length >= 2 && op[0] === "m" && op[1] === op[1].toUpperCase()) {
+        CONSTANTS.push(op)
     }
 }
 
@@ -1805,7 +2663,7 @@ const HELP = {
         example: "Examples: `g(y) = y^2 * sin(y)`\n  1. Derivative of a function: `diff g`\n  2. Expression of `x`: `diff x^2 * sin(x)`"
     },
     "bal": {
-        name: "Balance chemistry equation",
+        name: "Balance chemical equation",
         schema: [1],
         vars: ["x"],
         types: ["expression"],
@@ -2086,11 +2944,40 @@ function convert_to_unit(n, u1, u2) {
     }
 }
 
+class ComplexNumber {
+    constructor(re, im = 0) {
+        this.re = re
+        this.im = im
+    }
+
+    toString() {
+        let re = set_precision(this.re, calculator ? calculator.digits : 12)
+        let im = set_precision(this.im, calculator ? calculator.digits : 12)
+        if (re === 0) {
+            if (im === 0) {
+                return "0"
+            } else if (im === 1) {
+                return "i"
+            } else if (im === -1) {
+                return "-i"
+            }
+            return `${im}i`
+        }
+        if (im > 0) {
+            return `${re} + ${im === 1 ? "" : im}i`
+        } else if (im < 0) {
+            return `${re} - ${-im === 1 ? "" : -im}i`
+        } else {
+            return `${re}`
+        }
+    }
+}
+
 function get_param_types(params) {
     const type_list = []
     // console.log("get_param_types", params)
     for (const p of params) {
-        if (typeof p === "number" || p instanceof Fraction || p instanceof BaseNumber || p instanceof UnitNumber) {
+        if (typeof p === "number" || p instanceof Fraction || p instanceof BaseNumber || p instanceof UnitNumber || p instanceof ComplexNumber) {
             type_list.push(TN)
         } else if (typeof p === "boolean" || ["true", "false"].includes(p)) {
             type_list.push(TB)
@@ -2180,6 +3067,20 @@ function is_multipliable(token) {
 
 for (const c of CONSTANTS) {
     OPERATIONS[c]["example"] = `Value: \`${OPERATIONS[c].func()}\``
+}
+
+let atomic_number = 0
+for (const op in OPERATIONS) {
+    if (op == "mH") {
+        atomic_number = 1
+    }
+    if (atomic_number !== 0) {
+        OPERATIONS[op]["example"] = OPERATIONS[op]["example"] + `\nAtomic Number: \`${atomic_number}\``
+        atomic_number++
+    }
+    if (op == "mOg") {
+        break
+    }
 }
 
 for (const u in SI_EXPANSIONS) {
