@@ -19,7 +19,7 @@
     background-color: var(--bg-color);
     font-family: inherit;
     color: var(--text);
-    width: 160px;
+    width: 138px;
 }
 
 .grapher-graph {
@@ -78,5 +78,20 @@
 }
 
 .grapher-zoom-button:hover {
+    background-color: var(--bg-light);
+}
+
+.grapher-resize-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-left: 1px solid var(--border);
+    cursor: pointer;
+    transition-duration: 0.2s;
+    width: 20px;
+    user-select: none;
+}
+
+.grapher-resize-button:hover {
     background-color: var(--bg-light);
 }

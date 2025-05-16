@@ -79,20 +79,21 @@ class Calculator {
         }
         // Loop through string
         for (let i = 0; i < expression.length; i++) {
-            if (expression.charAt(i).trim().length === 0) {
+            const e = expression[i]
+            if (e.trim().length === 0) {
                 continue
             }
             let double_symbol = expression.substr(i, 2)
             // Symbol
-            if (!/^[a-zA-Z]$/.test(expression.charAt(i)) && (SYMBOLS.includes(expression.charAt(i)) || SYMBOLS.includes(double_symbol))) {
+            if (!/^[a-zA-Z]$/.test(e) && (SYMBOLS.includes(e) || SYMBOLS.includes(double_symbol))) {
                 if (SYMBOLS.includes(double_symbol)) {
                     tokens.push(double_symbol) 
                     i++
                 } else {
-                    tokens.push(expression.charAt(i))
+                    tokens.push(e)
                 }
             // Number
-            } else if (!isNaN(expression.charAt(i))) {
+            } else if (!isNaN(e)) {
                 if (expression.charAt(i) === "0" && i < expression.length - 1 && ["b", "o", "x"].includes(expression.charAt(i + 1))) {
                     let check
                     const base = expression.charAt(i + 1)
@@ -120,7 +121,7 @@ class Calculator {
                     i += number.length - 1
                 }
             // Letter
-            } else if (/^[a-zA-Z]+$/i.test(expression.charAt(i))) {
+            } else if (/^[a-zA-Z_∞αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ]+$/i.test(e)) {
                 const string = this.peek(expression, i, "string")
                 // Function parameter
                 if (string === "if") {
@@ -180,16 +181,16 @@ class Calculator {
                 } else {
                     return `Unknown string "${string}" at position ${i + 1}`
                 }
-            } else if (expression.charAt(i) === "@") {
+            } else if (e === "@") {
                 const number = this.peek(expression, i + 1, "number")
                 tokens.push(`@${number}`)
                 i += number.length
             // Special characters
-            } else if (["(", ")", "[", "]", ","].includes(expression[i])) {
-                tokens.push(expression[i])
+            } else if (["(", ")", "[", "]", ","].includes(e)) {
+                tokens.push(e)
             // Unknown character
             } else {
-                return `Unknown character "${expression[i]}" at position ${i + 1}`
+                return `Unknown character "${e}" at position ${i + 1}`
             }
         }
         for (let i = 0; i < tokens.length; i++) {
@@ -252,7 +253,7 @@ class Calculator {
                     fail = true
                     break
                 case "string":
-                    fail = !/^[a-zA-Z][a-zA-Z0-9_']*$/i.test(s)
+                    fail = !/^[a-zA-Z_∞αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ][a-zA-Z0-9_'∞αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ]*$/i.test(s)
             }
             if (fail) break
             length++
@@ -266,7 +267,7 @@ class Calculator {
             let [name, value] = expression.split("=").map((x) => x.trim())
             let status = 0
             // Name is alphabetic
-            if (/^[a-zA-Z][a-zA-Z0-9_']*$/i.test(name)) {
+            if (/^[a-zA-Z_αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ][a-zA-Z0-9_'αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ]*$/i.test(name)) {
                 // Name is an operation or keyword
                 if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.functions) {
                     return "Variable assignment error > name taken error"
@@ -291,7 +292,8 @@ class Calculator {
             } else {
                 return "Variable assignment error"
             }
-        } catch (err) {
+        } catch (error) {
+            console.log(err)
             return "Variable assignment error"
         }
     }
@@ -315,7 +317,7 @@ class Calculator {
                 return "Function declaration error > parentheses error"
             }
             const name = expression[0].slice(0, expression[0].indexOf("("))
-            if (!options?.ignore_name && !/^[a-zA-Z][a-zA-Z0-9_']*$/i.test(name)) {
+            if (!options?.ignore_name && !/^[a-zA-Z_αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ][a-zA-Z0-9αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ_']*$/i.test(name)) {
                 return "Function declaration error > name error"
             }
             if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.variables) {
@@ -324,7 +326,7 @@ class Calculator {
             let parameters = expression[0].slice(expression[0].indexOf("(") + 1, expression.indexOf(")")).split(",").map((x) => x.trim())
             if (parameters.length === 1 && parameters[0].length === 0) {
                 parameters = []
-            } else if (!(parameters.filter(e => /^[a-zA-Z][a-zA-Z0-9_]*$/i.test(e)).length === parameters.length && 
+            } else if (!(parameters.filter(e => /^[a-zA-Z_αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ][a-zA-Z0-9αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ_']*$/i.test(e)).length === parameters.length && 
                 (new Set(parameters)).size === parameters.length
             )) {
                 return "Function declaration error > invalid parameters"

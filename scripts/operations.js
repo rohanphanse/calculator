@@ -114,7 +114,7 @@ const CONSTANTS = ["pi", "e", "phi", "inf", "true", "false", "hh", "cc", "qe", "
 const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not", "mod", "si"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
 const ANGLE_INVERSE_FUNCTIONS = ["arcsin", "arccos", "arctan"]
-const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else", "trace", "plot", "bal"]
+const KEYWORDS = ["ans", "clear", "help", "save", "if", "then", "else", "trace", "plot", "bal", "as"]
 const LIST_OPERATIONS = ["mean", "median", "sd", "sort", "sum", "len", "max", "min", "concat", "zeros"]
 
 // Types
@@ -135,7 +135,7 @@ const OPERATIONS = {
     "+": {
         name: "Addition",
         func: (a, b) => {
-            param_types = get_param_types([a, b]) 
+            const param_types = get_param_types([a, b]) 
             if (param_types[0] == TN && param_types[1] == TN) {
                 if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
                     if (!(a instanceof ComplexNumber) && typeof a !== "number") {
@@ -212,7 +212,7 @@ const OPERATIONS = {
     "-": {
         name: "Subtraction",
         func: (a, b) => {
-            param_types = get_param_types([a, b])
+            const param_types = get_param_types([a, b])
             if (param_types[0] == TN && param_types[1] == TN) {
                 if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
                     if (!(a instanceof ComplexNumber) && typeof a !== "number") {
@@ -288,7 +288,7 @@ const OPERATIONS = {
     "neg": {
         name: "Negation",
         func: (n) => {
-            param_type = get_param_types([n])[0]
+            const param_type = get_param_types([n])[0]
             if (param_type == TN) {
                 if (n instanceof ComplexNumber) {
                     return new ComplexNumber(-n.re, -n.im)
@@ -298,8 +298,8 @@ const OPERATIONS = {
                     return copy
                 }
                 return -n
-            } else if (param_type.startsWith("list")) {
-                return add_tensors(n, n, -1, 0)
+            } else if (param_type.startsWith("list") && param_type.includes("number")) {
+                return scalar_multiply(n, -1)
             } else {
                 return "Invalid types"
             }
@@ -313,7 +313,7 @@ const OPERATIONS = {
     "*": {
         name: "Multiplication",
         func: (a, b) => {
-            param_types = get_param_types([a, b])
+            const param_types = get_param_types([a, b])
             if (param_types[0] == TN && param_types[1] == TN) {
                 if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
                     if (!(a instanceof ComplexNumber) && typeof a !== "number") {
@@ -351,7 +351,7 @@ const OPERATIONS = {
                     }
                 }
                 return a * b
-            } else if (param_types[0] == TL(TN) && param_types[1] == TL(TN)) {
+            } else if (param_types[0] == TL(TN) && param_types[1] === TL(TN)) {
                 if (a.length !== b.length) {
                     return "Dot product error > vectors must be the same size"
                 }
@@ -372,22 +372,26 @@ const OPERATIONS = {
                 return new UnitNumber(a, { [b.op]: 1 })
             } else if (typeof b === "number" && a instanceof Operation && UNITS.includes(a.op)) {
                 return new UnitNumber(b, { [a.op]: 1 })
-            } else if (param_types[0] == TL(TL(TN)) && param_types[1] == TL(TL(TN))) {
+            } else if (param_types[0] === TL(TL(TN)) && param_types[1] === TL(TL(TN))) {
                 return matmul(a, b)
-            } else if (param_types[0] == TN && param_types[1] == TL(TL(TN))) {
+            } else if (param_types[0] === TN && param_types[1] === TL(TL(TN))) {
                 return matmul_scalar(b, a)
-            } else if (param_types[1] == TN && param_types[0] == TL(TL(TN))) {
+            } else if (param_types[1] === TN && param_types[0] === TL(TL(TN))) {
                 return matmul_scalar(a, b)
-            } else if (param_types[0] == TN && param_types[1] == TL(TN)) {
+            } else if (param_types[0] === TN && param_types[1] === TL(TN)) {
                 return matmul_scalar([b], a)[0]
-            } else if (param_types[1] == TN && param_types[0] == TL(TN)) {
+            } else if (param_types[1] === TN && param_types[0] === TL(TN)) {
                 return matmul_scalar([a], b)[0]
+            } else if (param_types[0] === TN && param_types[1].startsWith("list") && param_types[1].includes("number")) {
+                return scalar_multiply(b, a)
+            } else if (param_types[1] === TN && param_types[0].startsWith("list") && param_types[0].includes("number")) {
+                return scalar_multiply(a, b)
             }
             return "Invalid types"
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TOR(TOR(TN, TOR(TL(TN), TL(TL(TN)))), TU), TOR(TOR(TN, TOR(TL(TN), TL(TL(TN)))), TU)],
+        types: [TOR(TOR(TN, TL(TA)), TU), TOR(TOR(TN, TL(TA)), TU)],
         example: "Examples:\n  1. Multiply numbers: \`2 * 2 -> 4\`\n  2. Dot product: \`[1, 2] * [3, 4] -> 11\`\n  3. Matrix multiplication:\n     \`[[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]\`",
         allow_fractions: true,
         allow_units: true,
@@ -396,8 +400,13 @@ const OPERATIONS = {
     "/": {
         name: "Division",
         func: (a, b) => {
-            // z₁ / z₂ = ((ac + bd) / (c² + d²)) + ((bc - ad) / (c² + d²)) i
-            if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
+            const param_types = get_param_types([a, b])
+            if (typeof b === "number" && b === 0) {
+                return "Divide by zero error"
+            }
+            if (typeof a === "number" && typeof b === "number") {
+                return a / b
+            } else if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
                 if (!(a instanceof ComplexNumber) && typeof a !== "number") {
                     a = a.value()
                 }
@@ -456,12 +465,14 @@ const OPERATIONS = {
                 } else {
                     return new UnitNumber(a.value(), UnitNumber.divide_units({}, { [b.op]: 1 }))
                 }
+            } else if (param_types[0].startsWith("list") && param_types[0].includes("number")) {
+                return scalar_multiply(a, 1 / b)
             }
-            return a / b
+            return "Invalid units"
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TOR(TN, TU), TOR(TN, TU)],
+        types: [TOR(TOR(TN, TL(TA)), TU), TOR(TN, TU)],
         allow_fractions: true,
         allow_units: true,
         allow_complex: true
@@ -2569,6 +2580,30 @@ const OPERATIONS = {
         types: [TN],
         allow_complex: true
     },
+    "eigen": {
+        name: "Get eigenvalues and eigenvectors",
+        func: (A) => {
+            let { eigenvalues, eigenvectors } = eigen(A)
+            for (let i = 0; i < eigenvalues.length; i++) {
+                calculator.calculate(`λ${i + 1} = ${eigenvalues[i]}`)
+                calculator.calculate(`v${i + 1} = tran([${(eigenvectors[i].map(v => round(v, 12)).join(", "))}])`)
+            }
+            let output = "Declared: "
+            for (let i = 0; i < eigenvalues.length; i++) {
+                const lambda = eigenvalues[i]
+                const vector = eigenvectors[i]
+                output += `\`λ${i + 1} = ${round(lambda, 6)}\`, `
+                output += `\`v${i + 1} = [${vector.map(v => round(v, 6)).join(", ")}]\``
+                if (i < eigenvalues.length - 1) {
+                    output += "\n"
+                }
+            }
+            return new String(output)
+        },
+        schema: [1],
+        vars: ["A"],
+        types: [TL(TL(TN))],
+    }
 }
 for (let i = 0; i < UNITS.length; i++) {
     OPERATIONS[UNITS[i]] = {
@@ -2670,7 +2705,15 @@ const HELP = {
         example: "Example: \`bal Ca(OH)2 + HCl = CaCl2 + H2O\`\nOutput: `\
 Ca(OH)2 + 2HCl → CaCl2 + 2H2O\`"
     },
+    "lim": {
+        name: "Limit",
+        schema: [1],
+        vars: ["x"],
+        types: ["expression"],
+        example: "Tip: Use the '\\to' macro to type '→'\nExamples:\n  1. `lim sin(y)/y as y → 0`\n     Output: `1`\n  2. `lim -1/abs(x) as x → 0`\n     Output: `-Infinity`"
+    },
 }
+
 
 // Determine if string is name of math function 
 // Math function - in OPERATIONS but not a symbol
@@ -3086,3 +3129,56 @@ for (const op in OPERATIONS) {
 for (const u in SI_EXPANSIONS) {
     OPERATIONS[u]["example"] = `SI: \`${u} = ${new UnitNumber(1, SI_EXPANSIONS[u])}\``
 }
+
+const SPECIAL_CHAR_MAP = {
+    "\\a": ["α", "Alpha"],
+    "\\b": ["β", "Beta"],
+    "\\g": ["γ", "Gamma"],
+    "\\G": ["Γ", "Uppercase Gamma"],
+    "\\d": ["δ", "Delta"],
+    "\\D": ["Δ", "Uppercase Delta"],
+    "\\e": ["ϵ", "Epsilon"],
+    "\\h": ["η", "Eta"],
+    "\\z": ["ζ", "Zeta"],
+    "\\th": ["θ", "Theta"],
+    "\\Th": ["Θ", "Uppercase Theta"],
+    "\\io": ["ι", "Iota"],
+    "\\k": ["κ", "Kappa"],
+    "\\l": ["λ", "Lambda"],
+    "\\L": ["Λ", "Uppercase Lambda"],
+    "\\m": ["μ", "Mu"],
+    "\\n": ["ν", "Nu"],
+    "\\x": ["ξ", "Xi"],
+    "\\X": ["Ξ", "Uppercase Xi"],
+    "\\pi": ["π", "Pi"],  
+    "\\Pi": ["Π", "Uppercase Pi"],
+    "\\r": ["ρ", "Rho"],
+    "\\s": ["σ", "Sigma"],
+    "\\S": ["Σ", "Uppercase Sigma"],
+    "\\tau": ["τ", "Tau"],
+    "\\u": ["υ", "Upsilon"],
+    "\\phi": ["ϕ", "Phi"],
+    "\\Phi": ["Φ", "Uppercase Phi"],
+    "\\c": ["χ", "Chi"],
+    "\\psi": ["ψ", "Psi"],
+    "\\Psi": ["Ψ", "Uppercase Psi"],
+    "\\o": ["ω", "Omega"],
+    "\\O": ["Ω", "Uppercase Omega"],
+    "\\to": ["→", "Arrow"],
+    "\\inf": ["∞", "Infinity"]
+}
+const SPECIAL_CHAR_REGEX = new RegExp(
+    Object.keys(SPECIAL_CHAR_MAP)
+    .map((k) => k.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"))
+    .join("|"), "g"
+)
+
+for (const key in SPECIAL_CHAR_MAP) {
+    HELP[key] = {
+        name: SPECIAL_CHAR_MAP[key][1],
+        schema: [],
+        vars: [],
+        types: [],
+        example: `Value: \`${SPECIAL_CHAR_MAP[key][0]}\``
+    }
+} 

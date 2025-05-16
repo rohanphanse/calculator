@@ -11,10 +11,12 @@ class Grapher {
         this.input = document.getElementById(`${this.parent.id}-input`)
         this.zoomOutButton = document.getElementById(`${this.parent.id}-zoom-out-button`)
         this.zoomInButton = document.getElementById(`${this.parent.id}-zoom-in-button`)
+        this.resizeButton = document.getElementById(`${this.parent.id}-resize-button`)
         this.posXMarker = document.getElementById(`${this.parent.id}-pos-x-marker`)
         this.negXMarker = document.getElementById(`${this.parent.id}-neg-x-marker`)
         this.posYMarker = document.getElementById(`${this.parent.id}-pos-y-marker`)
         this.negYMarker = document.getElementById(`${this.parent.id}-neg-y-marker`)
+        this.graph = this.parent.getElementsByClassName("grapher-graph")[0]
         // Canvas
         this.canvas = document.getElementById(`${this.parent.id}-canvas`)
         this.ctx = this.canvas.getContext("2d")
@@ -49,8 +51,6 @@ class Grapher {
     create() {
         // Parent
         this.parent.className = "grapher"
-        this.parent.style.height = `${this.height}px`
-        this.parent.style.width = `${this.width}px`
         // Bar
         const bar = document.createElement("div")
         bar.className = "grapher-bar"
@@ -68,6 +68,10 @@ class Grapher {
         zoomOutButton.id = `${this.parent.id}-zoom-out-button`
         zoomOutButton.className = "grapher-zoom-button"
         zoomOutButton.innerText = "-"
+        const resizeButton = document.createElement("div")
+        resizeButton.id = `${this.parent.id}-resize-button`
+        resizeButton.className = "grapher-resize-button"
+        resizeButton.innerText = "↔"
         // Graph
         const graph = document.createElement("div")
         graph.className = "grapher-graph"
@@ -96,6 +100,7 @@ class Grapher {
         bar.append(input)
         bar.append(zoomInButton)
         bar.append(zoomOutButton)
+        bar.append(resizeButton)
         graph.append(canvas)
         graph.append(posXMarker)
         graph.append(negXMarker)
@@ -178,8 +183,16 @@ class Grapher {
                 }
             }
         }]
+        this.resizeButtonListener = ["click", () => {
+            if (this.graph.style.width === "200px") {
+                this.updateSize({ height: 350, width: 350 })
+            } else {
+                this.updateSize({ height: 200, width: 200 })
+            }
+        }]
         this.zoomOutButton.addEventListener(...this.zoomOutButtonListener)
         this.zoomInButton.addEventListener(...this.zoomInButtonListener)
+        this.resizeButton.addEventListener(...this.resizeButtonListener)
         this.input.addEventListener(...this.inputListener)
         document.body.addEventListener(...this.keyListener)
     }
@@ -187,6 +200,7 @@ class Grapher {
     removeListeners() {
         this.zoomOutButton.removeEventListener(...this.zoomOutButtonListener)
         this.zoomInButton.removeEventListener(...this.zoomInButtonListener)
+        this.resizeButton.removeEventListener(...this.resizeButtonListener)
         this.input.removeEventListener(...this.inputListener)
         document.body.removeEventListener(...this.keyListener)
     }
@@ -632,8 +646,8 @@ class Grapher {
             pos = { x: event.clientX, y: event.clientY }
             const x_range = this.x_range.max - this.x_range.min
             const y_range = this.y_range.max - this.y_range.min
-            const delta_x = -dx * x_range / this.width
-            const delta_y = dy * y_range / this.height
+            const delta_x = -dx * x_range / 200
+            const delta_y = dy * y_range / 200
             this.x_range.min += delta_x
             this.x_range.max += delta_x
             this.y_range.min += delta_y
@@ -729,5 +743,24 @@ class Grapher {
                 x += step
             }
         }
+    }
+
+    updateSize(size) {
+        this.width = size.width || this.width
+        this.height = size.height || this.height
+        const dpr = window.devicePixelRatio || 1
+        this.canvas.width = this.width * dpr
+        this.canvas.height = this.height * dpr
+        this.graph.style.width = `${this.width}px`
+        this.graph.style.height = `${this.height}px`
+        this.canvas.style.width = `${this.width}px`
+        this.canvas.style.height = `${this.height}px`
+        this.input.style.width = `${this.width - 62}px`
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0)
+        this.ctx.scale(dpr, dpr)
+        this.slope_intervals = { x: this.width / this.field_intervals, y: this.height / this.field_intervals }
+        this.vector_intervals = { x: this.width / this.field_intervals, y: this.height / this.field_intervals }
+        this.drawGraphs()
+        this.updateAxisMarkers()
     }
 }

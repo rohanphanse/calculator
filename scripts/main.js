@@ -32,6 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const sideBarInputTag = document.getElementById("side-bar-input-tag")
     const molarMassToggle = document.getElementById("molar-mass-toggle")
     const molarMassList = document.getElementById("molar-mass-list")
+    const specialCharToggle = document.getElementById("special-char-toggle")
+    const specialCharList = document.getElementById("special-char-list")
+
  
     // States
     let UPDATE_DIGITS = false
@@ -46,6 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 0)
     }
     let molar_mass_expanded = false
+    let special_char_expanded = false
     let theme = localStorage.getItem("theme") || "light"
     if (theme === "dark") {
         document.documentElement.classList.add("disable-transitions")
@@ -132,6 +136,11 @@ document.addEventListener("DOMContentLoaded", () => {
         molarMassList.style.height = molar_mass_expanded ? "448px" : "67px"
         molarMassToggle.innerText = molar_mass_expanded ? "Show Less" : "Show More"
     })
+    specialCharToggle.addEventListener("click", () => {
+        special_char_expanded = !special_char_expanded
+        specialCharList.style.height = special_char_expanded ? "202px" : "67px"
+        specialCharToggle.innerText = special_char_expanded ? "Show Less" : "Show More"
+    })
 
     // Click event listener on document for handling digits input value
     document.addEventListener("click", (event) => {
@@ -157,12 +166,9 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 t += " "
             }
-            if (u.length === 0) {
-                if (t.startsWith("units")) {
-                    userInput.textContent = `${t}`
-                } else {
-                    userInput.textContent = `help ${t.replaceAll("()", "")}`
-                }
+            const op = t.trim().replaceAll("()", "")
+            if (u.length === 0 && (op in OPERATIONS || op in HELP)) {
+                userInput.textContent = `help ${op}`
                 highlightSyntax(userInput)
                 userInput.dispatchEvent(new KeyboardEvent("keydown", {
                     key: "Enter",
@@ -173,6 +179,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     cancelable: true
                 }))
             } else {
+                if (t.trim().startsWith("\\")) {
+                    t = SPECIAL_CHAR_MAP[t.trim()][0] + " "
+                    length = 2
+                }
                 userInput.textContent = `${u.slice(0, index)}${t}${u.slice(index, u.length)}`
                 highlightSyntax(userInput)
                 setCursorPosition(userInput, index + length)
@@ -300,6 +310,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // Auto fill answer
     function ansAutoFill(event) {
         let user_input = userInput.innerText
+        if (user_input.includes("\\") && !user_input.includes("help")) {
+            const pos = getCursorPosition(userInput)
+            let offset = -1
+            user_input = user_input.replace(SPECIAL_CHAR_REGEX, (match, _offset) => {       
+                offset = _offset     
+                return SPECIAL_CHAR_MAP[match][0]
+            })
+            if (offset !== -1) {
+                userInput.innerText = user_input
+                highlightSyntax(userInput)
+                setCursorPosition(userInput, offset + 1)
+            }
+        }
         // Autocomplete
         userInputAutocomplete.innerText = ""
         highlightSyntax(userInput)
@@ -532,6 +555,71 @@ document.addEventListener("DOMContentLoaded", () => {
                     } catch (error) {
                         if (!output) {
                             output = "Differentiation error"
+                        }
+                    }
+                } else if (user_input.startsWith("lim")) {
+                    try {
+                        if (!user_input.includes(" as ") || !user_input.includes("→")) {
+                            throw "Error"
+                        }
+                        let content = user_input.slice(user_input.indexOf("lim") + "lim".length).trim()
+                        let expr = content.slice(0, content.indexOf("as")).trim()
+                        let rest = content.slice(content.indexOf("as") + 2).trim()
+                        let x = rest.slice(0, rest.indexOf("→")).trim()
+                        let a = rest.slice(rest.indexOf("→") + 1).trim()
+                        calculator.calculate(`lim(${x}) = ${expr}`)
+                        let direct = calculator.calculate(`lim(${a})`)
+                        if (isFinite(direct)) {
+                            output = direct
+                        } else {
+                            const max_steps = 20
+                            let eps = 1e-3
+                            let prev = NaN
+                            const tol = 1e-12
+                            const history = []
+                            let success = false
+                            for (let i = 0; i < max_steps; i++) {
+                                let left = calculator.calculate(`lim(${a - eps})`)
+                                let right = calculator.calculate(`lim(${a + eps})`)
+                                if (isFinite(left) && isFinite(right)) {
+                                    let current = (left + right) / 2
+                                    history.push(current)
+                                    if (history.length >= 4) {
+                                        let signs = history.map(Math.sign)
+                                        let mags = history.map(Math.abs)
+                                        let increasing = mags.every((v, i, arr) => i === 0 || v > arr[i - 1] * 1.5)
+                                        if (increasing && signs.every(s => s > 0)) {
+                                            output = Infinity
+                                            success = true
+                                            break
+                                        }
+                                        if (increasing && signs.every(s => s < 0)) {
+                                            output = -Infinity
+                                            success = true
+                                            break
+                                        }
+                                    }
+                                    console.log(i, current)
+                                    if (isFinite(prev) && Math.abs(current - prev) < tol) {
+                                        output = current
+                                        success = true
+                                        break
+                                    } 
+                                    prev = current
+                                }
+                                eps /= 2
+                            }
+                            if (!success) {
+                                output = "Could not find limit"
+                            } else {
+                                calculator.ans = output
+                            }
+                            
+                        }
+                    } catch (error) {
+                        console.log(error)
+                        if (!output) {
+                            output = "Limit error"
                         }
                     }
                 } else if (user_input.startsWith("bal")) {

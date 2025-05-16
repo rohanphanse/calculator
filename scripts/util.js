@@ -1072,7 +1072,7 @@ function tree_to_string(node) {
 function highlightSyntax(element, backticks_mode = false, highlight_types = false) {
     const cursor_position = getCursorPosition(element)
     let text = element.innerHTML.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
-    const keywords = ["if", "then", "else", "save", "help", "clear", "trace", "to", "plot", "diff", "bal"]
+    const keywords = ["if", "then", "else", "save", "help", "clear", "trace", "to", "plot", "diff", "bal", "lim", "as"]
     const types = ["number", "list", "string", "any", "function", "optional", "variable", "unit", "expression"]
     const process_line = (text) => {
         const matches = []
@@ -1153,7 +1153,7 @@ function highlightSyntax(element, backticks_mode = false, highlight_types = fals
             }
         }
         // Handle words
-        const word_regex = /(^|\s|>|\(|\[|,|[-+*/%^=:.()])([a-zA-Z_][a-zA-Z0-9_]*)(?![^<]*>)/g
+        const word_regex = /(^|\s|>|\(|\[|,|[-+*/%^=:.()])([a-zA-Z∞αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ_][a-zA-Z0-9∞αγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ_]*)(?![^<]*>)/g
         while ((match = word_regex.exec(text)) !== null) {
             const prefix = match[1]
             const word = match[2]
@@ -1287,4 +1287,153 @@ function find_node_and_offset_position(root_node, target_position) {
         return null
     }
     return find_position(root_node)
+}
+
+function eigen(M) {
+    if (!is_square_matrix(M)) {
+        return "Input must be a square matrix"
+    }
+    const n = M.length
+    if (n === 2) {
+        return eigen_2x2(M)
+    }
+    return eigen_qr_method(M)
+}
+
+function is_square_matrix(M) {
+    const n = M.length
+    if (!Array.isArray(M)) return false
+    for (let i = 0; i < n; i++) {
+        if (!Array.isArray(M[i]) || M[i].length !== n) {
+            return false
+        }
+    }
+    return true
+}
+
+function eigen_2x2(M) {
+    const a = M[0][0]
+    const b = M[0][1]
+    const c = M[1][0]
+    const d = M[1][1]
+    const trace = a + d
+    const det = a * d - b * c
+    const discriminant = Math.sqrt(trace * trace - 4 * det)
+    const lambda1 = (trace + discriminant) / 2
+    const lambda2 = (trace - discriminant) / 2
+    let v1, v2
+    if (b !== 0) {
+        v1 = [b, lambda1 - a]
+    } else if (c !== 0) {
+        v1 = [lambda1 - d, c]
+    } else {
+        v1 = [1, 0]
+    }
+    if (b !== 0) {
+        v2 = [b, lambda2 - a]
+    } else if (c !== 0) {
+        v2 = [lambda2 - d, c]
+    } else {
+        v2 = [0, 1]
+    }
+    v1 = normalize(v1)
+    v2 = normalize(v2)
+    return {
+        eigenvalues: [lambda1, lambda2],
+        eigenvectors: [v1, v2]
+    }
+}
+
+function normalize(v) {
+    const magnitude = Math.sqrt(v.reduce((sum, val) => sum + val * val, 0))
+    return v.map(component => component / magnitude)
+}
+
+function eigen_qr_method(M) {
+    let A = M.map(row => [...row])
+    const n = A.length
+    let eigenvectors = Array(n).fill().map((_, i) => 
+        Array(n).fill().map((_, j) => i === j ? 1 : 0)
+    )
+    const max_iterations = 100
+    const tolerance = 1e-10
+    for (let iter = 0; iter < max_iterations; iter++) {
+        const {Q, R} = qr_decomposition(A)
+        A = matmul(R, Q)
+        eigenvectors = matmul(eigenvectors, Q)
+        if (is_triangular(A, tolerance)) {
+            break
+        }
+    }
+    const eigenvalues = A.map((row, i) => row[i])
+    const result = {
+        eigenvalues: eigenvalues,
+        eigenvectors: transpose_matrix(eigenvectors)
+    }
+    return result
+}
+
+function is_triangular(M, tolerance) {
+    const n = M.length
+    for (let i = 1; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+            if (Math.abs(M[i][j]) > tolerance) {
+                return false
+            }
+        }
+    }
+    return true
+}
+
+function transpose_matrix(M) {
+    const R = M.length
+    const C = M[0].length
+    const T = Array(C).fill().map(() => Array(R).fill(0))
+    for (let i = 0; i < R; i++) {
+        for (let j = 0; j < C; j++) {
+            T[j][i] = M[i][j]
+        }
+    }
+    
+    return T
+}
+
+function qr_decomposition(A) {
+    const tol = 1e-10
+    const m = A.length
+    const n = A[0].length
+    const cols = Array(n).fill().map((_, j) => 
+        Array(m).fill().map((_, i) => A[i][j])
+    )
+    const q = Array(n).fill().map(() => Array(m).fill(0))
+    const R = Array(n).fill().map(() => Array(n).fill(0))
+    for (let j = 0; j < n; j++) {
+        let v = [...cols[j]]
+        for (let i = 0; i < j; i++) {
+            R[i][j] = dot_product(q[i], cols[j])
+            
+            v = add_tensors(v, scalar_multiply(q[i], R[i][j]), -1)
+        }
+        R[j][j] = Math.sqrt(dot_product(v, v))
+        if (Math.abs(R[j][j]) > tol) {
+            q[j] = scalar_multiply(v, 1 / R[j][j])
+        } else {
+            q[j] = v
+        }
+    }
+    const Q = Array(m).fill().map(() => Array(n).fill(0))
+    for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+            Q[i][j] = q[j][i]
+        }
+    }
+    return {Q, R}
+}
+
+function dot_product(a, b) {
+    return a.reduce((sum, val, i) => sum + val * b[i], 0)
+}
+
+function scalar_multiply(T, scalar) {
+    return add_tensors(T, T, 0, scalar)
 }
