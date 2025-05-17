@@ -6,21 +6,30 @@ My goal for this project was to create a web calculator that offered standard ca
 
 As a challenge to myself, I decided not to use any external libraries. The entire calculator including the parser, evaluation engine, and UI was implemented with a few thousand lines of JavaScript code!
 
-**Math features:** linear algebra (e.g. `rref` and `eigen`), calculus (e.g. `diff` and `lim`), complex numbers, polynomial root solvers, 2D graphing with `plot`, 3D graphing with `plot3` 
+**Math Features:** linear algebra (e.g. `rref` and `eigen`), calculus (e.g. `diff` and `lim`), complex numbers, polynomial root solvers, 2D graphing with `plot`, 3D graphing with `plot3` 
 
-**Physics and Chemistry features:** physical units and constants, molar masses, balance chemical equations with `bal`
+**Physics and Chemistry Features:** physical units and constants, molar masses, `bal`ance chemical equations
 
-**Functional programming features:** variables, regular and anonymous `@` functions, `map` and `filter`, type checking, lambda capture, currying, conditional logic, `trace` function calls
+**Functional Programming Features:** variables, regular and anonymous `@` functions, `map` and `filter`, type checking, lambda capture, currying, conditional logic, `trace` function calls
 
-**Terminal features:** arrow keys move through history, `help` documentation, syntax highlighting, autocomplete
+**Terminal Features:** arrow keys move through history, `help` documentation, syntax highlighting, autocomplete
 
-**Additional features:** locally save variables and functions, unit and base conversions
+**Additional Features:** locally save variables and functions, unit and base conversions
+## Demo
 
 **Link to demo: <a href = "https://rohanphanse.github.io/calculator/">https://rohanphanse.github.io/calculator</a>**
 
-## Demo
+### Variables, functions, `save`, `diff`, and `lim`
+![demo 1](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_1.png) 
 
-Light Mode             |  Dark Mode
-:-------------------------:|:-------------------------:
-![](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_1.png)  |  ![](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_2.png)
+### 2D Graphing with `plot`
+![demo 2](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_2.png) 
 
+### Dark mode and `help plot`
+![demo dark mode](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_dark_mode.png) 
+
+### 3D Graphing with `plot3` 
+![demo 3](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_3.png) 
+
+### Fractions, unit and base conversions, linear algebra
+![demo 4](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_4.png) 

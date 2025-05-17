@@ -405,6 +405,9 @@ const OPERATIONS = {
                 return "Divide by zero error"
             }
             if (typeof a === "number" && typeof b === "number") {
+                if (Number.isInteger(a) && Number.isInteger(b)) {
+                    return new Fraction(a, b)
+                }
                 return a / b
             } else if (a instanceof ComplexNumber || b instanceof ComplexNumber) {
                 if (!(a instanceof ComplexNumber) && typeof a !== "number") {
@@ -426,8 +429,6 @@ const OPERATIONS = {
                     }
                     return new ComplexNumber(a.re / b, a.im / b)
                 }
-            } else if (Number.isInteger(a) && Number.isInteger(b)) {
-                return new Fraction(a, b)
             } else if (a instanceof Fraction && b instanceof Fraction) {
                 return new Fraction(a.n * b.d, a.d * b.n)
             } else if (a instanceof Fraction && Number.isInteger(b)) {

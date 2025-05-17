@@ -525,7 +525,7 @@ class Calculator {
 
     // Evaluate numerical result from tokens
     evaluate(tokens, options = {}) {
-        // console.log("evaluate", JSON.stringify(tokens), options)
+        console.log("evaluate", JSON.stringify(tokens), options)
         this.overflow_count++
         if (this.overflow_count > this.overflow_max) {
             return "Overflow error: too many function calls"
