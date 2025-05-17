@@ -1,5 +1,7 @@
 # The Functional Calculator
 
+**Link to calculator: <a href = "https://rohanphanse.github.io/calculator/">https://rohanphanse.github.io/calculator</a>**
+
 An intuitive and easy-to-use web calculator with the power of functional programming languages and the terminal!
 
 My goal for this project was to create a web calculator that offered standard calculator functions as well as more powerful features from programming languages through a simple and accessible syntax.
@@ -15,9 +17,8 @@ As a challenge to myself, I decided not to use any external libraries. The entir
 **Terminal Features:** arrow keys move through history, `help` documentation, syntax highlighting, autocomplete
 
 **Additional Features:** locally save variables and functions, unit and base conversions
-## Demo
 
-**Link to demo: <a href = "https://rohanphanse.github.io/calculator/">https://rohanphanse.github.io/calculator</a>**
+## Demo
 
 ### Variables, functions, `save`, `quad`, `diff`, and `lim`
 ![demo 1](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_1.png) 
