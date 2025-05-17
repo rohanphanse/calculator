@@ -19,13 +19,13 @@ As a challenge to myself, I decided not to use any external libraries. The entir
 
 **Link to demo: <a href = "https://rohanphanse.github.io/calculator/">https://rohanphanse.github.io/calculator</a>**
 
-### Variables, functions, `save`, `diff`, and `lim`
+### Variables, functions, `save`, `quad`, `diff`, and `lim`
 ![demo 1](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_1.png) 
 
 ### 2D Graphing with `plot`
 ![demo 2](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_2.png) 
 
-### Dark mode and `help plot`
+### Dark mode and `help plot` graphing tutorial
 ![demo dark mode](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_dark_mode.png) 
 
 ### 3D Graphing with `plot3` 
@@ -33,3 +33,10 @@ As a challenge to myself, I decided not to use any external libraries. The entir
 
 ### Fractions, unit and base conversions, linear algebra
 ![demo 4](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_4.png) 
+
+### Functional programming features like lambda capture and currying
+![demo 5](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_5.png) 
+
+### Physics and chemistry features like balancing chemical equations and symbolic unit computations
+![demo 6](https://raw.githubusercontent.com/rohanphanse/calculator/refs/heads/main/images/demo_6.png) 
+
