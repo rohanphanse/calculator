@@ -660,7 +660,6 @@ function balance_chemical_equation(equation, max_coefficient = 20) {
         const right_side = products.map((c, i) => (coeffs[reactants.length + i] !== 1 ? coeffs[reactants.length + i] : "") + c.raw).join(" + ")
         return `${left_side} → ${right_side}`
     } catch (error) {
-        console.log(error)
         return "Balance chemical equation error"
     }
 }
@@ -1072,7 +1071,7 @@ function tree_to_string(node) {
 function highlightSyntax(element, backticks_mode = false, highlight_types = false) {
     const cursor_position = getCursorPosition(element)
     let text = element.innerHTML.replace(/<span class="highlight-(?:number|word|keyword)">([^<]*)<\/span>/g, "$1")
-    const keywords = ["if", "then", "else", "save", "help", "clear", "trace", "to", "plot", "diff", "bal", "lim", "as"]
+    const keywords = ["if", "then", "else", "save", "help", "clear", "trace", "to", "plot", "diff", "bal", "lim", "as", "plot3"]
     const types = ["number", "list", "string", "any", "function", "optional", "variable", "unit", "expression"]
     const process_line = (text) => {
         const matches = []

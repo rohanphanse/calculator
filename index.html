@@ -5,11 +5,13 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width">
 	<title>Calculator</title>
+    <script src="scripts/gl-matrix.js"></script>
     <link href = "styles/main.css" rel = "stylesheet" type = "text/css" />
     <link href = "styles/grapher.css" rel = "stylesheet" type = "text/css" />
     <script src = "scripts/util.js"></script>
     <script src = "scripts/operations.js"></script>
     <script src = "scripts/calculator.js"></script>
+    <script src = "scripts/grapher3d.js"></script>
     <script src = "scripts/grapher.js"></script>
     <script src = "scripts/main.js"></script>
 </head>
@@ -93,9 +95,10 @@
                 <li>Last result: <span data-text = "ans" class = "command">ans</span></li>
                 <li>Usage help: <span data-text = "help" class = "command">help</span></li>
                 <li>Debug trace: <span data-text = "trace" class = "command">trace</span></li>
-                <li>Plot graphs: <span data-text = "plot" class = "command">plot</span></li>
+                <li>Plot 2D graphs: <span data-text = "plot" class = "command">plot</span></li>
+                <li>Plot 3D graphs: <span data-text = "plot3" class = "command">plot3</span></li>
                 <li>Differentiation: <span data-text = "diff" class = "command">diff</span></li>
-                <li>Limit: <span data-text = "lim" class = "command">lim</span></li>
+                <li>Numerical Limit: <span data-text = "lim" class = "command">lim</span></li>
             </ul>
             <pre>
 `diff x^2 * sin(x)`

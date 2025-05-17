@@ -125,8 +125,13 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             document.documentElement.classList.remove("disable-transitions")
         }, 0)
-        localStorage.setItem("theme", theme === "light" ? "dark" : "light")
+        theme = theme === "light" ? "dark" : "light"
+        localStorage.setItem("theme", theme)
+        console.log("themeButton click theme", theme)
         for (const graph of graphs) {
+            if (graph instanceof Grapher3D) {
+                graph.theme = theme
+            }
             graph.drawGraphs()
         }
     })
@@ -599,7 +604,6 @@ document.addEventListener("DOMContentLoaded", () => {
                                             break
                                         }
                                     }
-                                    console.log(i, current)
                                     if (isFinite(prev) && Math.abs(current - prev) < tol) {
                                         output = current
                                         success = true
@@ -617,7 +621,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             
                         }
                     } catch (error) {
-                        console.log(error)
                         if (!output) {
                             output = "Limit error"
                         }
@@ -630,7 +633,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             output = `\`${output}\``
                         }
                     } catch (error) {
-                        console.log(error)
                         if (!output) {
                             output = "Balance chemistry equation error"
                         }
@@ -657,7 +659,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Result
                 let result
                 if (!skip_result) {
-                    if (user_input.startsWith("plot")) {
+                    if (user_input.startsWith("plot3")) {
+                        result = document.createElement("div")
+                        result.className = "result-graph"
+                        const expr = user_input.slice(user_input.indexOf("plot3") + "plot3".length).trim()
+                        const graph_parent = document.createElement("div")
+                        graph_parent.id = `graph-${graph_id}`
+                        graph_id++
+                        result.append(graph_parent)
+                        requestAnimationFrame(() => {
+                            const graph = new Grapher3D({
+                                parent: graph_parent,
+                                height: 200,
+                                width: 200,
+                                theme: theme
+                            })
+                            graphs.push(graph)
+                            graph.setInput(expr)
+                        })
+                    } else if (user_input.startsWith("plot")) {
                         result = document.createElement("div")
                         result.className = "result-graph"
                         const expr = user_input.slice(user_input.indexOf("plot") + "plot".length).trim()
@@ -673,6 +693,32 @@ document.addEventListener("DOMContentLoaded", () => {
                             })
                             graphs.push(graph)
                             graph.setInput(expr)
+                        })
+                    } else if (user_input === "help plot3") {
+                        result = document.createElement("div")
+                        result.className = "result-graph"
+                        const help_text = document.createElement("div")
+                        help_text.className = "result-text"
+                        help_text.innerText = output
+                        result.append(help_text)
+                        highlightSyntax(help_text, true, true)
+                        const text_1 = document.createElement("div")
+                        text_1.innerText = "Guide:\n  1. Graph `z = f(x, y)`\n\nExample #1: `plot3 y^2 - x^2`"
+                        text_1.className = "result-text"
+                        highlightSyntax(text_1, true, true)
+                        result.append(text_1)
+                        let graph_parent = document.createElement("div")
+                        graph_parent.id = `graph-${graph_id}`
+                        graph_id++
+                        result.append(graph_parent)
+                        requestAnimationFrame(() => {
+                            const graph = new Grapher3D({
+                                parent: graph_parent,
+                                height: 200,
+                                width: 200
+                            })
+                            graph.setInput("y^2 - x^2")
+                            graphs.push(graph)
                         })
                     } else if (user_input === "help plot") {
                         result = document.createElement("div")

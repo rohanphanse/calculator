@@ -81,7 +81,7 @@
     background-color: var(--bg-light);
 }
 
-.grapher-resize-button {
+.grapher-resize-button, .grapher-reset-button {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -92,6 +92,6 @@
     user-select: none;
 }
 
-.grapher-resize-button:hover {
+.grapher-resize-button:hover, .grapher-reset-button:hover {
     background-color: var(--bg-light);
 }

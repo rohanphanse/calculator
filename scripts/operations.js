@@ -856,6 +856,9 @@ const OPERATIONS = {
         name: "Square root",
         func: (n) => {
             if (typeof n == "number") {
+                if (n < 0) {
+                    return new ComplexNumber(0, Math.sqrt(-n))
+                }
                 return Math.sqrt(n)
             } else if (n instanceof UnitNumber) {
                 const new_units = {}
@@ -2690,6 +2693,12 @@ const HELP = {
         vars: ["x"],
         types: ["expression"]
     },
+    "plot3": {
+        name: "Plot 3D",
+        schema: [1],
+        vars: ["x"],
+        types: ["expression"]
+    },
     "diff": {
         name: "Differentiation",
         schema: [1],
@@ -3142,7 +3151,7 @@ const SPECIAL_CHAR_MAP = {
     "\\z": ["ζ", "Zeta"],
     "\\th": ["θ", "Theta"],
     "\\Th": ["Θ", "Uppercase Theta"],
-    "\\io": ["ι", "Iota"],
+    "\\i": ["ι", "Iota"],
     "\\k": ["κ", "Kappa"],
     "\\l": ["λ", "Lambda"],
     "\\L": ["Λ", "Uppercase Lambda"],
@@ -3164,8 +3173,7 @@ const SPECIAL_CHAR_MAP = {
     "\\Psi": ["Ψ", "Uppercase Psi"],
     "\\o": ["ω", "Omega"],
     "\\O": ["Ω", "Uppercase Omega"],
-    "\\to": ["→", "Arrow"],
-    "\\inf": ["∞", "Infinity"]
+    "\\to": ["→", "Arrow"]
 }
 const SPECIAL_CHAR_REGEX = new RegExp(
     Object.keys(SPECIAL_CHAR_MAP)

@@ -293,7 +293,6 @@ class Calculator {
                 return "Variable assignment error"
             }
         } catch (error) {
-            console.log(err)
             return "Variable assignment error"
         }
     }
@@ -985,7 +984,6 @@ class Calculator {
             tokens.splice(index + offset, operation.schema.length + 1, result)
             return tokens
         } catch (err) {
-            console.log(err)
             return `${operation.name} error > execution error`
         }
     }
