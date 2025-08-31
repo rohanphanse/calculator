@@ -1,5 +1,5 @@
 // Units
-const UNIT_NAMES = { "km": "Kilometer", "me": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Kilogram", "gm": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "se": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "jl": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kj": "Kilojoule", "ev": "Electron Volt", "li": "Liter", "gal": "Gallon", "ml": "Milliiter", "in": "Inch", "kel": "Kelvin", "cel": "Celcius", "far": "Fahrenheit", "cu": "Coulomb", "fa": "Farad", "ne": "Newton", "am": "Ampere", "wa": "Watt", "pa": "Pascal", "wb": "Weber", "te": "Tesla", "he": "Henry", "om": "Ohm", "vo": "Volt", "atm": "Standard atmosphere", "mol": "Mole" }
+const UNIT_NAMES = { "km": "Kilometer", "me": "Meter", "cm": "Centimeter", "mm": "Millimeter", "um": "Micrometer", "nm": "Nanometer", "ft": "Foot", "mi": "Mile", "kg": "Kilogram", "gm": "Gram", "mg": "Milligram", "lb": "Pound", "oz": "Ounce", "se": "Second", "mn": "Minute", "hr": "Hour", "ms": "Millisecond", "us": "Microsecond", "ns": "Nanosecond", "day": "Day", "yr": "Year", "ly": "Light Year", "wk": "Week", "jl": "Joule", "cal": "Calorie", "kcal": "Kilocalorie", "au": "Astronomical Unit", "kj": "Kilojoule", "ev": "Electron Volt", "li": "Liter", "gal": "Gallon", "ml": "Milliiter", "in": "Inch", "kel": "Kelvin", "cel": "Celcius", "far": "Fahrenheit", "cu": "Coulomb", "fa": "Farad", "ne": "Newton", "am": "Ampere", "wa": "Watt", "pa": "Pascal", "wb": "Weber", "te": "Tesla", "he": "Henry", "om": "Ohm", "vo": "Volt", "atm": "Standard atmosphere", "mol": "Mole" }
 const UNITS = Object.keys(UNIT_NAMES)
 const TEMP_UNITS = ["far", "cel", "kel"]
 const FROM_UNITS = {
@@ -7,8 +7,8 @@ const FROM_UNITS = {
     "me": 1,
     "cm": 0.01,
     "mm": 0.001,
-    "um": 0.000001,
-    "nm": 0.000000001,
+    "um": 10e-6,
+    "nm": 10e-9,
     "ft": 0.3048,
     "mi": 1609.34,
     "kg": 1,
@@ -20,6 +20,8 @@ const FROM_UNITS = {
     "mn": 60,
     "hr": 3600,
     "ms": 0.001,
+    "us": 10e-6,
+    "ns": 10e-9,
     "day": 86400, 
     "yr": 31556952,
     "ly": 9.461e+15,
@@ -58,10 +60,13 @@ for (const u in FROM_UNITS) {
     }
 }
 const UNIT_GROUPS = [
-    ["km", "me", "cm", "mm", "um", "nm", "mi", "ft", "in", "au", "ly"], 
+    ["me", "km", "cm", "mm", "um", "nm", "mi", "ft", "in", "au", "ly"], 
     ["kg", "gm", "mg", "lb", "oz"], 
-    ["se", "ms", "mn", "hr", "day", "wk", "yr"], ["jl", "kj", "cal", "kcal", "ev"], 
-    ["li" , "ml", "gal"], ["kel", "cel", "far"], ["cu"], 
+    ["se", "ms",  "mn", "hr", "day", "wk", "yr", "us", "ns"],
+    ["jl", "kj", "cal", "kcal", "ev"], 
+    ["li" , "ml", "gal"],
+    ["kel", "cel", "far"],
+    ["cu"], 
     ["fa"], 
     ["ne"],
     ["am"],
@@ -110,6 +115,7 @@ const ORDER_OF_OPERATIONS = [
 ]
 
 // Subsets
+const NUMERICAL_CONSTANTS = ["pi", "e", "phi"]
 const CONSTANTS = ["pi", "e", "phi", "inf", "true", "false", "hh", "cc", "qe", "u0", "e0", "mel", "mp", "gg", "ge", "rr", "na", "i"]
 const SYMBOLS = ["+", "-", "*", "/", "^", "!", "<<", ">>", "&", "|", "~", "xor", "choose", "perm", "to", ...UNITS, ":", "cross", "==", "!=", ">", ">=", "<", "<=", "and", "or", "not", "mod", "si"]
 const ANGLE_FUNCTIONS = ["sin", "cos", "tan", "csc", "sec", "cot"]
@@ -350,6 +356,12 @@ const OPERATIONS = {
                         return new UnitNumber(a.value() * b.value(), b.unit)
                     }
                 }
+                if (a instanceof Fraction) {
+                    a = a.value()
+                }
+                if (b instanceof Fraction) {
+                    b = b.value()
+                }
                 return a * b
             } else if (param_types[0] == TL(TN) && param_types[1] === TL(TN)) {
                 if (a.length !== b.length) {
@@ -391,7 +403,7 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TOR(TOR(TN, TL(TA)), TU), TOR(TOR(TN, TL(TA)), TU)],
+        types: [TOR(TN, TL(TA)), TOR(TN, TL(TA))],
         example: "Examples:\n  1. Multiply numbers: \`2 * 2 -> 4\`\n  2. Dot product: \`[1, 2] * [3, 4] -> 11\`\n  3. Matrix multiplication:\n     \`[[1, 2], [3, 4]] * [[1, 1], [1, 1]] -> [[3, 3], [7, 7]]\`",
         allow_fractions: true,
         allow_units: true,
@@ -435,6 +447,10 @@ const OPERATIONS = {
                 return new Fraction(a.n, b * a.d)
             } else if (b instanceof Fraction && Number.isInteger(a)) {
                 return new Fraction(a * b.d, b.n)
+            } else if (a instanceof Fraction || b instanceof Fraction) {
+                if (a instanceof Fraction) a = a.value()
+                if (b instanceof Fraction) b = b.value()
+                return a / b
             } else if (a instanceof Operation && UNITS.includes(a.op) && b instanceof Operation && UNITS.includes(b.op)) {
                 a = new UnitNumber(1, { [a.op]: 1 })
                 const new_unit = UnitNumber.divide_units(a.unit, { [b.op]: 1 })
@@ -473,7 +489,7 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["a", "b"],
-        types: [TOR(TOR(TN, TL(TA)), TU), TOR(TN, TU)],
+        types: [TOR(TN, TL(TA)), TN],
         allow_fractions: true,
         allow_units: true,
         allow_complex: true
@@ -520,7 +536,7 @@ const OPERATIONS = {
         },
         schema: [-1, 1],
         vars: ["base", "exponent"],
-        types: [TOR(TN, TU), TN],
+        types: [TN, TN],
         allow_units: true,
         allow_complex: true
     },
@@ -1444,32 +1460,6 @@ const OPERATIONS = {
         vars: ["n_u1", "u2"],
         types: [TN, TU],
         example: "Tip: See all supported units by typing `units`\nExamples:\n  1. `5 km to mi -> 3.10686`\n  2. `C = cel; F = far; 30 C to F -> 86`\n",
-        allow_units: true
-    },
-    "to2":  {
-        name: "Convert units",
-        func: (u1, u2) => {
-            let n = 1
-            if (u1 instanceof Operation) {
-                u1 = u1.op
-            }
-            if (u2 instanceof Operation) {
-                u2 = u2.op
-            }
-            let new_value
-            if (u1 in FROM_UNITS && u2 in FROM_UNITS) {
-                if (typeof FROM_UNITS[u1] === "number" && typeof FROM_UNITS[u2] === "number") {
-                    new_value = n * FROM_UNITS[u1] * TO_UNITS[u2]
-                } else if (typeof FROM_UNITS[u1] === "object" && typeof FROM_UNITS[u2] === "object") {
-                    new_value = FROM_UNITS[u2].to(FROM_UNITS[u1].from(n))
-                }
-                return new UnitNumber(new_value, { [u2]: 1 })
-            }
-            return "Invalid units"
-        },
-        schema: [-1, 1],
-        vars: ["u1", "u2"],
-        types: [TU, TU],
         allow_units: true
     },
     "==": {
@@ -2993,7 +2983,7 @@ function convert_to_unit(n, u1, u2) {
     if (typeof FROM_UNITS[u1] === "number" && typeof FROM_UNITS[u2] === "number") {
         return n * FROM_UNITS[u1] * TO_UNITS[u2]
     } else if (typeof FROM_UNITS[u1] === "object" && typeof FROM_UNITS[u2] === "object") {
-        return FROM_UNITS[u1].to(FROM_UNITS[u2].from(n))
+        return FROM_UNITS[u2].to(FROM_UNITS[u1].from(n))
     }
 }
 

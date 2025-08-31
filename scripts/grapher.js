@@ -6,6 +6,7 @@ class Grapher {
         this.width = params.width
         // State
         this.canZoom = true
+        this.fullView = false
         // DOM elements
         this.create()
         this.input = document.getElementById(`${this.parent.id}-input`)
@@ -16,6 +17,7 @@ class Grapher {
         this.negXMarker = document.getElementById(`${this.parent.id}-neg-x-marker`)
         this.posYMarker = document.getElementById(`${this.parent.id}-pos-y-marker`)
         this.negYMarker = document.getElementById(`${this.parent.id}-neg-y-marker`)
+        this.container = document.getElementById(`${this.parent.id}-container`)
         this.graph = this.parent.getElementsByClassName("grapher-graph")[0]
         // Canvas
         this.canvas = document.getElementById(`${this.parent.id}-canvas`)
@@ -38,6 +40,7 @@ class Grapher {
         this.parametric_intervals = 1000
         this.colors = ["red", "green", "blue", "purple", "black"]
         this.calc_options = { no_fraction: true, no_base_number: true, noAns: true, noRound: true }
+        this.highlighted_points = []
         // Expressions
         this.expressions = []
         // Listeners
@@ -49,8 +52,6 @@ class Grapher {
     }
 
     create() {
-        // Parent
-        this.parent.className = "grapher"
         // Bar
         const bar = document.createElement("div")
         bar.className = "grapher-bar"
@@ -77,6 +78,9 @@ class Grapher {
         graph.className = "grapher-graph"
         graph.style.height = `${this.height}px`
         graph.style.width = `${this.width}px`
+        this.pointTooltip = document.createElement("div")
+        this.pointTooltip.className = "grapher-point-tooltip"
+        graph.append(this.pointTooltip)
         // Canvas
         const canvas = document.createElement("canvas")
         canvas.className = "grapher-canvas"
@@ -106,14 +110,18 @@ class Grapher {
         graph.append(negXMarker)
         graph.append(posYMarker)
         graph.append(negYMarker)
-        this.parent.append(bar)
-        this.parent.append(graph)
+        const container = document.createElement("div")
+        container.id = `${this.parent.id}-container`
+        container.className = "grapher"
+        container.append(bar)
+        container.append(graph)
+        this.parent.append(container)
     }
 
     addListeners() {
         this.zoomOutButtonListener = ["click", () => {
             if (!this.canZoom) {
-                return;
+                return
             }
             // Animate
             const original_x_range = { ...this.x_range }
@@ -136,7 +144,7 @@ class Grapher {
         }]
         this.zoomInButtonListener = ["click", () => {
             if (!this.canZoom) {
-                return;
+                return
             }
             const original_x_range = { ...this.x_range }
             const original_y_range = { ...this.y_range }
@@ -184,16 +192,59 @@ class Grapher {
             }
         }]
         this.resizeButtonListener = ["click", () => {
-            if (this.graph.style.width === "200px") {
-                this.updateSize({ height: 350, width: 350 })
+            if (!this.fullView) {
+                document.body.appendChild(this.container)
+                this.container.style.position = "absolute"
+                this.container.style.top = "50%"
+                this.container.style.left = "50%"
+                this.container.style.transform = "translate(-50%, -50%)"
+                this.container.style.boxShadow = "0 0 8px var(--shadow)"
+                calcContainer.style.display = "none"
+                let length = Math.min(window.innerHeight, window.innerWidth)
+                length = Math.floor(0.8 * length / 200) * 200
+                this.fullView = true
+                this.updateSize({ height: length, width: length })
             } else {
+                this.container.style.top = ""
+                this.container.style.left = ""
+                this.container.style.transform = ""
+                this.container.style.boxShadow = "none"
+                this.container.style.position = "relative"
+                calcContainer.style.display = "flex"
+                this.parent.appendChild(this.container)
+                this.fullView = false
                 this.updateSize({ height: 200, width: 200 })
+            }
+        }]
+        this.hoverListener = ["mousemove", (event) => {
+            const rect = this.graph.getBoundingClientRect()
+            const mouseX = event.clientX - rect.left
+            const mouseY = event.clientY - rect.top
+            let found = null
+            const radius = 5
+            for (const { cartesianPoint, canvasPoint } of this.highlighted_points) {
+                const dx = mouseX - canvasPoint.x
+                const dy = mouseY - canvasPoint.y
+                if (dx * dx + dy * dy <= radius * radius) {
+                    found = { cartesianPoint, canvasPoint }
+                    break
+                }
+            }
+            if (found) {
+                console.log("found", found)
+                this.pointTooltip.style.display = "block"
+                this.pointTooltip.style.left = `${found.canvasPoint.x + 8}px`
+                this.pointTooltip.style.top = `${found.canvasPoint.y + 8}px`
+                this.pointTooltip.innerText = `(${format_sigfig(found.cartesianPoint.x)}, ${format_sigfig(found.cartesianPoint.y)})`
+            } else {
+                this.pointTooltip.style.display = "none"
             }
         }]
         this.zoomOutButton.addEventListener(...this.zoomOutButtonListener)
         this.zoomInButton.addEventListener(...this.zoomInButtonListener)
         this.resizeButton.addEventListener(...this.resizeButtonListener)
         this.input.addEventListener(...this.inputListener)
+        this.graph.addEventListener(...this.hoverListener)
         document.body.addEventListener(...this.keyListener)
     }
 
@@ -242,9 +293,10 @@ class Grapher {
 
     drawGraphs() {
         try {
+            this.highlighted_points = []
             this.ctx.clearRect(0, 0, this.width, this.height)
             this.drawGraphLines()
-            // console.log(this.expressions)
+            let graphed_functions = []
             for (let i = 0; i < this.expressions.length; i++) {
                 const split_equals = this.expressions[i].split("=").map(e => e.trim())
                 if (this.expressions[i].substring(0, 2) === "s:") {
@@ -278,6 +330,61 @@ class Grapher {
                     const options = {}
                     options.color = this.colors[i % this.colors.length]
                     this.graphFunction(this.expressions[i], options)
+                    graphed_functions.push(this.expressions[i])
+                }
+            }
+            if (graphed_functions.length >= 2) {
+                for (let i = 0; i < Math.min(graphed_functions.length, 4); i++) {
+                    for (let j = i + 1; j < Math.min(graphed_functions.length, 4); j++) {
+                        try {
+                            let f = "graph1"
+                            let g = "graph2"
+                            delete calculator.functions["graph"]
+                            delete calculator.functions["graph1"]
+                            delete calculator.functions["graph2"]
+                            if (graphed_functions[i] in calculator.functions) {
+                                calculator.calculate(`graph1(x) = ${graphed_functions[i]}(x)`, this.calc_options)
+                                f = graphed_functions[i]
+                            } else {
+                                calculator.calculate(`graph1(x) = ${graphed_functions[i]}`, this.calc_options)
+                            }
+                            if (graphed_functions[j] in calculator.functions) {
+                                calculator.calculate(`graph2(x) = ${graphed_functions[j]}(x)`, this.calc_options)
+                                g = graphed_functions[j]
+                            } else {
+                                calculator.calculate(`graph2(x) = ${graphed_functions[j]}`, this.calc_options)
+                            }
+                            let result1 = calculator.calculate("graph1(1)", this.calc_options)
+                            if (typeof result1 !== "number" && !(typeof result1 === "string" && result1.includes("NaN"))) {
+                                throw result1
+                            }
+                            let result2 = calculator.calculate("graph2(1)", this.calc_options)
+                            if (typeof result2 !== "number" && !(typeof result2 === "string" && result2.includes("NaN"))) {
+                                throw result2
+                            }
+                            let [success1, msg1] = perform_diff(f, calculator)
+                            if (!success1) return
+                            let [success2, msg2] = perform_diff(g, calculator)
+                            if (!success2) return
+                            calculator.calculate(`graph(x) = ${f}(x) - ${g}(x)`, this.calc_options)
+                            calculator.calculate(`graph'(x) = ${f}'(x) - ${g}'(x)`, this.calc_options)
+                            let roots = find_roots(calculator, this.calc_options, "graph", "graph'", this.x_range.min, this.x_range.max)
+                            if (roots.length > 20) continue
+                            for (let i = 0; i < roots.length; i++) {
+                                this.ctx.fillStyle = "lightgray"
+                                let y = calculator.evaluate([f, new Paren([roots[i]])], this.calc_options)
+                                const canvasPoint = this.mapToCanvasPoint({ x: roots[i], y })
+                                const radius = this.fullView ? 4 : 3
+                                this.ctx.beginPath()
+                                this.ctx.arc(canvasPoint.x, canvasPoint.y, radius, 0, 2 * Math.PI)
+                                this.ctx.fill()
+                                this.highlighted_points.push({
+                                    cartesianPoint: { x: roots[i], y: 0 },
+                                    canvasPoint
+                                })
+                            }
+                        } catch (error) {}
+                    }
                 }
             }
         } catch (error) {
@@ -646,8 +753,8 @@ class Grapher {
             pos = { x: event.clientX, y: event.clientY }
             const x_range = this.x_range.max - this.x_range.min
             const y_range = this.y_range.max - this.y_range.min
-            const delta_x = -dx * x_range / 200
-            const delta_y = dy * y_range / 200
+            const delta_x = -dx * x_range / this.width
+            const delta_y = dy * y_range / this.height
             this.x_range.min += delta_x
             this.x_range.max += delta_x
             this.y_range.min += delta_y
@@ -664,9 +771,11 @@ class Grapher {
     }
 
     graphFunction(expression, options = {}) {
+        let f = "graph"
         try {
             delete calculator.functions["graph"]
             if (expression in calculator.functions) {
+                let f = expression
                 calculator.calculate(`graph(x) = ${expression}(x)`, this.calc_options)
             } else {
                 calculator.calculate(`graph(x) = ${expression}`, this.calc_options)
@@ -742,6 +851,41 @@ class Grapher {
                 // console.error(error)
                 x += step
             }
+        }
+        let [success, msg] = perform_diff(f, calculator)
+        if (!success) return
+        let df = `${f}'`
+        let roots = find_roots(calculator, this.calc_options, f, df, this.x_range.min, this.x_range.max)
+        if (roots.length > 20) return
+        for (let i = 0; i < roots.length; i++) {
+            this.ctx.fillStyle = "lightgray"
+            const canvasPoint = this.mapToCanvasPoint({ x: roots[i], y: 0 })
+            const radius = this.fullView ? 4 : 3
+            this.ctx.beginPath()
+            this.ctx.arc(canvasPoint.x, canvasPoint.y, radius, 0, 2 * Math.PI)
+            this.ctx.fill()
+            this.highlighted_points.push({
+                cartesianPoint: { x: roots[i], y: 0 },
+                canvasPoint
+            })
+        }
+        let [success2, msg2] = perform_diff(df, calculator)
+        if (!success2) return
+        let ddf = `${df}'`
+        let df_roots = find_roots(calculator, this.calc_options, df, ddf, this.x_range.min, this.x_range.max)
+        if (df_roots.length > 20) return
+        for (let i = 0; i < df_roots.length; i++) {
+            this.ctx.fillStyle = "lightgray"
+            let y = calculator.evaluate([f, new Paren([df_roots[i]])], this.calc_options)
+            const canvasPoint = this.mapToCanvasPoint({ x: df_roots[i], y })
+            const radius = this.fullView ? 4 : 3
+            this.ctx.beginPath()
+            this.ctx.arc(canvasPoint.x, canvasPoint.y, radius, 0, 2 * Math.PI)
+            this.ctx.fill()
+            this.highlighted_points.push({
+                cartesianPoint: { x: df_roots[i], y },
+                canvasPoint
+            })
         }
     }
 

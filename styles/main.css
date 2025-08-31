@@ -16,6 +16,7 @@
     --scroll-bar: rgb(163, 163, 163);
     --scroll-bar-hover: rgb(131, 131, 131);
     --shadow: rgba(0, 0, 0, 0.05);
+    --more-shadow: rgba(0, 0, 0, 0.2);
 }
 
 .dark {
@@ -34,6 +35,7 @@
     --scroll-bar: rgb(89, 89, 89);
     --scroll-bar-hover: rgb(104, 104, 104);
     --shadow: rgba(255, 255, 255, 0.05);
+    --more-shadow: rgba(255, 255, 255, 0.2);
 }
 
 * {

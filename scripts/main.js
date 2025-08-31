@@ -1,3 +1,5 @@
+let calcContainer
+
 document.addEventListener("DOMContentLoaded", () => {
     // Calculator
     calculator = new Calculator()
@@ -24,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const commandButtons = document.getElementsByClassName("command")
     const userBar = document.getElementById("user-bar")
     const varBar = document.getElementById("var-bar")
-    const calcContainer = document.getElementById("container")
+    calcContainer = document.getElementById("container")
     const sideBar = document.getElementById("side-bar")
     const sideBarMain = document.getElementById("side-bar-main")
     const sideBarButton = document.getElementById("side-bar-button")
@@ -493,75 +495,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         output = `Save error > can only save user-defined variables and functions`
                     }
                 } else if (user_input.startsWith("diff")) {
-                    try {
-                        let f = user_input.slice(user_input.indexOf("diff") + "diff".length).trim()
-                        let no_func = false
-                        if (!(f in calculator.functions)) {
-                            no_func = true
-                            let res = calculator.calculate(`diff(x) = ${f}`)
-                            f = "diff"
-                            if (typeof res === "string") {
-                                output = `Differentation error > ${res}`
-                                throw "Error"
-                            }
-                        }
-                        if (!(f in calculator.functions)) {
-                            "Differentation error > invalid input"
-                        }
-                        const tokens = calculator.functions[f].value
-                        const new_tokens = []
-                        for (let i = 0; i < tokens.length; i++) {
-                            let added = false
-                            if (typeof tokens[i] === "string") {
-                                if (tokens[i].startsWith("(")) {
-                                    new_tokens.push("(")
-                                    added = true
-                                }
-                                if (tokens[i].startsWith(")")) {
-                                    new_tokens.push(")")
-                                    added = true
-                                }
-                            }
-                            if (!added) {
-                                new_tokens.push(tokens[i])
-                            }
-                        }
-                        const x = calculator.functions[f].parameters[0]
-                        const symbols = ["+", "-", "*", "/", "^", "(", ")", "sin", "cos", "ln", "tan", "cot", "csc", "sec"]
-                        for (let i = 0; i < new_tokens.length - 1; i++) {
-                            if (!symbols.includes(new_tokens[i]) && !symbols.includes(new_tokens[i + 1])) {
-                                new_tokens.splice(i + 1, 0, "*")
-                            } 
-                            if (!symbols.includes(new_tokens[i]) && tokens[i + 1] === "(") {
-                                new_tokens.splice(i + 1, 0, "*")
-                            }
-                            if (!symbols.includes(new_tokens[i]) && ["sin", "cos", "ln", "tan", "cot", "csc", "sec"].includes(new_tokens[i + 1])) {
-                                new_tokens.splice(i + 1, 0, "*")
-                            }
-                        }
-                        for (let i = 0; i < new_tokens.length; i++) {
-                            if (new_tokens[i] instanceof Fraction || new_tokens[i] instanceof BaseNumber) {
-                                new_tokens[i] = new_tokens[i].value()
-                            }
-                            if (!symbols.includes(new_tokens[i]) && new_tokens[i] !== x && typeof new_tokens[i] !== "number") {
-                                output = `Differentation error > '${new_tokens[i]}' is not supported`
-                                throw "Error"
-                            }
-                        }
-                        // console.log("diff tokens", new_tokens)
-                        const expressionTree = diff_tree(new_tokens)
-                        let derivative = differentiate(expressionTree, x)
-                        output = tree_to_string(diff_natural_simplify(derivative))
-                        if (f.startsWith("@") || no_func) {
-                            f = "f"
-                        }
-                        calculator.calculate(`${f}'(${x}) = ${output}`)
-                        output = new String(`\`${f}'(${x}) = ${output}\`\nDerivative \`${f}'\` declared`)
-                    } catch (error) {
-                        if (!output) {
-                            output = "Differentiation error"
-                        }
-                    }
+                    let f = user_input.slice(user_input.indexOf("diff") + "diff".length).trim()
+                    output = perform_diff(f, calculator)[1]
                 } else if (user_input.startsWith("lim")) {
                     try {
                         if (!user_input.includes(" as ") || !user_input.includes("→")) {
@@ -788,7 +723,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         result.textContent = output
                     }
                     last_output = output
-                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "0123456789".includes(output[0]) || output.includes("("))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof ComplexNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || typeof output === "boolean") {
+                    console.log("output", output, typeof output)
+                    if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "-0123456789".includes(output[0]) || output.includes("("))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof ComplexNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || typeof output === "boolean") {
+                        console.log("highlightSyntax")
                         highlightSyntax(result, false, true)
                     }
                     if ((typeof output === "string" || output instanceof String) && output.includes("`") && result.className !== "result-graph") {

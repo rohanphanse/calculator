@@ -11,6 +11,7 @@ class Grapher3D {
         this.rotationX = Math.PI / 12
         this.rotationY = -0.7 * Math.PI
         this.zoomLevel = 1.0
+        this.fullView = false
         // Graph properties
         this.x_range = { min: -5, max: 5 }
         this.y_range = { min: -5, max: 5 }
@@ -39,8 +40,6 @@ class Grapher3D {
     }
 
     create() {
-        // Parent
-        this.parent.className = "grapher3d"
         // Bar
         const bar = document.createElement("div")
         bar.className = "grapher-bar"
@@ -89,8 +88,11 @@ class Grapher3D {
         bar.append(resizeButton)
         graph.append(canvas)
         graph.appendChild(overlayCanvas)
-        this.parent.append(bar)
-        this.parent.append(graph)
+        this.container = document.createElement("div")
+        this.container.className = "grapher3d"
+        this.container.append(bar)
+        this.container.append(graph)
+        this.parent.append(this.container)
     }
 
     initWebGL() {
@@ -280,9 +282,25 @@ class Grapher3D {
             document.removeEventListener("mouseup", this.mouseUpHandler)
         }
         this.resizeButtonListener = ["click", () => {
-            if (this.graph.style.width === "200px") {
-                this.updateSize({ height: 350, width: 350 })
+            if (!this.fullView) {
+                document.body.appendChild(this.container)
+                this.container.style.position = "absolute"
+                this.container.style.top = "50%"
+                this.container.style.left = "50%"
+                this.container.style.transform = "translate(-50%, -50%)"
+                calcContainer.style.display = "none"
+                let length = Math.min(window.innerHeight, window.innerWidth)
+                length = Math.floor(0.8 * length / 200) * 200
+                this.updateSize({ height: length, width: length })
+                this.fullView = true
             } else {
+                this.container.style.top = ""
+                this.container.style.left = ""
+                this.container.style.transform = ""
+                this.container.style.position = "relative"
+                calcContainer.style.display = "flex"
+                this.parent.appendChild(this.container)
+                this.fullView = false
                 this.updateSize({ height: 200, width: 200 })
             }
         }]

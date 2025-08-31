@@ -4,6 +4,9 @@
     align-items: center;
     position: relative;
     cursor: grab;
+    font-family: monospace;
+    font-size: 1.1rem;
+    color: var(--text-medium);
 }
 
 .grapher-bar {
@@ -28,6 +31,18 @@
 
 .grapher-canvas {
     border: 1px solid var(--border);
+}
+
+.grapher-point-tooltip {
+    display: none;
+    position: absolute;
+    font-size: 0.8rem;
+    background-color: var(--bg-color);
+    padding: 5px;
+    border-radius: 4px;
+    box-shadow: 0 0 8px var(--more-shadow);
+    white-space: nowrap;
+    z-index: 1000;
 }
 
 .grapher-pos-x-marker {

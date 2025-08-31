@@ -64,9 +64,29 @@ function roundArray(a, p = 0, calc = false) {
     return a
 }
 
+function format_sigfig(num, sig = 6) {
+    if (Math.abs(num) < 1e-9) return "0"
+    let abs = Math.abs(num)
+    let s
+    if (abs < 1e-3 || abs >= 1e3) {
+        s = num.toExponential(sig - 1)
+    } else {
+        s = num.toPrecision(sig)
+        if (s.includes(".") && !s.includes("e")) {
+            s = s.replace(/\.?0+$/, "")
+        }
+    }
+    return s
+}
+
 function set_precision(value, p) {
-    if (value === 0 || !value.toString().includes(".")) return value
-    return parseFloat(value.toPrecision(p))
+    if (value === 0) return 0
+    const abs = Math.abs(value)
+    if (abs >= 1e9 || abs <= 1e-6) {
+        return value.toExponential(p - 1)
+    } else {
+        return value
+    }
 }
 
 function solve_quadratic(a, b, c) {
@@ -516,13 +536,13 @@ function eval_if(if_st, calc) {
 
 function add_fractions(f1, f2) {
     let d = lcm(f1.d, f2.d)
-    let n = d / f1.d * f1.n + d / f2.d * f2.n
+    let n = d / f1.d * f1.n * (f1.neg ? -1 : 1) + d / f2.d * f2.n * (f2.neg ? -1 : 1)
     return new Fraction(n, d)
 }
 
 function subtract_fractions(f1, f2) {
     let d = lcm(f1.d, f2.d)
-    let n = d / f1.d * f1.n - d / f2.d * f2.n
+    let n = d / f1.d * f1.n * (f1.neg ? -1 : 1) - d / f2.d * f2.n * (f2.neg ? -1 : 1)
     return new Fraction(n, d)
 }
 
@@ -1067,6 +1087,76 @@ function tree_to_string(node) {
     }
 }
 
+function perform_diff(f, calculator) {
+    try {
+        let no_func = false
+        if (!(f in calculator.functions)) {
+            no_func = true
+            let res = calculator.calculate(`diff(x) = ${f}`)
+            f = "diff"
+            if (typeof res === "string") {
+                return [false, `Differentation error > ${res}`]
+            }
+        }
+        if (!(f in calculator.functions)) {
+            return [false, "Differentation error > invalid input"]
+        }
+        const tokens = calculator.functions[f].value
+        const new_tokens = []
+        for (let i = 0; i < tokens.length; i++) {
+            let added = false
+            if (typeof tokens[i] === "string") {
+                if (tokens[i].startsWith("(")) {
+                    new_tokens.push("(")
+                    added = true
+                }
+                if (tokens[i].startsWith(")")) {
+                    new_tokens.push(")")
+                    added = true
+                }
+            }
+            if (!added) {
+                new_tokens.push(tokens[i])
+            }
+        }
+        const x = calculator.functions[f].parameters[0]
+        const symbols = ["+", "-", "*", "/", "^", "(", ")", "sin", "cos", "ln", "tan", "cot", "csc", "sec"]
+        for (let i = 0; i < new_tokens.length - 1; i++) {
+            if (NUMERICAL_CONSTANTS.includes(new_tokens[i])) {
+                new_tokens[i] = OPERATIONS[new_tokens[i]].func()
+            }
+            if (!symbols.includes(new_tokens[i]) && !symbols.includes(new_tokens[i + 1])) {
+                new_tokens.splice(i + 1, 0, "*")
+            } 
+            if (!symbols.includes(new_tokens[i]) && tokens[i + 1] === "(") {
+                new_tokens.splice(i + 1, 0, "*")
+            }
+            if (!symbols.includes(new_tokens[i]) && ["sin", "cos", "ln", "tan", "cot", "csc", "sec"].includes(new_tokens[i + 1])) {
+                new_tokens.splice(i + 1, 0, "*")
+            }
+        }
+        for (let i = 0; i < new_tokens.length; i++) {
+            if (new_tokens[i] instanceof Fraction || new_tokens[i] instanceof BaseNumber) {
+                new_tokens[i] = new_tokens[i].value()
+            }
+            if (!symbols.includes(new_tokens[i]) && new_tokens[i] !== x && typeof new_tokens[i] !== "number") {
+                return [false, `Differentation error > '${new_tokens[i]}' is not supported`]
+            }
+        }
+        // console.log("diff tokens", new_tokens)
+        const expressionTree = diff_tree(new_tokens)
+        let derivative = differentiate(expressionTree, x)
+        output = tree_to_string(diff_natural_simplify(derivative))
+        if (f.startsWith("@") || no_func) {
+            f = "f"
+        }
+        calculator.calculate(`${f}'(${x}) = ${output}`)
+        return [true, new String(`\`${f}'(${x}) = ${output}\`\nDerivative \`${f}'\` declared`)]
+    } catch (error) {
+        return [false, "Differentiation error"]
+    }
+}
+
 // Syntax highlight code generated with help from LLMs
 function highlightSyntax(element, backticks_mode = false, highlight_types = false) {
     const cursor_position = getCursorPosition(element)
@@ -1435,4 +1525,43 @@ function dot_product(a, b) {
 
 function scalar_multiply(T, scalar) {
     return add_tensors(T, T, 0, scalar)
+}
+
+function eval_f(calculator, calc_options, f, x) {
+    return calculator.evaluate([f, new Paren([x])], calc_options)
+}
+
+function find_roots(calculator, calc_options, f, df, x_min, x_max) {
+    const roots = []
+    let x = x_min
+    let prev_x = x
+    let prev_y = eval_f(calculator, calc_options, f, prev_x)
+    let step = (x_max - x_min) * 0.01
+    let tol = 1e-9
+    let max_iter = 20
+
+    for (x = x_min + step; x <= x_max; x += step) {
+        const y = eval_f(calculator, calc_options, f, x)
+        if (prev_y * y <= 0) {
+            let root = (prev_x + x) / 2
+            // Newton's method
+            for (let i = 0; i < max_iter; i++) {
+                const fx = eval_f(calculator, calc_options, f, root)
+                if (Math.abs(fx) < tol) break
+                const dfx = eval_f(calculator, calc_options, df, root)
+                if (Math.abs(dfx) < 1e-12) break
+                root -= fx / dfx
+            }
+            // Check if root and only keep unique roots
+            let f_root = Math.abs(eval_f(calculator, calc_options, f, root))
+            if (f_root < tol) {
+                if (!roots.some(r => Math.abs(r - root) < 1e-3)) {
+                    roots.push(root)    
+                }
+            }
+        }
+        prev_x = x
+        prev_y = y
+    }
+    return roots
 }

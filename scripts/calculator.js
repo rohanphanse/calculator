@@ -866,19 +866,18 @@ class Calculator {
                 return `${operation.name} error > type error: expected ${operation.types.length} parameter${operation.types.length !== 1 ? "s" : ""} but received ${params.length} parameters`
             }
             let param_types = get_param_types(params)
+            for (let i = 0; i < Math.min(param_types.length, operation.types.length); i++) {
+                if (param_types[i] == TU && operation.types[i].split(" | ").includes(TN) && operation.allow_units) {
+                    param_types[i] = TN
+                    let unit = params[i] instanceof Operation ? params[i].op : params[i]
+                    params[i] = new UnitNumber(1, { [unit] : 1 })
+                }
+            }
             if (!check_param_types(param_types, operation.types)) {
                 // Try negation if parameter error for subtraction
                 let fail = true
                 if (tokens[index] === "-") {
                     operation = OPERATIONS["neg"]
-                    params = operation.schema.map((i) => tokens[i + index])
-                    param_types = get_param_types(params)
-                    if (check_param_types(param_types, operation.types)) {
-                        fail = false
-                    }
-                }
-                if (tokens[index] === "to") {
-                    operation = OPERATIONS["to2"]
                     params = operation.schema.map((i) => tokens[i + index])
                     param_types = get_param_types(params)
                     if (check_param_types(param_types, operation.types)) {
@@ -929,7 +928,7 @@ class Calculator {
             const offset = operation.schema[0] < 0 ? operation.schema[0] : 0
             if (!operation.allow_fractions) {
                 params = params.map((n) => n instanceof Fraction ? n.value() : n)
-            } 
+            }
             if (!operation.allow_units) {
                 params = params.map((n) => n instanceof UnitNumber ? n.value() : n)
             }
