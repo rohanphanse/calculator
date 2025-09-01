@@ -110,7 +110,7 @@ add3(1)(2)                  -- 3
 
 -- Thanks to lambda capture, we can partially apply `add3` 
 -- to create an incrementer function `inc`
-inc = add3(1) -- Function inc declared
+inc = add3(1)   -- Function inc declared
 inc(10)         -- 11
 
 ----------------------------------------------------
