@@ -96,6 +96,10 @@ f(x) = x^2 - 12x + 27   -- Function f declared
 f(0)                    -- 27
 add(a, b) = a + b       -- Function add declared
 
+-- Tip: locally save variables and functions with `save`
+save a  -- Saved a = 3
+save f  -- Saved f(x) = x^2 - 12x + 27
+
 -- We can also define `add` using a lambda function
 add2 = @(a, b) = a + b  -- Function add2 declared
 add2(1, 2)              -- 3 
@@ -106,7 +110,7 @@ add3(1)(2)                  -- 3
 
 -- Thanks to lambda capture, we can partially apply `add3` 
 -- to create an incrementer function `inc`
-# inc = add3(1) -- Function inc declared
+-- inc = add3(1) -- Function inc declared
 inc(10)         -- 11
 
 ----------------------------------------------------
