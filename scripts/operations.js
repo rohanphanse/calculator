@@ -96,11 +96,11 @@ const SI_EXPANSIONS = {
 }
 // Order of operations
 const ORDER_OF_OPERATIONS = [
+    ["!"],
     ["^"],
     UNITS,
     ["to"],
-    ["!", "mod"],         // Exponentiation and modulus
-    ["choose", "perm", "cross"],
+    ["mod", "choose", "perm", "cross"],
     ["/", "*"],         // Division then multiplication
     ["-"],        // Sutraction, negation, and then addition
     ["+"],
@@ -1196,7 +1196,8 @@ const OPERATIONS = {
         schema: [1],
         vars: ["x"],
         types: [TA],
-        example: "Examples:\n  1. \`type(pi) -> number\n\`  2. \`type(0b101) -> number\`\n  3. \`type([1, 2, 3]) -> list[number]\`\n  4. \`type([[1, 2], [3, 4]]) -> list[list[number]]\`\n  5. \`type([1, 0b101, [2]]) -> list[any]\`\n  6. \`type(true) -> bool\`\n  7. \`type(km) -> unit\`\n  8. \`type(sin) -> function\`"
+        example: "Examples:\n  1. \`type(pi) -> number\n\`  2. \`type(0b101) -> number\`\n  3. \`type([1, 2, 3]) -> list[number]\`\n  4. \`type([[1, 2], [3, 4]]) -> list[list[number]]\`\n  5. \`type([1, 0b101, [2]]) -> list[any]\`\n  6. \`type(true) -> bool\`\n  7. \`type(km) -> unit\`\n  8. \`type(sin) -> function\`",
+        allow_complex: true
     },
     "index": {
         name: "Index",
@@ -3105,7 +3106,7 @@ function parseCoefficient(coefficient) {
 
 function is_multipliable(token) {
     let param_type = get_param_types([token])
-    return param_type == TN || param_type == TL(TN) || param_type == TL(TL(TN)) || (token instanceof Operation && UNITS.includes(token.op))
+    return param_type == TN || param_type == TL(TN) || param_type == TL(TL(TN))
 }
 
 for (const c of CONSTANTS) {

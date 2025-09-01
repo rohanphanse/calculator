@@ -270,7 +270,7 @@ class Calculator {
             if (/^[a-zA-Z_αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ][a-zA-Z0-9_'αβγΓδΔϵζηθΘικλΛμνξΞπΠρσΣτυϒϕΦχψΨωΩ]*$/i.test(name)) {
                 // Name is an operation or keyword
                 if (name in OPERATIONS || KEYWORDS.includes(name) || name in this.functions) {
-                    return "Variable assignment error > name taken error"
+                    return "Variable declaration error > name taken error"
                 }
                 status++
             }
@@ -279,7 +279,7 @@ class Calculator {
             if (typeof result !== "string") {
                 status++
             } else {
-                return `Variable assignment error > ${result}`
+                return `Variable declaration error > ${result}`
             }
             // Variable name and value valid
             if (status === 2) {
@@ -288,12 +288,12 @@ class Calculator {
                     redeclared = true
                 }
                 this.variables[name] = result
-                return new String(`Variable \`${name}\` ${redeclared ? "reassigned" : "declared"}`)  
+                return new String(`Variable \`${name}\` ${redeclared ? "redeclared" : "declared"}`)  
             } else {
-                return "Variable assignment error"
+                return "Variable declaration error"
             }
         } catch (error) {
-            return "Variable assignment error"
+            return "Variable declaration error"
         }
     }
 
@@ -845,7 +845,7 @@ class Calculator {
 
     // Perform operation given tokens and index
     operate(tokens, index, options) {
-        // console.log("operate", tokens, index)
+        console.log("operate", `${tokens}`, index)
         let operation = OPERATIONS[tokens[index]]
         try {
             // Create parameters

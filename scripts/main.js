@@ -551,6 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (!success) {
                                 output = "Could not find limit"
                             } else {
+                                output = round(output, 12)
                                 calculator.ans = output
                             }
                             
@@ -723,9 +724,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         result.textContent = output
                     }
                     last_output = output
-                    console.log("output", output, typeof output)
                     if (typeof output === "number" || ((typeof output === "string" || output instanceof String) && (output.startsWith("[") || "-0123456789".includes(output[0]) || output.includes("("))) || output instanceof Operation || output instanceof Fraction || output instanceof BaseNumber || output instanceof ComplexNumber || output instanceof UnitNumber || (user_input.startsWith("trace") && output !== "N/A") || typeof output === "boolean") {
-                        console.log("highlightSyntax")
                         highlightSyntax(result, false, true)
                     }
                     if ((typeof output === "string" || output instanceof String) && output.includes("`") && result.className !== "result-graph") {
